@@ -5,13 +5,62 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Keeps foreground status-count reads cache-only and coordinates cron refreshes.
+ * Keeps foreground status-count reads cache-only and coordinates refreshes.
+ *
+ * The aggregate SUM(CASE ...) queries behind the redirect/captured tab counts
+ * must never run inline in a page render, so a foreground read serves whatever
+ * the cache holds and enqueues the recomputation. WP-Cron is the preferred
+ * place for that work, but it cannot be the ONLY writer: on a host with
+ * DISABLE_WP_CRON set and an out-of-band runner draining wp-cron.php every few
+ * minutes, a freshly enqueued single event lands behind whatever backlog is
+ * already due, so a site with a cold cache renders "-" in every tab and ships
+ * NULL counts in its support reports for as long as the backlog lasts.
+ *
+ * A cold read therefore also arms a deferred recompute on the `shutdown` hook,
+ * which runs after the response body has been produced. That backstop is
+ * bounded on four axes so it can never become a foreground cost:
+ *   1. one arming per scope per request (instance flag);
+ *   2. a re-read at shutdown, so a refresh another request already completed is
+ *      not repeated;
+ *   3. a cross-request cooldown transient, so a scope whose query keeps failing
+ *      is retried at most once per cooldown window rather than once per admin
+ *      page view;
+ *   4. a shorter query budget than the cron path gets.
+ *
+ * @see ABJ_404_Solution_LogsHitsRollupService::scheduleHitsTableRebuild() the
+ *      same cron-or-shutdown shape for the logs/hits rollup rebuild.
  */
 class ABJ_404_Solution_StatusCountsRefreshCoordinator {
 
     const SCOPE_REDIRECTS = 'redirects';
     const SCOPE_CAPTURED = 'captured';
     const SCOPE_HIGH_IMPACT = 'high-impact';
+
+    /** Counts came from the current-generation cache. */
+    const STATE_FRESH = 'fresh';
+    /** Counts came from the last-known cache; a refresh is pending. */
+    const STATE_STALE = 'stale';
+    /** No count has ever been computed on this site, so there is nothing to serve. */
+    const STATE_UNCOMPUTED = 'uncomputed';
+
+    /**
+     * Minimum wall-clock gap between two deferred (shutdown) recomputes of the
+     * same scope. Matched to the typical out-of-band wp-cron.php cadence on
+     * cPanel/CloudLinux hosts: a site whose recompute keeps failing pays at
+     * most one extra aggregate per window no matter how many admin page views
+     * happen inside it.
+     */
+    const DEFERRED_REFRESH_COOLDOWN_SECONDS = 300;
+
+    /** Transient key prefix for the per-scope deferred-refresh cooldown. */
+    const DEFERRED_REFRESH_COOLDOWN_KEY_PREFIX = 'abj404_status_counts_deferred_';
+
+    /**
+     * Query budget for the deferred path. Deliberately smaller than the cron
+     * budgets: a recompute that cannot finish inside this belongs to cron, and
+     * the shutdown hook runs while the client connection is still open.
+     */
+    const DEFERRED_REFRESH_QUERY_TIMEOUT_SECONDS = 10;
 
     /** @var callable(string,array<string,mixed>,callable):mixed|null */
     private static $operationTracer = null;
@@ -24,6 +73,9 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
 
     /** @var callable(string):void */
     private $warn;
+
+    /** @var array<string, bool> Scopes whose shutdown backstop is armed for this request. */
+    private $deferredArmed = array();
 
     public function __construct(
         ABJ_404_Solution_StatusCountsRepository $statusCounts,
@@ -40,8 +92,13 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
         self::$operationTracer = $tracer;
     }
 
-    /** @return array<string, int> */
-    public function getRedirectStatusCounts(): array {
+    /**
+     * Counts plus the freshness state that produced them, so a caller can tell
+     * "never computed" apart from "computed and genuinely zero".
+     *
+     * @return array{counts: array<string, int>, state: string}
+     */
+    public function getRedirectStatusCountsResult(): array {
         return self::trace('status_count_scope', array('scope' => self::SCOPE_REDIRECTS),
             function (): array {
                 return $this->resolveRead(
@@ -53,7 +110,14 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
     }
 
     /** @return array<string, int> */
-    public function getCapturedStatusCounts(): array {
+    public function getRedirectStatusCounts(): array {
+        return self::flatten($this->getRedirectStatusCountsResult());
+    }
+
+    /**
+     * @return array{counts: array<string, int>, state: string}
+     */
+    public function getCapturedStatusCountsResult(): array {
         return self::trace('status_count_scope', array('scope' => self::SCOPE_CAPTURED),
             function (): array {
                 return $this->resolveRead(
@@ -62,6 +126,11 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
                 );
             }
         );
+    }
+
+    /** @return array<string, int> */
+    public function getCapturedStatusCounts(): array {
+        return self::flatten($this->getCapturedStatusCountsResult());
     }
 
     /** @return int|null */
@@ -78,24 +147,13 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
     }
 
     /**
-     * Cron-only recomputation. A direct foreground call can only enqueue work.
+     * Background recomputation entry point. A direct foreground call can only
+     * enqueue work; the cron listener and the shutdown backstop are the two
+     * places the aggregate actually runs.
      */
     public function refresh(string $scope): void {
-        $refreshers = array(
-            self::SCOPE_REDIRECTS => array(
-                'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS,
-                'callback' => array($this->statusCounts, 'recomputeRedirectStatusCounts'),
-            ),
-            self::SCOPE_CAPTURED => array(
-                'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS,
-                'callback' => array($this->statusCounts, 'recomputeCapturedStatusCounts'),
-            ),
-            self::SCOPE_HIGH_IMPACT => array(
-                'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED,
-                'callback' => array($this->statusCounts, 'recomputeHighImpactCapturedCount'),
-            ),
-        );
-        if (!isset($refreshers[$scope])) {
+        $refresher = $this->refresherFor($scope);
+        if ($refresher === null) {
             call_user_func($this->warn, 'Ignoring unknown status-count refresh scope: ' . $scope);
             return;
         }
@@ -104,33 +162,97 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
             return;
         }
 
-        $refresh = $refreshers[$scope];
-        $cacheKey = $refresh['cache_key'];
-        if (!$this->refreshLock->acquire($cacheKey)) {
+        $this->performRefresh($scope, $refresher['cron_timeout']);
+    }
+
+    /**
+     * Run one scope's aggregate under the distributed refresh lock.
+     */
+    private function performRefresh(string $scope, int $timeoutSeconds): void {
+        $refresh = $this->refresherFor($scope);
+        if ($refresh === null) {
+            return;
+        }
+        if (!$this->refreshLock->acquire($refresh['cache_key'])) {
             return;
         }
         try {
-            $refreshed = call_user_func($refresh['callback']);
+            $refreshed = ($refresh['recompute'])($timeoutSeconds);
             if ($refreshed !== true) {
                 call_user_func($this->warn,
                     'Status-count refresh failed for scope ' . $scope . '; retaining the last-known cache.'
                 );
             }
         } finally {
-            $this->refreshLock->release($cacheKey);
+            $this->refreshLock->release($refresh['cache_key']);
         }
     }
 
     /**
+     * Everything that differs between the three cron-written scopes, in one
+     * place: where the cache lives, how to recompute it, how to ask whether it
+     * still needs recomputing, and what the unattended query budget is.
+     *
+     * @return array{cache_key: string, recompute: callable(int):bool, needs_refresh: callable():bool, cron_timeout: int}|null
+     */
+    private function refresherFor(string $scope): ?array {
+        $statusCounts = $this->statusCounts;
+        $refreshers = array(
+            self::SCOPE_REDIRECTS => array(
+                'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_REDIRECT_STATUS,
+                'recompute' => static fn(int $timeout): bool
+                    => $statusCounts->recomputeRedirectStatusCounts($timeout),
+                'needs_refresh' => static fn(): bool
+                    => $statusCounts->readRedirectStatusCountsCache()['needs_refresh'],
+                'cron_timeout' => ABJ_404_Solution_StatusCountsRepository::STATUS_QUERY_TIMEOUT_SECONDS,
+            ),
+            self::SCOPE_CAPTURED => array(
+                'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_CAPTURED_STATUS,
+                'recompute' => static fn(int $timeout): bool
+                    => $statusCounts->recomputeCapturedStatusCounts($timeout),
+                'needs_refresh' => static fn(): bool
+                    => $statusCounts->readCapturedStatusCountsCache()['needs_refresh'],
+                'cron_timeout' => ABJ_404_Solution_StatusCountsRepository::STATUS_QUERY_TIMEOUT_SECONDS,
+            ),
+            self::SCOPE_HIGH_IMPACT => array(
+                'cache_key' => ABJ_404_Solution_ViewReadRuntimeState::CACHE_KEY_HIGH_IMPACT_CAPTURED,
+                'recompute' => static fn(int $timeout): bool
+                    => $statusCounts->recomputeHighImpactCapturedCount($timeout),
+                'needs_refresh' => static fn(): bool
+                    => $statusCounts->readHighImpactCapturedCountCache()['needs_refresh'],
+                'cron_timeout' => ABJ_404_Solution_StatusCountsRepository::HIGH_IMPACT_QUERY_TIMEOUT_SECONDS,
+            ),
+        );
+        return $refreshers[$scope] ?? null;
+    }
+
+    /**
      * @param array{counts: array<string, int>, needs_refresh: bool, incomplete: bool} $state
-     * @return array<string, int>
+     * @return array{counts: array<string, int>, state: string}
      */
     private function resolveRead(string $scope, array $state): array {
         if ($state['needs_refresh']) {
             $this->scheduleRefresh($scope);
         }
-        $counts = $state['counts'];
         if ($state['incomplete']) {
+            return array('counts' => $state['counts'], 'state' => self::STATE_UNCOMPUTED);
+        }
+        return array(
+            'counts' => $state['counts'],
+            'state' => $state['needs_refresh'] ? self::STATE_STALE : self::STATE_FRESH,
+        );
+    }
+
+    /**
+     * Legacy flat shape: counts plus the `_incomplete` marker that the admin
+     * tab renderer and the pagination/trash AJAX responses already understand.
+     *
+     * @param array{counts: array<string, int>, state: string} $result
+     * @return array<string, int>
+     */
+    private static function flatten(array $result): array {
+        $counts = $result['counts'];
+        if ($result['state'] === self::STATE_UNCOMPUTED) {
             $counts['_incomplete'] = 1;
         }
         return $counts;
@@ -151,6 +273,67 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
                 array($scope)
             )
         );
+        $this->armDeferredRefresh($scope);
+    }
+
+    /**
+     * Register the post-response backstop for one scope. Cron requests are
+     * excluded: refresh() runs the aggregate inline there, so arming would
+     * duplicate it.
+     */
+    private function armDeferredRefresh(string $scope): void {
+        if ($this->isCronRequest() || !empty($this->deferredArmed[$scope])) {
+            return;
+        }
+        if ($this->refresherFor($scope) === null || !function_exists('add_action')) {
+            return;
+        }
+        $this->deferredArmed[$scope] = true;
+        add_action('shutdown', function () use ($scope): void {
+            $this->runDeferredRefresh($scope);
+        });
+    }
+
+    /**
+     * The shutdown backstop itself. Never lets a failure escape: this runs
+     * after the response, where an exception would only corrupt the tail of
+     * the output.
+     */
+    private function runDeferredRefresh(string $scope): void {
+        try {
+            $refresher = $this->refresherFor($scope);
+            // Re-read the cache here: between the foreground read and this
+            // point the cron backlog may have drained, or a sibling request
+            // may have filled it.
+            if ($refresher === null || !($refresher['needs_refresh'])()) {
+                return;
+            }
+            if (!$this->claimDeferredRefreshWindow($scope)) {
+                return;
+            }
+            $this->performRefresh($scope, self::DEFERRED_REFRESH_QUERY_TIMEOUT_SECONDS);
+        } catch (\Throwable $e) {
+            call_user_func($this->warn,
+                'Deferred status-count refresh failed for scope ' . $scope . ': '
+                . get_class($e) . ': ' . $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Cross-request rate limit. Recorded BEFORE the aggregate runs so a query
+     * that fails (or is killed) still consumes the window.
+     */
+    private function claimDeferredRefreshWindow(string $scope): bool {
+        if (!function_exists('get_transient') || !function_exists('set_transient')) {
+            return true;
+        }
+        $key = self::DEFERRED_REFRESH_COOLDOWN_KEY_PREFIX . $scope;
+        if (get_transient($key) !== false) {
+            return false;
+        }
+        set_transient($key, 1, self::DEFERRED_REFRESH_COOLDOWN_SECONDS);
+        return true;
     }
 
     private function isCronRequest(): bool {

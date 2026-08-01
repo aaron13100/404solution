@@ -299,6 +299,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         return $this->statusCountsRefreshCoordinator->getRedirectStatusCounts();
     }
 
+    /** @inheritDoc */
+    function getRedirectStatusCountsResult(): array {
+        return $this->statusCountsRefreshCoordinator->getRedirectStatusCountsResult();
+    }
+
     /** @return array<string, int> */
     function getRedirectHitCountHistogram(): array {
         return $this->statusCounts->getRedirectHitCountHistogram();
@@ -312,6 +317,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array {
         unset($bypassCache, $tableOptions);
         return $this->statusCountsRefreshCoordinator->getCapturedStatusCounts();
+    }
+
+    /** @inheritDoc */
+    function getCapturedStatusCountsResult(): array {
+        return $this->statusCountsRefreshCoordinator->getCapturedStatusCountsResult();
     }
 
     /**

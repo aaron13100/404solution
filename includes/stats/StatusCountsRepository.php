@@ -29,6 +29,16 @@ class ABJ_404_Solution_StatusCountsRepository {
     const STATUS_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_CACHE_TTL;
     const STATUS_LAST_KNOWN_CACHE_TTL = ABJ_404_Solution_ViewReadRuntimeState::STATUS_LAST_KNOWN_CACHE_TTL;
 
+    /**
+     * Query budget for an unattended redirect/captured status recompute. The
+     * deferred foreground backstop passes a smaller one -- see
+     * ABJ_404_Solution_StatusCountsRefreshCoordinator.
+     */
+    const STATUS_QUERY_TIMEOUT_SECONDS = 20;
+
+    /** Query budget for an unattended high-impact recompute (joins the logs rollup). */
+    const HIGH_IMPACT_QUERY_TIMEOUT_SECONDS = 60;
+
     /** @var callable(string,array<string,mixed>,callable):mixed|null */
     private static $operationTracer = null;
 
@@ -81,8 +91,13 @@ class ABJ_404_Solution_StatusCountsRepository {
         );
     }
 
-    /** Recompute redirect counts from the cron-only refresh entry point. */
-    public function recomputeRedirectStatusCounts(): bool {
+    /**
+     * Recompute redirect counts. Called from the cron listener and from the
+     * coordinator's shutdown backstop, which passes a smaller query budget.
+     *
+     * @param int|null $timeoutSeconds Null uses the unattended budget.
+     */
+    public function recomputeRedirectStatusCounts(?int $timeoutSeconds = null): bool {
 
         $query = "SELECT
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active_count,
@@ -94,7 +109,10 @@ class ABJ_404_Solution_StatusCountsRepository {
             WHERE status IN (" . ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX . ")";
         $query = $this->dbCore->doTableNameReplacements($query);
 
-        $result = $this->dbCore->queryAndGetResults($query, array('timeout' => 20));
+        $result = $this->dbCore->queryAndGetResults(
+            $query,
+            array('timeout' => self::resolveTimeout($timeoutSeconds, self::STATUS_QUERY_TIMEOUT_SECONDS))
+        );
         $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
@@ -172,8 +190,13 @@ class ABJ_404_Solution_StatusCountsRepository {
         );
     }
 
-    /** Recompute captured counts from the cron-only refresh entry point. */
-    public function recomputeCapturedStatusCounts(): bool {
+    /**
+     * Recompute captured counts. Called from the cron listener and from the
+     * coordinator's shutdown backstop, which passes a smaller query budget.
+     *
+     * @param int|null $timeoutSeconds Null uses the unattended budget.
+     */
+    public function recomputeCapturedStatusCounts(?int $timeoutSeconds = null): bool {
 
         $query = "SELECT
             COUNT(*) as total,
@@ -186,7 +209,10 @@ class ABJ_404_Solution_StatusCountsRepository {
             WHERE status IN (" . ABJ404_STATUS_CAPTURED . ", " . ABJ404_STATUS_IGNORED . ", " . ABJ404_STATUS_LATER . ")";
         $query = $this->dbCore->doTableNameReplacements($query);
 
-        $result = $this->dbCore->queryAndGetResults($query, array('timeout' => 20));
+        $result = $this->dbCore->queryAndGetResults(
+            $query,
+            array('timeout' => self::resolveTimeout($timeoutSeconds, self::STATUS_QUERY_TIMEOUT_SECONDS))
+        );
         $hadError = !empty($result['last_error']) || !empty($result['timed_out']);
         $rows = is_array($result['rows']) ? $result['rows'] : array();
 
@@ -276,8 +302,13 @@ class ABJ_404_Solution_StatusCountsRepository {
         );
     }
 
-    /** Recompute the high-impact count from the cron-only refresh entry point. */
-    public function recomputeHighImpactCapturedCount(): bool {
+    /**
+     * Recompute the high-impact count. Called from the cron listener and from
+     * the coordinator's shutdown backstop, which passes a smaller query budget.
+     *
+     * @param int|null $timeoutSeconds Null uses the unattended budget.
+     */
+    public function recomputeHighImpactCapturedCount(?int $timeoutSeconds = null): bool {
         if (!$this->logsRepo->logsHitsTableExists()) {
             $this->logsRepo->scheduleHitsTableRebuild();
             return false;
@@ -285,7 +316,10 @@ class ABJ_404_Solution_StatusCountsRepository {
 
         $query = $this->queryBuilder->buildHighImpactCapturedCountQuery();
 
-        $result = $this->dbCore->queryAndGetResults($query, array('timeout' => 60));
+        $result = $this->dbCore->queryAndGetResults(
+            $query,
+            array('timeout' => self::resolveTimeout($timeoutSeconds, self::HIGH_IMPACT_QUERY_TIMEOUT_SECONDS))
+        );
         $timedOut = !empty($result['timed_out']);
         $hadError = !empty($result['last_error']) || $timedOut;
         $rows = is_array($result['rows']) ? $result['rows'] : array();
@@ -369,6 +403,17 @@ class ABJ_404_Solution_StatusCountsRepository {
         }
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         return empty($rows);
+    }
+
+    /**
+     * A caller-supplied budget never exceeds the unattended one: the deferred
+     * foreground path may only ask for LESS time, never more.
+     */
+    private static function resolveTimeout(?int $requested, int $unattended): int {
+        if ($requested === null || $requested < 1) {
+            return $unattended;
+        }
+        return min($requested, $unattended);
     }
 
     /**

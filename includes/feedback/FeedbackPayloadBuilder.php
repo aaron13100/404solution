@@ -121,6 +121,7 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
             'redirects_automatic_count'    => null,
             'redirects_regex_count'        => null,
             'redirects_trashed_count'      => null,
+            'redirects_status_counts_state' => ABJ_404_Solution_FeedbackDiagnosticsCollector::STATUS_COUNTS_STATE_REDACTED,
             'redirect_hit_count_histogram' => null,
 
             'captured_404s_active_total'  => null,
@@ -128,6 +129,7 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
             'captured_404s_ignored_count' => null,
             'captured_404s_later_count'   => null,
             'captured_404s_trashed_count' => null,
+            'captured_404s_status_counts_state' => ABJ_404_Solution_FeedbackDiagnosticsCollector::STATUS_COUNTS_STATE_REDACTED,
 
             'log_entries_count'     => null,
             'log_table_size_bytes'  => null,

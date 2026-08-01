@@ -121,6 +121,11 @@ return (function (): array {
         'redirects_automatic_count' => ['type' => 'int|null'],
         'redirects_regex_count'     => ['type' => 'int|null'],
         'redirects_trashed_count'   => ['type' => 'int|null'],
+        'redirects_status_counts_state' => [
+            'type' => 'string',
+            'enum' => ['fresh', 'stale', 'uncomputed', 'unavailable', 'redacted'],
+            'description' => 'Why the five redirects_* tallies above hold what they hold. The tallies are served from a cache that a background job fills, so NULL/0 alone cannot distinguish "this site has no redirects" from "no count has ever been computed here" (uncomputed) or "the read service could not be reached" (unavailable). `stale` means the counts came from the last-known cache while a refresh is pending.',
+        ],
         'redirect_hit_count_histogram' => [
             'type' => 'object|null',
             'key_type' => 'string',
@@ -134,6 +139,11 @@ return (function (): array {
         'captured_404s_ignored_count' => ['type' => 'int|null'],
         'captured_404s_later_count'   => ['type' => 'int|null'],
         'captured_404s_trashed_count' => ['type' => 'int|null'],
+        'captured_404s_status_counts_state' => [
+            'type' => 'string',
+            'enum' => ['fresh', 'stale', 'uncomputed', 'unavailable', 'redacted'],
+            'description' => 'Same discriminator as redirects_status_counts_state, for the five captured_404s_* tallies above.',
+        ],
 
         // Log + debug file health.
         'log_entries_count'     => ['type' => 'int|null'],

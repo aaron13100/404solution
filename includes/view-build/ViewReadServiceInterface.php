@@ -37,6 +37,18 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     public function getRedirectStatusCounts($bypassCache = false, array $tableOptions = array()): array;
 
     /**
+     * Same counts as getRedirectStatusCounts(), plus the freshness state that
+     * produced them, so a caller can tell "never computed on this site" apart
+     * from "computed and genuinely zero". The flat accessor above collapses
+     * both onto an absent key / a zero.
+     *
+     * State is one of ABJ_404_Solution_StatusCountsRefreshCoordinator::STATE_*.
+     *
+     * @return array{counts: array<string, int>, state: string}
+     */
+    public function getRedirectStatusCountsResult(): array;
+
+    /**
      * @return array<string, int>
      */
     public function getRedirectHitCountHistogram(): array;
@@ -47,6 +59,14 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
      * @return array<string, int>
      */
     public function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array;
+
+    /**
+     * Captured-404 counts plus their freshness state. See
+     * getRedirectStatusCountsResult().
+     *
+     * @return array{counts: array<string, int>, state: string}
+     */
+    public function getCapturedStatusCountsResult(): array;
 
     /** @return int|null Null until the background count has been computed. */
     public function getHighImpactCapturedCount(): ?int;

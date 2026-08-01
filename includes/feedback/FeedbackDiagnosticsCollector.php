@@ -14,6 +14,23 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
     const DEBUG_LOG_MAX_BYTES = 262144;
 
     /**
+     * Status-count freshness reported alongside the tallies. The three
+     * cache-derived values mirror
+     * ABJ_404_Solution_StatusCountsRefreshCoordinator::STATE_*; `unavailable`
+     * is this collector's own state for "the read service could not be
+     * reached at all", which is otherwise indistinguishable from a cold cache
+     * because both ship NULL counts.
+     */
+    const STATUS_COUNTS_STATE_UNAVAILABLE = 'unavailable';
+
+    /**
+     * The state a minimal / diagnostics-redacted payload carries. The counts
+     * were deliberately withheld, which is a different fact from a cold cache
+     * or an unreachable service, and saying so keeps the discriminator honest.
+     */
+    const STATUS_COUNTS_STATE_REDACTED = 'redacted';
+
+    /**
      * @return array<string, mixed>
      */
     public function collect(string $type): array {
@@ -24,20 +41,28 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
         $payload['categories_count']      = $this->tryInt(function () { return $this->countCategories(); });
         $payload['tags_count']            = $this->tryInt(function () { return $this->countTags(); });
 
-        $redirectCounts = $this->tryArray(function () { return $this->redirectCountsRaw(); });
+        $redirects = $this->statusCountsWithState(
+            'getRedirectStatusCountsResult', 'getRedirectStatusCounts'
+        );
+        $redirectCounts = $redirects['counts'];
         $payload['redirects_active_total']    = $this->pluckInt($redirectCounts, 'all');
         $payload['redirects_manual_count']    = $this->pluckInt($redirectCounts, 'manual');
         $payload['redirects_automatic_count'] = $this->pluckInt($redirectCounts, 'auto');
         $payload['redirects_regex_count']     = $this->pluckInt($redirectCounts, 'regex');
         $payload['redirects_trashed_count']   = $this->pluckInt($redirectCounts, 'trash');
+        $payload['redirects_status_counts_state'] = $redirects['state'];
         $payload['redirect_hit_count_histogram'] = $this->redirectHitCountHistogram();
 
-        $capturedCounts = $this->tryArray(function () { return $this->capturedCountsRaw(); });
+        $captured = $this->statusCountsWithState(
+            'getCapturedStatusCountsResult', 'getCapturedStatusCounts'
+        );
+        $capturedCounts = $captured['counts'];
         $payload['captured_404s_active_total']  = $this->pluckInt($capturedCounts, 'all');
         $payload['captured_404s_new_count']     = $this->pluckInt($capturedCounts, 'captured');
         $payload['captured_404s_ignored_count'] = $this->pluckInt($capturedCounts, 'ignored');
         $payload['captured_404s_later_count']   = $this->pluckInt($capturedCounts, 'later');
         $payload['captured_404s_trashed_count'] = $this->pluckInt($capturedCounts, 'trash');
+        $payload['captured_404s_status_counts_state'] = $captured['state'];
 
         $payload['log_entries_count']     = $this->tryInt(function () { return $this->logEntriesCount(); });
         $payload['log_table_size_bytes']  = $this->tryInt(function () { return $this->logTableSizeBytes(); });
@@ -152,38 +177,67 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
     }
 
     /**
-     * @return array<string, int>
+     * Read one status-count scope together with the cache state that produced
+     * it. Without the state, a support report cannot tell a site that has
+     * genuinely zero redirects from one whose count has never been computed:
+     * both arrive as NULL/0 tallies.
+     *
+     * @param string $resultMethod State-carrying accessor (preferred).
+     * @param string $flatMethod Legacy flat accessor, used when a read service
+     *        predates the state-carrying one; its `_incomplete` marker still
+     *        distinguishes uncomputed from computed.
+     * @return array{counts: array<string, int>, state: string}
      */
-    private function redirectCountsRaw(): array {
-        $viewReadService = $this->viewReadService();
-        if ($viewReadService === null || !method_exists($viewReadService, 'getRedirectStatusCounts')) {
-            throw new \RuntimeException('ViewReadService::getRedirectStatusCounts unavailable');
-        }
-        $raw = $viewReadService->getRedirectStatusCounts(true);
-        if (!is_array($raw)) {
-            throw new \RuntimeException('getRedirectStatusCounts returned non-array');
-        }
-        $out = array();
-        foreach ($raw as $k => $v) {
-            if (is_string($k) && is_scalar($v)) {
-                $out[$k] = (int)$v;
+    private function statusCountsWithState(string $resultMethod, string $flatMethod): array {
+        try {
+            $viewReadService = $this->viewReadService();
+            if ($viewReadService === null) {
+                throw new \RuntimeException('view_read_service unavailable');
             }
+            if (method_exists($viewReadService, $resultMethod)) {
+                return self::normalizeStatusCountsResult(
+                    $resultMethod,
+                    $viewReadService->{$resultMethod}()
+                );
+            }
+            if (!method_exists($viewReadService, $flatMethod)) {
+                throw new \RuntimeException('ViewReadService::' . $flatMethod . ' unavailable');
+            }
+            $flat = $viewReadService->{$flatMethod}();
+            if (!is_array($flat)) {
+                throw new \RuntimeException($flatMethod . ' returned non-array');
+            }
+            $counts = self::intMap($flat);
+            return array(
+                'counts' => $counts,
+                'state' => empty($counts['_incomplete'])
+                    ? ABJ_404_Solution_StatusCountsRefreshCoordinator::STATE_FRESH
+                    : ABJ_404_Solution_StatusCountsRefreshCoordinator::STATE_UNCOMPUTED,
+            );
+        } catch (\Throwable $e) {
+            ABJ_404_Solution_FeedbackTransportLog::log('warn',
+                'FeedbackDiagnosticsCollector status-count lookup failed: ' . $e->getMessage());
+            return array('counts' => array(), 'state' => self::STATUS_COUNTS_STATE_UNAVAILABLE);
         }
-        return $out;
     }
 
     /**
+     * @param mixed $raw
+     * @return array{counts: array<string, int>, state: string}
+     */
+    private static function normalizeStatusCountsResult(string $method, $raw): array {
+        if (!is_array($raw) || !isset($raw['counts']) || !is_array($raw['counts'])
+                || !isset($raw['state']) || !is_string($raw['state']) || $raw['state'] === '') {
+            throw new \RuntimeException($method . ' returned an unexpected shape');
+        }
+        return array('counts' => self::intMap($raw['counts']), 'state' => $raw['state']);
+    }
+
+    /**
+     * @param array<mixed, mixed> $raw
      * @return array<string, int>
      */
-    private function capturedCountsRaw(): array {
-        $viewReadService = $this->viewReadService();
-        if ($viewReadService === null || !method_exists($viewReadService, 'getCapturedStatusCounts')) {
-            throw new \RuntimeException('ViewReadService::getCapturedStatusCounts unavailable');
-        }
-        $raw = $viewReadService->getCapturedStatusCounts(true);
-        if (!is_array($raw)) {
-            throw new \RuntimeException('getCapturedStatusCounts returned non-array');
-        }
+    private static function intMap(array $raw): array {
         $out = array();
         foreach ($raw as $k => $v) {
             if (is_string($k) && is_scalar($v)) {
