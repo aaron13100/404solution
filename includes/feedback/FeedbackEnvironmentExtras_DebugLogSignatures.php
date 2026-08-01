@@ -45,13 +45,23 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
      * Shape:
      *   [ {signature: string, count: int, last_seen_at: int}, ... ]
      *
+     * An absent, unreadable, or error-free log yields an empty array: on a
+     * healthy site that is the truthful answer. A MISSING LOGGING SERVICE
+     * throws instead, so the caller's recordProbe() wrapper writes a
+     * `recent_error_signatures_error` marker. Those two cases used to be
+     * indistinguishable in the payload -- the same "silently degrade to empty
+     * after the thing I observe is refactored away" shape that left
+     * `view_build_state` looking healthy-but-empty for seven weeks
+     * (t_260801_071502_922). A probe that cannot look must never report
+     * "nothing to see".
+     *
      * @return array<int, array<string, mixed>>
      */
     public function probeRecentErrorSignatures(): array {
         $out = array();
         $log = function_exists('abj_service_optional') ? abj_service_optional('logging') : null;
         if (!is_object($log) || !method_exists($log, 'getDebugFilePath')) {
-            return $out;
+            throw new \RuntimeException('logging service unavailable for recent_error_signatures probe');
         }
         $path = (string)$log->getDebugFilePath();
         if ($path === '' || !is_file($path) || !is_readable($path)) {

@@ -149,7 +149,7 @@ $abj404ClassesByDirectory = array(
         'HostFilesystemPressureProbe', 'HostPressureSampler', 'HostServerCounterProbe',
         'SameSiteRequestCensus', 'SameSiteRequestRegistry',
         'RequestEnvironmentFingerprint', 'ClientBuildFingerprint', 'DiagnosticModuleManifest',
-        'OpcacheGenerationProbe',
+        'OpcacheGenerationProbe', 'BootWaypointRecorder',
         'ClientTransportReport', 'AjaxCanaryLadder', 'AjaxCanaryPayloadFactory',
         'AjaxCanaryReceiptParser', 'DebugLogFileStore', 'DebugLogReader',
         'DebugLogArchiveBuilder', 'DeveloperLogMailer', 'ToolsDiagnostics',
@@ -161,7 +161,8 @@ $abj404ClassesByDirectory = array(
     ),
     'feedback' => array(
         'FeedbackDatabaseIdentity', 'FeedbackDiagnosticsCollector', 'FeedbackEnvironmentExtras',
-        'FeedbackEnvironmentExtras_DbProbes', 'FeedbackEnvironmentExtras_HostProbes',
+        'MysqlServerStateProbe', 'PluginSchemaMetadataProbe', 'RollupFreshnessProbe',
+        'FeedbackEnvironmentExtras_HostProbes',
         'FeedbackEnvironmentExtras_PlatformFingerprint',
         'FeedbackEnvironmentExtras_DebugLogSignatures', 'FeedbackSiteTokenStore',
         'SupportLogExcerpt', 'SupportEvidenceExcerpt', 'CanaryReceiptSupportSection',

@@ -4,7 +4,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/FeedbackEnvironmentExtras_DbProbes.php';
+require_once __DIR__ . '/MysqlServerStateProbe.php';
+require_once __DIR__ . '/PluginSchemaMetadataProbe.php';
+require_once __DIR__ . '/RollupFreshnessProbe.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_HostProbes.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_PlatformFingerprint.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
@@ -18,11 +20,16 @@ require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
  * field of the feedback payload.
  *
  * This class owns ONLY the probe registry and the failure-isolation
- * wrapper. The probe implementations live in four collaborator classes,
- * partitioned by data source and lifecycle:
- *   - FeedbackEnvironmentExtras_DbProbes: MySQL/MariaDB probes via $wpdb
- *     (SHOW GLOBAL VARIABLES/STATUS, SHOW PROCESSLIST, SHOW INDEX,
- *     information_schema, view-build option signals).
+ * wrapper. The probe implementations live in six collaborator classes,
+ * partitioned by the subject each one observes:
+ *   - MysqlServerStateProbe: the database server's own state via $wpdb
+ *     (SHOW GLOBAL/SESSION VARIABLES, SHOW GLOBAL STATUS, SHOW PROCESSLIST).
+ *     No plugin table is named in it.
+ *   - PluginSchemaMetadataProbe: this plugin's own storage shape via
+ *     information_schema and SHOW INDEX (table sizes, index cardinality,
+ *     JOIN-hot column collations).
+ *   - RollupFreshnessProbe: redirects-hits rollup staleness, read live
+ *     through the logs_repository service (no SQL of its own).
  *   - FeedbackEnvironmentExtras_HostProbes: dynamic PHP/OS/WP runtime
  *     state (opcache, filesystem headroom, open_basedir, timezone,
  *     multisite role, htaccess writability, lifecycle).
@@ -47,8 +54,14 @@ require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
  */
 class ABJ_404_Solution_FeedbackEnvironmentExtras {
 
-    /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes */
-    private $db;
+    /** @var ABJ_404_Solution_MysqlServerStateProbe */
+    private $server;
+
+    /** @var ABJ_404_Solution_PluginSchemaMetadataProbe */
+    private $schema;
+
+    /** @var ABJ_404_Solution_RollupFreshnessProbe */
+    private $rollup;
 
     /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes */
     private $host;
@@ -60,7 +73,9 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
     private $debugLog;
 
     public function __construct() {
-        $this->db = new ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes();
+        $this->server = new ABJ_404_Solution_MysqlServerStateProbe();
+        $this->schema = new ABJ_404_Solution_PluginSchemaMetadataProbe();
+        $this->rollup = new ABJ_404_Solution_RollupFreshnessProbe();
         $this->host = new ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes();
         $this->platform = new ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint();
         $this->debugLog = new ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures();
@@ -85,7 +100,9 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
      */
     public function collect(): array {
         $extras = array();
-        $db = $this->db;
+        $server = $this->server;
+        $schema = $this->schema;
+        $rollup = $this->rollup;
         $host = $this->host;
         $platform = $this->platform;
         $debugLog = $this->debugLog;
@@ -93,12 +110,12 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // MySQL global variables: the binding constraints for slow
         // JOIN / GROUP BY on Bruno-class sites. SHOW GLOBAL VARIABLES
         // is read-only, no plugin tables involved.
-        $this->recordProbe($extras, 'mysql_globals', function () use ($db) { return $db->collectMysqlGlobals(); }, array());
+        $this->recordProbe($extras, 'mysql_globals', function () use ($server) { return $server->collectMysqlGlobals(); }, array());
 
-        // MySQL session-variable probe persisted by older builds. Reading the
-        // option instead of re-querying keeps the support request cheap when
-        // historical probe data is present.
-        $this->recordProbe($extras, 'mysql_session_probe', function () use ($db) { return $db->loadViewBuildSessionEnvProbe(); }, array());
+        // Live SHOW SESSION VARIABLES probe for this connection. Some hosts
+        // override operational variables per-session (poolers, connection
+        // init hooks), so this can diverge from mysql_globals.
+        $this->recordProbe($extras, 'mysql_session_probe', function () use ($server) { return $server->collectMysqlSessionVariables(); }, array());
 
         // Disk headroom on the WP uploads directory (where the plugin's
         // debug log and any cron-scratch files land). "Table is full"
@@ -129,26 +146,28 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // column). redirects volume and logs_hits rollup size are
         // direct signals for the getRedirectsForViewTempTable.sql
         // perf class.
-        $this->recordProbe($extras, 'plugin_tables_bytes', function () use ($db) { return $db->collectPluginTableSizes(); }, array());
+        $this->recordProbe($extras, 'plugin_tables_bytes', function () use ($schema) { return $schema->collectPluginTableSizes(); }, array());
 
-        // View-build freshness signals: when did the rollup last
-        // complete, what stage did the most recent build reach, is
-        // the rollup stale relative to logsv2? Hand-assembled from
-        // plugin options the staged build already writes; no new SQL.
-        $this->recordProbe($extras, 'view_build_state', function () use ($db) { return $db->collectViewBuildState(); }, array());
+        // Redirects-hits rollup freshness signals: does the rollup table
+        // exist, does it need a rebuild right now, when did it last
+        // refresh/get scheduled, and how far behind is its watermark
+        // relative to logsv2? Read live from the rollup service, the
+        // subsystem most implicated in "the admin redirects page never
+        // loads" reports.
+        $this->recordProbe($extras, 'view_build_state', function () use ($rollup) { return $rollup->collectRollupFreshness(); }, array());
 
         // SHOW PROCESSLIST row count. Indicator of shared-host MySQL
         // saturation: a queue of 200+ idle connections explains why
         // the staged build's BEGIN/COMMIT slots wait. Just the count;
         // no connection details (user/host) are emitted.
-        $this->recordProbe($extras, 'active_connection_count', function () use ($db) { return $db->probeActiveConnectionCount(); }, null);
+        $this->recordProbe($extras, 'active_connection_count', function () use ($server) { return $server->probeActiveConnectionCount(); }, null);
 
         // SHOW INDEX cardinality for the canonical indexes on
         // redirects + logs_hits + logs_hits_preagg. A degraded
         // cardinality (1 row, or NULL after a crash recovery) is a
         // sufficient explanation for a previously-fast JOIN suddenly
         // doing a full table scan. Shape: {table: {index: int}}.
-        $this->recordProbe($extras, 'index_cardinality', function () use ($db) { return $db->probeIndexCardinality(); }, array());
+        $this->recordProbe($extras, 'index_cardinality', function () use ($schema) { return $schema->probeIndexCardinality(); }, array());
 
         // Best-effort hosting-class hint parsed from server_software
         // and host-specific environment markers (cPanel, hPanel,
@@ -168,14 +187,14 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // runtime symptoms (lock waits, tmp-disk spills, aborted
         // connects, slow queries) that the variables can only
         // bound, never observe.
-        $this->recordProbe($extras, 'mysql_status', function () use ($db) { return $db->probeMysqlStatus(); }, array());
+        $this->recordProbe($extras, 'mysql_status', function () use ($server) { return $server->probeMysqlStatus(); }, array());
 
         // DB charset + collation, plus per-column collation on the
         // canonical JOIN keys for redirects (url, canonical_url) and
         // logs_hits (requested_url). Collation drift silently
         // disables index seeks on JOIN: symptom is "fast on staging,
         // slow on prod with identical data."
-        $this->recordProbe($extras, 'db_collation', function () use ($db) { return $db->probeDbCollation(); }, array());
+        $this->recordProbe($extras, 'db_collation', function () use ($schema) { return $schema->probeDbCollation(); }, array());
 
         // WP + PHP timezone identity. Bruno-class sites in non-UTC
         // zones (pt_BR, ja_JP) sometimes show off-by-N-hours bugs
@@ -276,6 +295,35 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
     }
 
     /**
+     * Probe-failure slug => the lowercased message substrings that select it.
+     * FIRST MATCH WINS, so declaration order is the precedence order: the
+     * narrow, unambiguous causes are listed before `sql_failed`, whose needles
+     * ('sql', 'query') are broad enough to swallow a more specific message.
+     *
+     * A table rather than an if/elseif chain because this is a classifier with
+     * five branches and grows by one every time a probe learns a new way to
+     * fail; adding a cause should be adding a row, not adding a branch.
+     * `service_unavailable` is one such row (t_260801_071502_922): a probe
+     * whose own collaborator service could not be resolved is a plugin-wiring
+     * failure, not an environment failure, and the two must be groupable apart
+     * on the server, because the wiring class is exactly what let
+     * `view_build_state` ship empty for seven weeks without anyone noticing.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const PROBE_ERROR_SIGNATURES = array(
+        'wpdb_unavailable'    => array('wpdb unavailable', 'wpdb missing'),
+        'fs_unavailable'      => array('disk_free_space', 'disk_total_space', 'sys_get_temp_dir'),
+        'service_unavailable' => array('service unavailable'),
+        'invalid_shape'       => array('invalid shape', 'non-array', 'unexpected shape'),
+        'sql_failed'          => array(
+            'sql', 'mysql', 'mariadb', 'query', 'processlist', 'simulated db',
+            'show global', 'show index', 'show processlist', 'information_schema',
+            'all tables failed', 'no tables probed',
+        ),
+    );
+
+    /**
      * Map a thrown probe exception to a short server-groupable slug.
      * Matched on the message rather than the exception class because
      * the probe helpers all throw \RuntimeException. The message is
@@ -287,32 +335,12 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
      */
     private function classifyProbeError(\Throwable $e): string {
         $msg = strtolower((string)$e->getMessage());
-        if (strpos($msg, 'wpdb unavailable') !== false || strpos($msg, 'wpdb missing') !== false) {
-            return 'wpdb_unavailable';
-        }
-        if (strpos($msg, 'disk_free_space') !== false
-            || strpos($msg, 'disk_total_space') !== false
-            || strpos($msg, 'sys_get_temp_dir') !== false) {
-            return 'fs_unavailable';
-        }
-        if (strpos($msg, 'invalid shape') !== false
-            || strpos($msg, 'non-array') !== false
-            || strpos($msg, 'unexpected shape') !== false) {
-            return 'invalid_shape';
-        }
-        if (strpos($msg, 'sql') !== false
-            || strpos($msg, 'mysql') !== false
-            || strpos($msg, 'mariadb') !== false
-            || strpos($msg, 'query') !== false
-            || strpos($msg, 'processlist') !== false
-            || strpos($msg, 'simulated db') !== false
-            || strpos($msg, 'show global') !== false
-            || strpos($msg, 'show index') !== false
-            || strpos($msg, 'show processlist') !== false
-            || strpos($msg, 'information_schema') !== false
-            || strpos($msg, 'all tables failed') !== false
-            || strpos($msg, 'no tables probed') !== false) {
-            return 'sql_failed';
+        foreach (self::PROBE_ERROR_SIGNATURES as $slug => $needles) {
+            foreach ($needles as $needle) {
+                if (strpos($msg, $needle) !== false) {
+                    return $slug;
+                }
+            }
         }
         $shortClass = (new \ReflectionClass($e))->getShortName();
         return 'exception:' . $shortClass;

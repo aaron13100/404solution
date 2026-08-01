@@ -72,7 +72,9 @@ return array(
     ),
     'ABJ_404_Solution_FeedbackTransport' => array(
         'ABJ_404_Solution_FeedbackEnvironmentExtras',
-        'ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes',
+        'ABJ_404_Solution_MysqlServerStateProbe',
+        'ABJ_404_Solution_PluginSchemaMetadataProbe',
+        'ABJ_404_Solution_RollupFreshnessProbe',
         'ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes',
         'ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint',
         'ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures',

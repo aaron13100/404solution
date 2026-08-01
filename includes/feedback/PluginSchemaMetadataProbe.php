@@ -5,127 +5,28 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Database-side environment probes for the feedback payload's
- * `environment_extras` field.
+ * Read-only probes of THIS PLUGIN's own storage shape for the feedback
+ * payload's `environment_extras` field: how large each plugin table is, how
+ * healthy its indexes are, and what collation its JOIN-hot URL columns carry.
  *
- * Every method in this class reads from MySQL/MariaDB via `$wpdb` (SHOW
- * GLOBAL VARIABLES, SHOW GLOBAL STATUS, SHOW PROCESSLIST, SHOW INDEX,
- * information_schema) or from plugin options the staged view-build
- * already writes. No host/runtime introspection lives here, and no
- * filesystem access. The DAO-bypass markers on every read are
- * specifically scoped to read-only @@GLOBAL / metadata probes.
+ * One subject: the plugin's schema as the server currently reports it, read
+ * through `information_schema` and `SHOW INDEX`. Reads about the SERVER's own
+ * configuration live in ABJ_404_Solution_MysqlServerStateProbe; reads about
+ * the rollup's freshness live in ABJ_404_Solution_RollupFreshnessProbe.
  *
- * Owned by ABJ_404_Solution_FeedbackEnvironmentExtras via composition;
- * see that class's collect() method for the keyed probe registry that
- * wraps each call below in recordProbe() for failure isolation.
+ * Every probe here iterates a candidate table list and isolates each table in
+ * its own try/catch, so a missing table (rebuild race, repair pending, an
+ * install that never got that table) degrades to a missing map entry rather
+ * than blanking the whole probe. A probe throws only when EVERY attempt
+ * failed, which is the "we learned nothing" case the caller's recordProbe()
+ * wrapper should mark as `<probe>_error`.
+ *
+ * The DAO-bypass markers here are specifically scoped to read-only metadata
+ * probes: these statements read table/column/index METADATA, never plugin row
+ * data, so DatabaseCore's repair-and-retry recovery does not apply (see
+ * docs/adr/dataaccess-refactor.md).
  */
-class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
-
-    /**
-     * Pull a fixed set of MySQL global variables relevant to staged
-     * view-build / temp-table JOIN performance on Bruno-class hosts. One
-     * SHOW GLOBAL VARIABLES query, parameterized name list, suppressed
-     * errors so a perms-denied response degrades to an empty map rather
-     * than a payload error.
-     *
-     * @return array<string, mixed>
-     */
-    public function collectMysqlGlobals(): array {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
-            throw new \RuntimeException('wpdb unavailable for SHOW GLOBAL VARIABLES probe');
-        }
-        $names = array(
-            'innodb_buffer_pool_size',
-            'innodb_log_file_size',
-            'innodb_flush_method',
-            'innodb_file_per_table',
-            'innodb_lock_wait_timeout',
-            'tmp_table_size',
-            'max_heap_table_size',
-            'key_buffer_size',
-            'max_allowed_packet',
-            'sort_buffer_size',
-            'join_buffer_size',
-            'max_connections',
-            'thread_cache_size',
-            'table_open_cache',
-            'wait_timeout',
-            'interactive_timeout',
-            'character_set_server',
-            'collation_server',
-            'optimizer_switch',
-            'sql_mode',
-            'long_query_time',
-            'slow_query_log',
-            'open_files_limit',
-        );
-        $placeholders = implode(',', array_fill(0, count($names), '%s'));
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        try {
-            $prepared = "SHOW GLOBAL VARIABLES";
-            if (method_exists($wpdb, 'prepare')) {
-                // DAO-bypass-approved: SHOW GLOBAL VARIABLES placeholder bind; no plugin-table writes possible.
-                $prepared = $wpdb->prepare("SHOW GLOBAL VARIABLES WHERE Variable_name IN ($placeholders)", $names);
-            }
-            // DAO-bypass-approved: read-only probe of @@GLOBAL; no plugin tables involved.
-            $rows = $wpdb->get_results($prepared, ARRAY_A);
-        } finally {
-            if (method_exists($wpdb, 'suppress_errors')) {
-                $wpdb->suppress_errors($prevSuppress);
-            }
-        }
-
-        if (!is_array($rows)) {
-            throw new \RuntimeException('SHOW GLOBAL VARIABLES returned non-array');
-        }
-        $out = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) { continue; }
-            $name = '';
-            $value = '';
-            foreach ($row as $k => $v) {
-                $klow = strtolower((string)$k);
-                if ($klow === 'variable_name' && is_scalar($v)) { $name = strtolower((string)$v); }
-                if ($klow === 'value' && is_scalar($v))         { $value = (string)$v; }
-            }
-            if ($name === '') { continue; }
-            // Coerce numeric-looking values so the server-side JSON sort
-            // is meaningful (otherwise 9 sorts after 100 lexically).
-            if (is_numeric($value) && strpos($value, '.') === false) {
-                $out[$name] = (int)$value;
-            } elseif (is_numeric($value)) {
-                $out[$name] = (float)$value;
-            } else {
-                $out[$name] = $value;
-            }
-        }
-        return $out;
-    }
-
-    /**
-     * Read persisted session-variable probe data written by older builds.
-     * This preserves historical support-request context without paying for
-     * a fresh SHOW SESSION VARIABLES query.
-     *
-     * @return array<string, mixed>
-     */
-    public function loadViewBuildSessionEnvProbe(): array {
-        if (!function_exists('get_option')) {
-            return array();
-        }
-        $opt = get_option('abj404_view_build_session_env_probe', array());
-        if (!is_array($opt)) {
-            return array();
-        }
-        $out = array();
-        foreach ($opt as $k => $v) {
-            if (is_string($k)) {
-                $out[$k] = $v;
-            }
-        }
-        return $out;
-    }
+class ABJ_404_Solution_PluginSchemaMetadataProbe {
 
     /**
      * Size of plugin-owned tables beyond logsv2 (which has its own typed
@@ -206,73 +107,6 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
     }
 
     /**
-     * View-build freshness signals: when did the rollup last complete,
-     * what stage did the most recent build reach, and is the rollup
-     * stale relative to logsv2? Hand-assembled from plugin options the
-     * staged build already writes; no new SQL.
-     *
-     * @return array<string, int>
-     */
-    public function collectViewBuildState(): array {
-        if (!function_exists('get_option')) {
-            return array();
-        }
-        $out = array();
-        $optMap = array(
-            'last_build_completed_at' => 'abj404_view_build_last_completed_at',
-            'last_build_started_at'   => 'abj404_view_build_last_started_at',
-            'last_build_stage'        => 'abj404_view_build_last_stage',
-            'last_build_failure_at'   => 'abj404_view_build_last_failure_at',
-            'logs_hits_max_log_id'    => 'abj404_logs_hits_max_log_id',
-        );
-        foreach ($optMap as $outKey => $optName) {
-            $v = get_option($optName, null);
-            if (is_scalar($v)) {
-                $out[$outKey] = is_numeric($v) ? (int)$v : 0;
-            }
-        }
-        return $out;
-    }
-
-    /**
-     * Row count from SHOW PROCESSLIST. Cheap on a shared host (returns
-     * the current request's view of connection saturation) and a strong
-     * leading indicator for "the BEGIN/COMMIT in the staged build is
-     * waiting because there are 200 other queries in flight". Only the
-     * row count is emitted; user/host/info columns are dropped to avoid
-     * PII leakage from other tenants on the same MySQL instance.
-     *
-     * Throws when the probe genuinely cannot complete (no $wpdb, query
-     * failed) so the caller's tryInt wrapper records null rather than
-     * a misleading zero.
-     *
-     * @return int
-     */
-    public function probeActiveConnectionCount(): int {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
-            throw new \RuntimeException('wpdb unavailable');
-        }
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        $rows = null;
-        try {
-            // DAO-bypass-approved: read-only probe of @@PROCESSLIST; no plugin tables involved.
-            $rows = $wpdb->get_results('SHOW PROCESSLIST', ARRAY_A);
-        } catch (\Throwable $e) {
-            // allow-silent-catch: probe is best-effort; rethrow after restoring suppress so the outer tryInt records null
-            ABJ_404_Solution_FeedbackTransportLog::log('warn', 'probeActiveConnectionCount failed: ' . $e->getMessage());
-            $rows = null;
-        }
-        if (method_exists($wpdb, 'suppress_errors')) {
-            $wpdb->suppress_errors($prevSuppress);
-        }
-        if (!is_array($rows)) {
-            throw new \RuntimeException('processlist probe failed');
-        }
-        return count($rows);
-    }
-
-    /**
      * Per-index cardinality for the canonical indexes on the JOIN-hot
      * plugin tables. Output shape:
      *   { redirects: {idx_url_disabled_status: int, idx_canonical_url: int, ...},
@@ -347,78 +181,6 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DbProbes {
         }
         if ($errors === $attempted && empty($out)) {
             throw new \RuntimeException('index_cardinality: all tables failed SHOW INDEX probe');
-        }
-        return $out;
-    }
-
-    /**
-     * SHOW GLOBAL STATUS counterpart to mysql_globals. The variables tell
-     * us what the server is CONFIGURED to allow; the status counters tell
-     * us what is actually HAPPENING. Counters that have ticked up since
-     * boot are the strongest proximate-cause signal: lock-wait pile-ups,
-     * tmp-disk spills, aborted connects, slow queries.
-     *
-     * One SHOW GLOBAL STATUS query, parameterized name list, suppressed
-     * errors so a perms-denied response degrades to an empty map rather
-     * than a payload error.
-     *
-     * @return array<string, int>
-     */
-    public function probeMysqlStatus(): array {
-        global $wpdb;
-        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_results')) {
-            throw new \RuntimeException('wpdb unavailable for SHOW GLOBAL STATUS probe');
-        }
-        $names = array(
-            'Innodb_buffer_pool_pages_dirty',
-            'Innodb_buffer_pool_pages_total',
-            'Innodb_row_lock_waits',
-            'Innodb_row_lock_time_avg',
-            'Innodb_deadlocks',
-            'Threads_running',
-            'Threads_connected',
-            'Aborted_connects',
-            'Aborted_clients',
-            'Created_tmp_disk_tables',
-            'Created_tmp_tables',
-            'Slow_queries',
-            'Table_locks_waited',
-            'Open_tables',
-            'Opened_tables',
-            'Uptime',
-        );
-        $placeholders = implode(',', array_fill(0, count($names), '%s'));
-        $prevSuppress = method_exists($wpdb, 'suppress_errors') ? $wpdb->suppress_errors(true) : false;
-        try {
-            $prepared = 'SHOW GLOBAL STATUS';
-            if (method_exists($wpdb, 'prepare')) {
-                // DAO-bypass-approved: SHOW GLOBAL STATUS placeholder bind; no plugin-table writes possible.
-                $prepared = $wpdb->prepare("SHOW GLOBAL STATUS WHERE Variable_name IN ($placeholders)", $names);
-            }
-            // DAO-bypass-approved: read-only probe of @@GLOBAL_STATUS; no plugin tables involved.
-            $rows = $wpdb->get_results($prepared, ARRAY_A);
-        } finally {
-            if (method_exists($wpdb, 'suppress_errors')) {
-                $wpdb->suppress_errors($prevSuppress);
-            }
-        }
-        if (!is_array($rows)) {
-            throw new \RuntimeException('SHOW GLOBAL STATUS returned non-array');
-        }
-        $out = array();
-        foreach ($rows as $row) {
-            if (!is_array($row)) { continue; }
-            $name = '';
-            $value = '';
-            foreach ($row as $k => $v) {
-                $klow = strtolower((string)$k);
-                if ($klow === 'variable_name' && is_scalar($v)) { $name = strtolower((string)$v); }
-                if ($klow === 'value' && is_scalar($v))         { $value = (string)$v; }
-            }
-            if ($name === '') { continue; }
-            if (is_numeric($value)) {
-                $out[$name] = (int)$value;
-            }
         }
         return $out;
     }
