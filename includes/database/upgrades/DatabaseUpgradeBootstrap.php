@@ -8,7 +8,13 @@ if (!defined('ABSPATH')) {
  * Table-bootstrap orchestration entry point sub-component of DatabaseUpgradesEtc.
  *
  * Owns the CREATE TABLE / first-activation flow:
- *  - Synchronized createDatabaseTables() entry point.
+ *  - Synchronized createDatabaseTables() entry point (the FULL bootstrap:
+ *    unbounded on a large site, always lock-serialized, never inline on a
+ *    user-facing request).
+ *  - repairMissingTables(), the bounded counterpart used by the per-query
+ *    missing-table auto-repair: materializes only the tables that are actually
+ *    missing, does no schema-wide drift correction or data backfill, needs no
+ *    lock, and queues a one-off daily-maintenance tick for the rest.
  *  - reallyCreateDatabaseTables() orchestrator that walks the per-site path
  *    (single site vs network activation vs network upgrade), runs the
  *    permanent-DDL bootstrap, ensures collations / engine / indexes, and
@@ -34,21 +40,28 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
     /** Create the tables when the plugin is first activated.
+     *
+     * Always serialized on the `create_db_tables` lock. There is deliberately
+     * no `$force` / bypass parameter: this entry point runs the FULL bootstrap
+     * (schema-wide collation sweep, engine conversion, index pass, canonical_url
+     * and denorm backfills, orphan adoption, permalink-cache rebuild, one-time
+     * URL migration), which is unbounded on a large site, so N callers running
+     * it concurrently is never correct. The one caller that used to bypass the
+     * lock -- the per-query missing-table auto-repair -- now calls
+     * repairMissingTables() instead, whose work is bounded by construction and
+     * therefore does not need (or contend for) this lock at all.
+     *
      * @param bool $updatingToNewVersion
      * @return void
      */
-    function createDatabaseTables($updatingToNewVersion = false, bool $force = false) {
+    function createDatabaseTables($updatingToNewVersion = false) {
 
         $synchronizedKeyFromUser = "create_db_tables";
-        $uniqueID = null;
+        $uniqueID = $this->syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
 
-        if (!$force) {
-            $uniqueID = $this->syncUtils->synchronizerAcquireLockTry($synchronizedKeyFromUser);
-
-            if ($uniqueID == '' || $uniqueID == null) {
-                $this->logger->debugMessage("Avoiding multiple calls for creating database tables.");
-                return;
-            }
+        if ($uniqueID == '' || $uniqueID == null) {
+            $this->logger->debugMessage("Avoiding multiple calls for creating database tables.");
+            return;
         }
 
         // Fixed: Use finally block to ensure lock is ALWAYS released, even on fatal errors
@@ -59,10 +72,76 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
             $this->logger->errorMessage("Error creating database tables. ", $e);
             throw $e;  // Re-throw to propagate the error
         } finally {
-            // Release the lock only if one was acquired (non-forced path).
-            if ($uniqueID !== null) {
-                $this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
-            }
+            $this->syncUtils->synchronizerReleaseLock($uniqueID, $synchronizedKeyFromUser);
+        }
+    }
+
+    /**
+     * Bounded missing-table repair, for the per-query auto-repair path only.
+     *
+     * Materializes the permanent plugin tables that are currently missing and
+     * nothing else (see
+     * DatabaseTableDdlExecutor::createMissingPermanentTables() for exactly what
+     * is and is not done, and why). Safe to call inline from a user-facing
+     * request: the cost is one SHOW TABLES probe per DDL file plus one CREATE
+     * TABLE IF NOT EXISTS per genuinely-missing table, with no data backfill and
+     * no schema-wide ALTER pass.
+     *
+     * Concurrency: no lock. Every statement is idempotent (CREATE TABLE IF NOT
+     * EXISTS) and the pre-probe means the common case -- a concurrent request
+     * that lost the race and finds the table already created -- issues no DDL at
+     * all. Acquiring the `create_db_tables` lock here would be actively wrong:
+     * a bootstrap holding it can run for minutes, and a repair that gave up
+     * because the lock was busy would leave the caller's query failing.
+     *
+     * Whatever schema-wide drift correction the table also wants (collations,
+     * engine, indexes on OTHER tables, backfills, orphan adoption) converges
+     * out-of-band on the daily maintenance tick, which this method schedules a
+     * one-off of when it actually creates something so convergence happens in
+     * about a minute rather than up to 24 hours.
+     *
+     * @return array<int, string> Fully-qualified names of the tables created.
+     */
+    function repairMissingTables(): array {
+        $created = $this->ddlExecutor()->createMissingPermanentTables();
+        if (!empty($created)) {
+            $this->logger->infoMessage(
+                'Missing-table repair materialized ' . count($created) . ' table(s): '
+                . implode(', ', $created) . '. Scheduling a deferred maintenance tick so the '
+                . 'schema-wide passes (collations, indexes, engine, orphan adoption, backfills) '
+                . 'converge out of band.'
+            );
+            $this->scheduleDeferredSchemaConvergence();
+        }
+        return $created;
+    }
+
+    /**
+     * Queue a single out-of-band run of the daily-maintenance cron so the
+     * schema-wide work the bounded repair deliberately skipped still happens
+     * promptly. Uses the existing, already-registered daily hook rather than a
+     * new one, so there is no extra event to register at activation or clear at
+     * uninstall. wp_schedule_single_event() de-duplicates identical hook+args
+     * within a 10-minute window, so a burst of concurrent repairs queues one
+     * tick, not one per request.
+     *
+     * @return void
+     */
+    private function scheduleDeferredSchemaConvergence(): void {
+        try {
+            abj_cron_scheduler()->scheduleSingleAt(
+                ABJ_404_Solution_CronScheduler::HOOK_CLEANUP,
+                abj_clock()->now() + 60
+            );
+        } catch (\Throwable $e) {
+            // A cron-scheduling failure must never turn a successful table
+            // repair into a failed one: the caller's query has already been
+            // made serviceable, and the same convergence runs on the next
+            // regular daily tick regardless.
+            $this->logger->warn(
+                'Could not schedule deferred schema convergence after a missing-table repair: '
+                . $e->getMessage() . '. The regular daily maintenance tick will still converge.'
+            );
         }
     }
 

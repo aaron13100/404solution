@@ -128,13 +128,42 @@ class ABJ_404_Solution_PermalinkCache {
         $this->updatePermalinkCache(1);
     }
     
-    /** 
-     * @param int $maxExecutionTime
-     * @param int $executionCount
-     * @return int
+    /**
+     * Rebuild the permalink cache, bounded by a wall-clock budget.
+     *
+     * `$maxExecutionTime` is a real budget, not a hint. Callers on user-facing
+     * paths (post save/delete listeners, the settings-save handler, the
+     * permalink-structure change hook) pass a small one precisely because they
+     * are running inside somebody's request; the cron listener passes
+     * `max_execution_time - 5`. Before this was honoured, every one of those
+     * callers ran an unbounded full-corpus pass -- on a site with thousands of
+     * posts, that is seconds to minutes of PHP-side keyword extraction inside a
+     * foreground request.
+     *
+     * What the budget can and cannot bound:
+     *   - The two set-based statements (the cache INSERT..SELECT and the
+     *     parent-page pass) are single SQL statements. They cannot be split
+     *     mid-flight, so they always run once; their cost is the database's,
+     *     not PHP's.
+     *   - The content-keyword population is a PHP loop over post bodies. That is
+     *     the interruptible part, so it is what the deadline gates: batches run
+     *     only while budget remains, and never at all once it is already spent.
+     *
+     * When the budget runs out with keyword work still pending, the run
+     * re-arms itself via scheduleToRunAgain() so a large corpus converges
+     * across successive cron ticks instead of being silently truncated at one
+     * batch forever. `$executionCount` caps that chain at MAX_EXECUTIONS.
+     *
+     * @param int $maxExecutionTime Wall-clock budget in seconds (minimum 1).
+     * @param int $executionCount 1-based position in a rescheduled chain.
+     * @return int Rows inserted into the permalink cache by this pass.
      * @throws Exception
      */
     function updatePermalinkCache($maxExecutionTime, $executionCount = 1) {
+        $budgetSeconds = is_numeric($maxExecutionTime) ? max(1, (int)$maxExecutionTime) : 1;
+        $executionCount = is_numeric($executionCount) ? max(1, (int)$executionCount) : 1;
+        $deadline = abj_clock()->nowFloat() + $budgetSeconds;
+
     	// check to see if we need to upgrade the database.
         // we must pass "true" here to avoid an infinite loop when updating the database.
         abj_service('options_repository')->getOptions(true);
@@ -155,11 +184,54 @@ class ABJ_404_Solution_PermalinkCache {
         // and update the post_parent to be the parent ID of the parent.
         $this->contentRepository->updatePermalinkCacheParentPages();
 
-        $this->populateContentKeywords();
+        $keywordWorkRemains = $this->populateContentKeywordsWithinBudget($deadline);
 
         $this->checkPermalinkCacheStaleness();
 
+        if ($keywordWorkRemains && $executionCount < self::MAX_EXECUTIONS) {
+            $this->scheduleToRunAgain($executionCount + 1);
+        }
+
         return $rowsInserted;
+    }
+
+    /**
+     * Maximum content-keyword batches a single run will process, independent of
+     * the wall-clock budget. Guarantees termination even when the budget clock
+     * does not advance (a frozen/injected clock) or when the keyword write is
+     * silently not sticking, so the same rows keep coming back forever. At
+     * populateContentKeywords()'s default batch size of 500 posts this is
+     * 10,000 posts per run, well above what any realistic budget affords.
+     */
+    const MAX_KEYWORD_BATCHES_PER_RUN = 20;
+
+    /**
+     * Populate content keywords in batches while wall-clock budget remains.
+     *
+     * Starts a batch only while budget remains. The set-based cache work runs
+     * before this method and can consume the entire caller budget by itself;
+     * starting a 500-post PHP batch after that point would make the deadline a
+     * decorative hint instead of a real request bound.
+     *
+     * @param float $deadline Epoch seconds (microsecond precision) after which
+     *   no further batch may start.
+     * @return bool True when the pass stopped with work still pending (budget
+     *   or batch cap reached), so the caller should reschedule. False when the
+     *   corpus converged -- a batch came back with nothing left to do.
+     */
+    private function populateContentKeywordsWithinBudget(float $deadline): bool {
+        $clock = abj_clock();
+        for ($batch = 0; $batch < self::MAX_KEYWORD_BATCHES_PER_RUN; $batch++) {
+            if ($clock->nowFloat() >= $deadline) {
+                return true;
+            }
+            if ($this->populateContentKeywords() === 0) {
+                // Nothing left needing keywords: the corpus is converged, so
+                // there is nothing to reschedule.
+                return false;
+            }
+        }
+        return true;
     }
 
     /** @return void */

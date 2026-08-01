@@ -243,6 +243,102 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
     }
 
     /**
+     * Materialize ONLY the permanent plugin tables that are currently missing,
+     * and nothing else.
+     *
+     * This is the bounded counterpart to runInitialCreateTables(), for the
+     * per-query missing-table auto-repair path
+     * (DatabaseRepairPolicy::attemptMissingTableRepairAndRetry). That path runs
+     * inline inside whatever request happened to issue the failing query --
+     * frontend 404 dispatch, admin AJAX, REST -- so it must do the minimum work
+     * that makes the caller's retry succeed and no more.
+     *
+     * The work here is bounded by construction:
+     *   - one SHOW TABLES probe per permanent DDL file (metadata only),
+     *   - one CREATE TABLE IF NOT EXISTS per table that is actually missing,
+     *   - one post-CREATE materialization probe for each of those.
+     * Every create*Table.sql file carries its full column list AND its full
+     * index list, so a table created here is complete: it needs no follow-up
+     * ALTER, no verifyColumns() diff (there is nothing to diff against a table
+     * built from the current DDL), and no index pass.
+     *
+     * Deliberately absent, versus runInitialCreateTables() /
+     * reallyCreateDatabaseTables(): the schema-wide collation sweep, the
+     * MyISAM-to-InnoDB engine conversion, createIndexes(), the canonical_url
+     * and denorm backfills, the lowercase-rename / orphan-adoption scan, the
+     * permalink-cache rebuild, and the relative-path URL migration. Those are
+     * drift correction and data backfill across tables that are NOT missing;
+     * they are the daily maintenance cron's job (runSelfHealPrologue), never a
+     * user-facing request's. Running them inline is what turned a single
+     * missing table on a large site into a multi-minute admin-AJAX stall.
+     *
+     * @return array<int, string> Fully-qualified names of the tables that were
+     *   missing on entry and that this pass materialized. Empty when nothing
+     *   was missing, or when every CREATE failed to materialize.
+     */
+    public function createMissingPermanentTables(): array {
+        $created = array();
+        foreach ($this->discoverPermanentDDLFiles() as $ddlEntry) {
+            if (!is_array($ddlEntry)) {
+                continue;
+            }
+            $placeholder = isset($ddlEntry['placeholder']) && is_string($ddlEntry['placeholder'])
+                ? $ddlEntry['placeholder'] : '';
+            $ddlContent = isset($ddlEntry['ddlContent']) && is_string($ddlEntry['ddlContent'])
+                ? $ddlEntry['ddlContent'] : '';
+            if ($placeholder === '' || $ddlContent === '') {
+                continue;
+            }
+            $tableName = $this->dbCore->doTableNameReplacements($placeholder);
+            if (!is_string($tableName) || $tableName === '') {
+                continue;
+            }
+            // Skip tables that already exist: the repair exists to close the
+            // gap for the one table the failing query named, not to re-run DDL
+            // for the whole schema on every recovered query.
+            if ($this->tableExistsOnDisk($tableName)) {
+                continue;
+            }
+
+            $this->dbCore->queryAndGetResults($this->applyPluginTableCharsetCollate($ddlContent));
+
+            if ($this->verifyTableMaterialized(array('tableName' => $tableName, 'placeholder' => $placeholder))) {
+                $created[] = $tableName;
+            }
+        }
+        return $created;
+    }
+
+    /**
+     * Metadata-only existence probe for a fully-qualified plugin table.
+     *
+     * Routed through queryAndGetResults() (not a raw $wpdb->get_var()) so it
+     * carries the DAO's query-timeout wrapper: a concurrent CREATE/ALTER/DROP
+     * can hold a metadata lock that SHOW TABLES waits on, and an unbounded wait
+     * inside a user-facing request is exactly what this repair path exists to
+     * avoid.
+     *
+     * @param string $tableName Fully-qualified table name (with prefix).
+     * @return bool
+     */
+    private function tableExistsOnDisk(string $tableName): bool {
+        if ($tableName === '') {
+            return false;
+        }
+        // @utf8-audit: opt-out - $tableName is a fully-qualified plugin table
+        // name from doTableNameReplacements / $wpdb->prefix; never user input.
+        $result = $this->dbCore->queryAndGetResults(
+            "SHOW TABLES LIKE '" . esc_sql($tableName) . "'"
+        );
+        if (!isset($result['rows']) || !is_array($result['rows']) || !isset($result['rows'][0])) {
+            return false;
+        }
+        $row = $result['rows'][0];
+        $found = is_array($row) ? reset($row) : $row;
+        return $found === $tableName;
+    }
+
+    /**
      * Verify that a CREATE TABLE actually materialized the named table on disk.
      * Returns true if the table exists, false (and logs a per-table error) if not.
      *
@@ -267,24 +363,14 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
         if ($tableName === '') {
             return false;
         }
-        // Routed through queryAndGetResults() (same pattern as
-        // DatabaseUpgradeCollationDrift::correctCollations()) rather than a
-        // raw $wpdb->get_var() so this metadata probe carries the DAO's
+        // Shares tableExistsOnDisk()'s queryAndGetResults() probe (same pattern
+        // as DatabaseUpgradeCollationDrift::correctCollations()) rather than a
+        // raw $wpdb->get_var(), so this metadata probe carries the DAO's
         // query-timeout wrapper: a concurrent CREATE/ALTER/DROP racing this
         // freshly-run CREATE TABLE can hold a metadata lock that SHOW TABLES
         // waits on, and an unbounded wait here would block schema bootstrap
         // indefinitely instead of surfacing as a logged, recoverable error.
-        // @utf8-audit: opt-out - $tableName is fully-qualified plugin table
-        // name from doTableNameReplacements / $wpdb->prefix; never user input.
-        $result = $this->dbCore->queryAndGetResults(
-            "SHOW TABLES LIKE '" . esc_sql($tableName) . "'"
-        );
-        $found = null;
-        if (isset($result['rows']) && is_array($result['rows']) && isset($result['rows'][0])) {
-            $row = $result['rows'][0];
-            $found = is_array($row) ? reset($row) : $row;
-        }
-        if ($found === $tableName) {
+        if ($this->tableExistsOnDisk($tableName)) {
             return true;
         }
         $this->logger->errorMessage(

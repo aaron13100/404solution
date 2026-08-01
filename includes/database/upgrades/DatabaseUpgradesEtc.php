@@ -190,11 +190,10 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 
 	/**
 	 * @param bool $updatingToNewVersion
-	 * @param bool $force
 	 * @return void
 	 */
-	public function createDatabaseTables($updatingToNewVersion = false, bool $force = false) {
-		$this->components()->bootstrapUpgrade()->createDatabaseTables($updatingToNewVersion, $force);
+	public function createDatabaseTables($updatingToNewVersion = false) {
+		$this->components()->bootstrapUpgrade()->createDatabaseTables($updatingToNewVersion);
 	}
 
 	/** @return void */

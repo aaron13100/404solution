@@ -214,9 +214,9 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
     }
 
     /**
-     * Run the actual repair: createDatabaseTables(), flush wpdb, retry the
-     * original query, and either clear the cooldown (success) or engage the
-     * cooldown + admin notice (failure).
+     * Run the actual repair: materialize only missing permanent tables, flush
+     * wpdb, retry the original query, and either clear the cooldown (success)
+     * or engage the cooldown + admin notice (failure).
      *
      * @param string $query
      * @param array<string, mixed> $result
@@ -237,13 +237,30 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
         ?ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer = null
     ): void {
         $upgrades = abj_service('database_upgrades');
-        // Pass $force = true so the repair bypasses the concurrency lock. If another
-        // request holds the lock (e.g. a concurrent upgrade), calling createDatabaseTables
-        // without $force would silently return without creating anything, leaving the
-        // missing table unrepaired.  Concurrent CREATE TABLE IF NOT EXISTS calls are safe
-        // (idempotent), so bypassing the lock here is correct.
+        // repairMissingTables(), NOT createDatabaseTables(). This runs inline in
+        // whatever request issued the failing query -- frontend 404 dispatch,
+        // admin AJAX, REST -- so the work it does has to be bounded by
+        // construction: one SHOW TABLES probe per DDL file, plus one
+        // CREATE TABLE IF NOT EXISTS for each table that is genuinely missing.
+        //
+        // createDatabaseTables() ran the entire bootstrap here instead: the
+        // schema-wide collation sweep, the MyISAM-to-InnoDB conversion,
+        // createIndexes(), the canonical_url + denorm backfills, the orphan
+        // adoption scan, a full-corpus permalink-cache rebuild, and the
+        // one-time relative-path URL migration -- none of which the caller's
+        // retry needs, and all of which scale with site size. It also passed
+        // $force = true to bypass the create_db_tables lock, so N concurrent
+        // admin-AJAX requests could each run that whole pipeline at once. On a
+        // 13k-page site that is a multi-minute stall on a user-facing request
+        // (Bruno, report-146.txt: repair at 07:15:05, then pagination requests
+        // from 07:16:39 onward that never completed).
+        //
+        // Every create*Table.sql carries its full column AND index list, so a
+        // table created by the bounded path is complete; the schema-wide drift
+        // passes belong to the daily maintenance cron, which repairMissingTables()
+        // queues a one-off of when it actually creates something.
         $repairCreate = static function () use ($upgrades): void {
-            $upgrades->components()->bootstrapUpgrade()->createDatabaseTables(false, true);
+            $upgrades->components()->bootstrapUpgrade()->repairMissingTables();
         };
         if ($tracer === null) {
             $repairCreate();
@@ -399,7 +416,7 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
             : '';
         $existenceContext = $tableStillMissing
             ? ' Table is still missing after CREATE TABLE ran. '
-            . 'createDatabaseTables() did not materialize this table '
+            . 'repairMissingTables() did not materialize this table '
             . '(likely a concurrent DROP, swallowed SQL error in queryAndGetResults, '
             . 'or insufficient CREATE TABLE privileges).'
             : '';
