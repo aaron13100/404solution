@@ -14,8 +14,17 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_HostPressureSampler {
 
-    /** @return array<string, mixed> */
-    public static function capture(): array {
+    /** @var array<string, array<string, mixed>> */
+    private static $sameUidProcessesByRequest = array();
+
+    /**
+     * Capture host pressure while paying the process-wide procfs walk once
+     * for each request. Cheap counters remain fresh on every checkpoint.
+     *
+     * @param string $requestScope Stable identity shared by captures from one request.
+     * @return array<string, mixed>
+     */
+    public static function capture(string $requestScope = ''): array {
         $procRoot = '/proc';
         if (function_exists('apply_filters')) {
             try {
@@ -36,7 +45,7 @@ final class ABJ_404_Solution_HostPressureSampler {
             'runtime_identity' => self::runtimeIdentity(),
             'proc_self_limits' => self::procSelfLimits($procRoot . '/self/limits'),
             'proc_self_cgroup' => self::procSelfCgroup($procRoot . '/self/cgroup'),
-            'same_uid_processes' => self::sameUidProcesses($procRoot),
+            'same_uid_processes' => self::sameUidProcesses($procRoot, $requestScope),
             'cloudlinux_lve_server_vars' => ABJ_404_Solution_HostServerCounterProbe::capture(
                 '/^(?:LVE_|CLOUDLINUX_)/i',
                 $environment
@@ -47,6 +56,13 @@ final class ABJ_404_Solution_HostPressureSampler {
             ),
             'filesystem_quota_probes' => ABJ_404_Solution_HostFilesystemPressureProbe::capture(),
         );
+    }
+
+    /**
+     * PHPUnit workers simulate multiple requests in one PHP process.
+     */
+    public static function resetForTests(): void {
+        self::$sameUidProcessesByRequest = array();
     }
 
     /**
@@ -334,7 +350,11 @@ final class ABJ_404_Solution_HostPressureSampler {
     }
 
     /** @return array<string, mixed> */
-    private static function sameUidProcesses(string $procRoot): array {
+    private static function sameUidProcesses(string $procRoot, string $requestScope): array {
+        $cacheKey = hash('sha256', $requestScope . "\0" . $procRoot);
+        if (array_key_exists($cacheKey, self::$sameUidProcessesByRequest)) {
+            return self::$sameUidProcessesByRequest[$cacheKey];
+        }
         if (!is_dir($procRoot) || !is_readable($procRoot)) {
             return self::unavailable('proc_root_not_readable', array(
                 $procRoot => 'not_readable_directory',
@@ -384,17 +404,21 @@ final class ABJ_404_Solution_HostPressureSampler {
             }
         }
         if ($readable === 0) {
-            return self::unavailable('no_readable_process_statuses', array(
+            $result = self::unavailable('no_readable_process_statuses', array(
                 $procRoot . '/[pid]/status' => 'none_readable',
             ));
+            self::$sameUidProcessesByRequest[$cacheKey] = $result;
+            return $result;
         }
-        return array(
+        $result = array(
             'status' => 'available',
             'effective_uid' => $effectiveUid,
             'sibling_count' => $siblings,
             'readable_processes' => $readable,
             'unreadable_processes' => $unreadable,
         );
+        self::$sameUidProcessesByRequest[$cacheKey] = $result;
+        return $result;
     }
 
     private static function effectiveUidFromStatus(string $raw): ?string {
