@@ -386,7 +386,7 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                 'required_fields' => $resolutionFields,
                 'non_empty_fields' => $resolutionFields,
                 'all_matches' => true,
-                'activation' => array('event' => 'flush_end'),
+                'activation' => array('event' => 'finish_request'),
             ),
             array(
                 'id' => 'detach_ab_resolution_end_identity',
@@ -398,7 +398,7 @@ final class ABJ_404_Solution_DecisiveRecordDiscriminatorContract {
                     'status', 'mode', 'counter_status',
                 )),
                 'all_matches' => true,
-                'activation' => array('event' => 'flush_end'),
+                'activation' => array('event' => 'finish_request'),
             ),
         );
     }

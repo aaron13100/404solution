@@ -9,8 +9,8 @@ require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
 
 /**
  * How a JSON AJAX response actually leaves the server: header + ledger
- * stamping, the measured json_encode + echo boundary, output-buffer drain,
- * connection-detach (fastcgi_finish_request / litespeed_finish_request,
+ * stamping, the measured json_encode + echo boundary, connection-detach
+ * (fastcgi_finish_request / litespeed_finish_request,
  * including the Bruno timeout cause matrix gap G9 detach A/B diagnostic),
  * and exit. Split out of ABJ_404_Solution_Ajax_AdminEndpointSupport (which
  * owns the surrounding request lifecycle: auth gate, error envelope,
@@ -21,11 +21,9 @@ require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
  *
  * Every micro-step in this path is bracketed with a start/end checkpoint
  * pair, not just a post-hoc record: gap-hunt iteration 2 (Codex gaps #4 and
- * #5, 2026-07-22) found that json_encode() ran raw and each ob_end_flush()
- * close had only a pre-call record, so a hang or fatal INSIDE either call
- * was indistinguishable from a stall in the preceding uninstrumented setup.
- * Header emission and the status_header()/http_response_code() call were not
- * measured at all. All four are now around()-bracketed like echo already was.
+ * #5, 2026-07-22) found that json_encode() ran raw. Header emission and the
+ * status_header()/http_response_code() call were not measured at all. Those
+ * operations are now around()-bracketed like echo already was.
  */
 final class ABJ_404_Solution_AjaxResponseEmitter {
 
@@ -250,45 +248,16 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
     }
 
     /**
-     * The output-buffer flush / connection-detach / exit tail (matrix
-     * coverage req. 2): each ob_end_flush() close (handler name + bytes),
-     * flush(), which finish-request function exists, which one was selected
-     * and what it returned, and a final exit sentinel immediately before the
-     * caller calls exit. Kept as
+     * The connection-detach / exit tail (matrix coverage req. 2): which
+     * finish-request function exists, which one was selected and what it
+     * returned, and a final exit sentinel immediately before the caller calls
+     * exit. Kept as
      * its own method (rather than inlined before `exit;`) so it is a real,
      * directly callable unit: the literal `exit;` a few lines below it in
      * sendJsonResponseAndExit() can never run inside a PHPUnit process, but
      * this method's own logic can be exercised and asserted on directly.
      */
     private static function checkpointedFlushAndFinish(string $checkpointRequestId): void {
-        ABJ_404_Solution_SameSiteRequestCensus::markPhase(
-            ABJ_404_Solution_SameSiteRequestCensus::PHASE_OB_DRAIN);
-        if (function_exists('ob_end_flush')) {
-            // Bounded with a stall check: an ob_end_flush() that does not lower
-            // the level (non-removable handler, or a buffer callback that opens
-            // a fresh buffer while we are unwinding) used to spin here forever,
-            // which is what stranded report 193's workers BEFORE the detach
-            // call below. See ABJ_404_Solution_OutputBufferDrain.
-            $drain = ABJ_404_Solution_OutputBufferDrain::drainTo(0, static function () use ($checkpointRequestId) {
-                self::checkpointedObEndFlush($checkpointRequestId);
-            });
-            if ($checkpointRequestId !== '' && ($drain['stalled'] || $drain['budget_exhausted'])) {
-                ABJ_404_Solution_AjaxCheckpointLogger::record(
-                    $checkpointRequestId,
-                    'ob_drain_incomplete',
-                    $drain
-                );
-            }
-        }
-        if (function_exists('flush')) {
-            if ($checkpointRequestId !== '') {
-                ABJ_404_Solution_AjaxCheckpointLogger::around($checkpointRequestId, 'flush', static function () {
-                    flush();
-                });
-            } else {
-                flush();
-            }
-        }
         // Detach the response before shutdown work runs. fastcgi_finish_request()
         // is FPM-only: php-src deliberately disabled the alias under the
         // litespeed SAPI (commit ccf051c3), so on a LiteSpeed/LSAPI host the
@@ -300,10 +269,13 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         // fastcgi, then litespeed, then neither. Which one was selected, and
         // what it returned, is journaled either way -- including the 'none'
         // case, so "did not detach" is positive evidence rather than a gap.
-        // Marked before the detach attempt, so a row still reading 'ob_drain'
-        // proves the drain never returned, and one reading 'detach' proves it
-        // did and the detach itself is where the worker stopped. Those two need
-        // different fixes and no other signal separates them.
+        // Both supported SAPI functions flush every response buffer themselves.
+        // Empirical probes against native PHP-FPM and LiteSpeed 6.3.6 confirmed
+        // that they deliver the complete body and reduce a positive stack level
+        // to zero. Pre-draining here was therefore redundant and violated
+        // ownership by tearing down WordPress, PHP, and other-plugin buffers.
+        // SAPIs without either function flush normally when the immediate exit
+        // after this method terminates the request.
         ABJ_404_Solution_SameSiteRequestCensus::markPhase(
             ABJ_404_Solution_SameSiteRequestCensus::PHASE_DETACH);
         $hasFastcgiFinish = function_exists('fastcgi_finish_request');
@@ -387,74 +359,6 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             );
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'exit_sentinel');
         }
-    }
-
-    /**
-     * One ob_end_flush() close as a measured boundary (gap-hunt iteration 2,
-     * Codex gap #5): handler name and byte count are captured before the
-     * call (a stalled or killed close still leaves them on record), and the
-     * call itself is now around()-bracketed so a slow output handler shows a
-     * matched ob_close_start/_end pair with elapsed time instead of only "a
-     * close was attempted" with no proof it returned. Split out of
-     * checkpointedFlushAndFinish() so the while-loop body stays a single
-     * call, not inlined branching.
-     *
-     * `level_before` / `level_after` / `close_result` are what make the close
-     * DECIDABLE rather than merely observed. ABJ_404_Solution_OutputBufferDrain
-     * survives three mutually exclusive mechanisms that need three different
-     * fixes, and handler+bytes+elapsed_ms cannot tell them apart:
-     *
-     *   close_result === false && level_after === level_before
-     *       STUCK. The handler refused deletion (a buffer opened without
-     *       PHP_OUTPUT_HANDLER_REMOVABLE). Retrying can never help.
-     *   close_result === true  && level_after === level_before
-     *       RE-CREATED. The close consumed a buffer and something re-opened
-     *       one before the level could be read -- a foreign callback
-     *       re-entering WordPress while the stack unwinds.
-     *   level_after > level_before
-     *       GROWING. More buffers were opened across the close than it
-     *       closed; the stack is moving away from zero, not toward it.
-     *   close_result === true  && level_after === level_before - 1
-     *       The ordinary close. Nothing to explain.
-     *
-     * close_result === null means ob_end_flush() never returned at all (the
-     * worker died inside it), which is a fifth, distinct finding.
-     *
-     * Both levels are read through ABJ_404_Solution_OutputBufferDrain's own
-     * reader rather than a second raw ob_get_level(), so this record and the
-     * drain's stall verdict can never disagree about the level they saw.
-     */
-    private static function checkpointedObEndFlush(string $checkpointRequestId): void {
-        if ($checkpointRequestId === '') {
-            ob_end_flush();
-            return;
-        }
-        $status = ob_get_status();
-        $levelBefore = ABJ_404_Solution_OutputBufferDrain::currentLevel();
-        $endFields = array(
-            'level_before' => $levelBefore,
-            'level_after' => null,
-            'close_result' => null,
-        );
-        ABJ_404_Solution_AjaxCheckpointLogger::around(
-            $checkpointRequestId,
-            'ob_close',
-            static function () use (&$endFields) {
-                $endFields['close_result'] = ob_end_flush();
-                $endFields['level_after'] = ABJ_404_Solution_OutputBufferDrain::currentLevel();
-            },
-            array(
-                'handler' => is_string($status['name'] ?? null) ? $status['name'] : 'unknown',
-                'bytes' => ob_get_length(),
-                'level_before' => $levelBefore,
-            ),
-            // level_before is repeated on the _end record on purpose. The
-            // journal rotates oldest-first and the support excerpt is
-            // bounded, so the _start of a close can be evicted while its
-            // _end survives; an _end that needs its evicted partner to name
-            // a mechanism decides nothing.
-            $endFields
-        );
     }
 
     /**

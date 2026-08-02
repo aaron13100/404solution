@@ -6,8 +6,8 @@ if (!defined('ABSPATH')) {
 
 /**
  * Closes output buffers with a guaranteed exit, for every place this plugin
- * has to unwind the output stack (the AJAX response tail, the AJAX and admin
- * fatal-error responders, the admin endpoint's buffer cleanup).
+ * has to unwind buffers it opened (the AJAX and admin fatal-error responders,
+ * and the admin endpoint's buffer cleanup).
  *
  * WHY THIS EXISTS -- the shape it replaces was:
  *
@@ -34,12 +34,11 @@ if (!defined('ABSPATH')) {
  * (wp_ob_end_flush_all(), wp-includes/functions.php) by capturing the level
  * ONCE and running a fixed `for` over it. This class does that and adds a
  * stall check, so a non-decrementing close costs one wasted iteration instead
- * of the whole budget -- the drain in the response tail pays a checkpoint
- * write per iteration, so "bounded" alone was not cheap enough.
+ * of the whole budget. The response tail no longer drains at all: native FPM
+ * and LiteSpeed probes proved their finish-request boundaries own that flush.
  *
  * The return value is deliberately a telemetry array rather than void: the
- * callers journal it, so "the stack did not fully unwind" becomes positive
- * evidence in a support payload instead of an invisible early return.
+ * caller and tests can distinguish a complete unwind from a deliberate stop.
  */
 final class ABJ_404_Solution_OutputBufferDrain {
 
@@ -48,8 +47,9 @@ final class ABJ_404_Solution_OutputBufferDrain {
      * falling, or the one-time budget is spent -- whichever comes first.
      *
      * @param int $minLevel Stop once ob_get_level() is at or below this. Callers
-     *   that captured a pre-existing level (so they only unwind their OWN
-     *   buffers) pass it here; callers unwinding everything pass 0.
+     *   must capture their inherited level before opening or taking ownership
+     *   of any buffer, then pass that level here. Global zero is not an owned
+     *   floor and is forbidden for production callers.
      * @param callable $closeOne Closes exactly one buffer. Receives no
      *   arguments and its return value is ignored -- progress is measured from
      *   the level reader, never from what the close call claims, because the

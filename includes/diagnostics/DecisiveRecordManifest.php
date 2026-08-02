@@ -292,7 +292,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
             ),
             'sentinel' => 'response_control_filter_dispatch_end.callbacks_attributed',
         ),
-        // The full detach A/B resolution after flush_end and before
+        // The full detach A/B resolution after echo_end and before
         // finish_request. Every instrumented response resolves a mode, including
         // stable/disabled and no-session requests, so this pair is always
         // present. A killed filter callback or transient operation leaves the
