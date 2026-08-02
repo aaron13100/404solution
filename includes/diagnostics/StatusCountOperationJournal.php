@@ -272,9 +272,16 @@ final class ABJ_404_Solution_StatusCountOperationJournal
         if (strpos($operation, 'cache_') === 0) {
             return $result === false ? 'miss' : 'hit';
         }
-        if ($operation === 'status_count_scope' && is_array($result)
-                && isset($result['_incomplete'])) {
-            return 'missing';
+        if ($operation === 'status_count_scope' && is_array($result)) {
+            // The redirect/captured scopes resolve to {counts, state}. Keep
+            // that state visible instead of collapsing every result to array.
+            if (isset($result['state']) && is_string($result['state'])
+                    && $result['state'] !== '') {
+                return $result['state'];
+            }
+            if (isset($result['_incomplete'])) {
+                return 'missing';
+            }
         }
         return is_bool($result) ? ($result ? 'true' : 'false') : gettype($result);
     }
