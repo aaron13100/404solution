@@ -328,11 +328,13 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         // feature existed; only 'off' changes anything.
         $abDetachSkipped = self::resolveAndRecordDetachAbSkip($checkpointRequestId);
 
-        // Recorded BEFORE the call: if the detach itself stalls or the worker
-        // is killed inside it, the journal still names what was about to run.
+        // Recorded IMMEDIATELY before the call: if the detach itself stalls or
+        // the worker is killed inside it, the journal still names what was
+        // about to run and proves whether output buffers remained open.
         // ab_detach_skipped distinguishes a deliberate skip from the 'none'
         // case (no detach function available at all): both leave 'result'
         // null in the next record, and only this flag tells them apart.
+        $obLevelAtCall = ABJ_404_Solution_OutputBufferDrain::currentLevel();
         if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request', array(
                 'fastcgi_finish_request_exists' => $hasFastcgiFinish,
@@ -340,6 +342,7 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
                 'selected' => $finishFunction,
                 'sapi' => PHP_SAPI,
                 'ab_detach_skipped' => $abDetachSkipped,
+                'ob_level_at_call' => $obLevelAtCall,
             ));
         }
         $result = null;
@@ -350,26 +353,38 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
                 $result = litespeed_finish_request();
             }
         }
-        $detached = !$abDetachSkipped && $finishFunction !== 'none' && $result !== false;
-        $workerBudgetArmed = false;
-        if ($checkpointRequestId !== '' && $detached) {
-            // Connection detach does not release the LSAPI/FPM worker. Bound
-            // everything after this point, including foreign shutdown code.
-            $workerBudgetArmed = ABJ_404_Solution_PostResponseWorkerBudget::arm($checkpointRequestId);
-        }
+        $obLevelAfterCall = ABJ_404_Solution_OutputBufferDrain::currentLevel();
         if ($checkpointRequestId !== '') {
+            // This MUST be the first operation after the SAPI call. Moving the
+            // record behind worker-budget setup made a stall in that setup
+            // indistinguishable from a finish_request() call that never
+            // returned. The record envelope's `ts` is therefore the durable
+            // post-call timestamp the support payload can compare with the
+            // pre-call finish_request record.
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request_result', array(
                 'function' => $abDetachSkipped ? 'skipped_by_ab_diagnostic' : $finishFunction,
                 'result' => $result,
-                'worker_budget_armed' => $workerBudgetArmed,
+                // Repeated because journal rotation can evict the pre-call
+                // record while leaving this result in the support excerpt.
+                'ob_level_at_call' => $obLevelAtCall,
+                'ob_level_after_call' => $obLevelAfterCall,
             ));
+        }
+        $detached = !$abDetachSkipped && $finishFunction !== 'none' && $result !== false;
+        if ($checkpointRequestId !== '' && $detached) {
+            // Connection detach does not release the LSAPI/FPM worker. Bound
+            // everything after this point, including foreign shutdown code.
+            // PostResponseWorkerBudget writes its own armed/unavailable event,
+            // so its outcome stays observable without delaying the detach
+            // result boundary above.
+            ABJ_404_Solution_PostResponseWorkerBudget::arm($checkpointRequestId);
+        }
+        if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxStageDiagnostics::recordRequestPhase(
                 $checkpointRequestId,
                 'response_emission',
                 'complete'
             );
-        }
-        if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'exit_sentinel');
         }
     }
