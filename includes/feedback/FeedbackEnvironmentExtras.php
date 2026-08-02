@@ -196,7 +196,16 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // Plesk, WP Engine, Kinsta, Pantheon, Flywheel, RunCloud,
         // CloudPanel). Lets server-side group heartbeats by host
         // class retroactively without paying for a deep fingerprint.
-        $this->recordProbe($extras, 'hosting_class', function () use ($platform) { return $platform->probeHostingClass(); }, array());
+        $this->recordProbe($extras, 'hosting_class', function () use ($platform) {
+            return $platform->probeHostingClass(array('php_sapi' => PHP_SAPI));
+        }, array());
+
+        // Full-request page-cache drop-ins can own an outer output buffer.
+        // Report only presence and the declared Plugin Name so support can
+        // identify that foreign owner without receiving file content or paths.
+        $this->recordProbe($extras, 'advanced_cache_dropin', function () use ($platform) {
+            return $platform->probeCacheDropin('advanced_cache');
+        }, array('present' => false, 'owner' => ''));
 
         // Object-cache backend NAME, not just the on/off enum already
         // shipped in `object_cache`. Detect Redis / Memcached / APCu
@@ -204,6 +213,12 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // + wp_using_ext_object_cache(). Stale-cache reports cluster
         // by backend class.
         $this->recordProbe($extras, 'object_cache_backend', function () use ($platform) { return $platform->probeObjectCacheBackend(); }, array());
+
+        // The backend marker identifies the running cache implementation;
+        // the drop-in header identifies which plugin installed object-cache.php.
+        $this->recordProbe($extras, 'object_cache_dropin', function () use ($platform) {
+            return $platform->probeCacheDropin('object_cache');
+        }, array('present' => false, 'owner' => ''));
 
         // SHOW GLOBAL STATUS counterpart to mysql_globals. Captures
         // runtime symptoms (lock waits, tmp-disk spills, aborted

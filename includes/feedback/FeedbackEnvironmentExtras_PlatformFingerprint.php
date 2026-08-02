@@ -7,8 +7,9 @@ if (!defined('ABSPATH')) {
 /**
  * Static-identity probes that fingerprint the hosting platform: WHICH
  * managed host (WP Engine, Kinsta, Pantheon, ...), WHICH control panel
- * (cPanel, Plesk, RunCloud, ...), and WHICH object-cache backend (Redis
- * variants, Memcached, APCu, W3TC, LiteSpeed, ...).
+ * (cPanel, Plesk, RunCloud, ...), WHICH PHP execution stack (LSWS,
+ * mod_lsapi, FPM, mod_php, CGI), WHICH CloudLinux markers are present,
+ * and WHICH cache drop-ins/backends own the request caches.
  *
  * Distinct in kind from FeedbackEnvironmentExtras_HostProbes, which
  * answers dynamic runtime questions (how much disk is left, what is
@@ -39,24 +40,36 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
      * No PII: only matched markers are returned. server_software is NOT
      * echoed wholesale; it may include a hostname.
      *
+     * `$runtime` is an optional already-observed runtime snapshot. Production
+     * callers normally omit it; diagnostic tests and offline collectors can
+     * supply stable values without mutating process-wide PHP state.
+     *
+     * @param array{php_sapi?: mixed, loaded_extensions?: mixed, cloudlinux_alt_php_present?: mixed} $runtime
      * @return array<string, mixed>
      */
-    public function probeHostingClass(): array {
+    public function probeHostingClass(array $runtime = array()): array {
         $out = array(
-            'host'           => 'unknown',
-            'panel'          => 'unknown',
-            'matched_marker' => '',
+            'host'               => 'unknown',
+            'panel'              => 'unknown',
+            'php_execution_stack' => 'unknown',
+            'cloudlinux_markers' => array(),
+            'matched_marker'     => '',
         );
         $sw = '';
         if (isset($_SERVER['SERVER_SOFTWARE']) && is_scalar($_SERVER['SERVER_SOFTWARE'])) {
             $sw = strtolower((string)$_SERVER['SERVER_SOFTWARE']);
         }
-        // Webserver class only (no version, no hostname).
-        if (strpos($sw, 'apache') !== false)       { $out['server_class'] = 'apache'; }
-        elseif (strpos($sw, 'nginx') !== false)    { $out['server_class'] = 'nginx'; }
-        elseif (strpos($sw, 'litespeed') !== false){ $out['server_class'] = 'litespeed'; }
-        elseif (strpos($sw, 'iis') !== false)      { $out['server_class'] = 'iis'; }
-        else                                       { $out['server_class'] = ($sw === '' ? 'unknown' : 'other'); }
+        $out['server_class'] = $this->classifyServerClass($sw);
+
+        $phpSapi = isset($runtime['php_sapi']) && is_scalar($runtime['php_sapi'])
+            ? strtolower(trim((string)$runtime['php_sapi']))
+            : strtolower(PHP_SAPI);
+        $out['php_execution_stack'] = $this->classifyPhpExecutionStack(
+            (string)$out['server_class'],
+            $phpSapi
+        );
+
+        $out['cloudlinux_markers'] = $this->collectCloudLinuxMarkers($runtime);
 
         // Managed-host markers: each host publishes a distinctive
         // constant or environment variable.
@@ -85,6 +98,10 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
                     break 2;
                 }
             }
+        }
+        if ($out['host'] === 'unknown' && $out['cloudlinux_markers'] !== array()) {
+            $out['host'] = 'cloudlinux';
+            $out['matched_marker'] = (string)$out['cloudlinux_markers'][0];
         }
 
         // Control-panel markers: cPanel / hPanel / Plesk / DirectAdmin /
@@ -130,6 +147,133 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
         }
 
         return $out;
+    }
+
+    /**
+     * Reduce SERVER_SOFTWARE to a bounded server product without returning
+     * versions or hostnames that may appear in the raw value.
+     *
+     * @param string $serverSoftware Lowercased SERVER_SOFTWARE value.
+     * @return string
+     */
+    private function classifyServerClass(string $serverSoftware): string {
+        if (strpos($serverSoftware, 'apache') !== false) {
+            return 'apache';
+        }
+        if (strpos($serverSoftware, 'nginx') !== false) {
+            return 'nginx';
+        }
+        if (strpos($serverSoftware, 'litespeed') !== false) {
+            return 'litespeed';
+        }
+        if (strpos($serverSoftware, 'iis') !== false) {
+            return 'iis';
+        }
+        return $serverSoftware === '' ? 'unknown' : 'other';
+    }
+
+    /**
+     * Collect only the fixed, non-identifying CloudLinux markers used by
+     * support diagnostics.
+     *
+     * @param array{loaded_extensions?: mixed, cloudlinux_alt_php_present?: mixed} $runtime
+     * @return array<int, string>
+     */
+    private function collectCloudLinuxMarkers(array $runtime): array {
+        $loadedExtensions = array_key_exists('loaded_extensions', $runtime)
+            ? $runtime['loaded_extensions']
+            : get_loaded_extensions();
+        $extensionNames = array();
+        if (is_array($loadedExtensions)) {
+            foreach ($loadedExtensions as $extensionName) {
+                if (is_scalar($extensionName)) {
+                    $extensionNames[strtolower((string)$extensionName)] = true;
+                }
+            }
+        }
+
+        $markers = array();
+        foreach (array('xray', 'clos_ssa') as $cloudLinuxExtension) {
+            if (isset($extensionNames[$cloudLinuxExtension])) {
+                $markers[] = 'extension:' . $cloudLinuxExtension;
+            }
+        }
+        $altPhpPresent = array_key_exists('cloudlinux_alt_php_present', $runtime)
+            ? $runtime['cloudlinux_alt_php_present'] === true
+            : @is_dir('/opt/alt/php'); // allow-silent-error: CloudLinux's alt-PHP directory is outside many open_basedir roots; denial means the marker is unavailable.
+        if ($altPhpPresent) {
+            // Report the marker name, never the absolute path that was probed.
+            $markers[] = 'alt_php';
+        }
+
+        return $markers;
+    }
+
+    /**
+     * Identify the request's PHP execution product from the webserver and
+     * SAPI pair. In particular, Apache + the `litespeed` SAPI is mod_lsapi,
+     * not LiteSpeed Web Server.
+     *
+     * @param string $serverClass
+     * @param string $phpSapi
+     * @return string
+     */
+    private function classifyPhpExecutionStack(string $serverClass, string $phpSapi): string {
+        if ($phpSapi === 'litespeed') {
+            return $serverClass === 'apache' ? 'mod_lsapi' : 'lsws';
+        }
+        if (strpos($phpSapi, 'fpm') !== false) {
+            return 'fpm';
+        }
+        if ($phpSapi === 'apache2handler' || $phpSapi === 'apache') {
+            return 'mod_php';
+        }
+        if ($phpSapi === 'cgi' || $phpSapi === 'cgi-fcgi') {
+            return 'cgi';
+        }
+        return 'unknown';
+    }
+
+    /**
+     * Report whether one of WordPress's two cache drop-ins is installed and
+     * the owner declared by its `Plugin Name` header. No file body, path, or
+     * other header is returned.
+     *
+     * @param string $dropinKey One of `advanced_cache` or `object_cache`.
+     * @return array{present: bool, owner: string}
+     */
+    public function probeCacheDropin(string $dropinKey): array {
+        $dropinFiles = array(
+            'advanced_cache' => 'advanced-cache.php',
+            'object_cache' => 'object-cache.php',
+        );
+        if (!isset($dropinFiles[$dropinKey])) {
+            return array('present' => false, 'owner' => '');
+        }
+
+        $contentDirectory = defined('WP_CONTENT_DIR')
+            ? rtrim((string)WP_CONTENT_DIR, '/\\')
+            : rtrim((string)ABSPATH, '/\\') . '/wp-content';
+        $dropinPath = $contentDirectory . '/' . $dropinFiles[$dropinKey];
+        if (!is_file($dropinPath)) {
+            return array('present' => false, 'owner' => '');
+        }
+        if (!function_exists('get_file_data')) {
+            return array('present' => true, 'owner' => 'unknown');
+        }
+
+        $headers = get_file_data($dropinPath, array('owner' => 'Plugin Name'), 'plugin');
+        if (!is_array($headers) || !isset($headers['owner']) || !is_scalar($headers['owner'])) {
+            return array('present' => true, 'owner' => 'unknown');
+        }
+        $owner = trim(strip_tags((string)$headers['owner']));
+        $owner = preg_replace('/[[:cntrl:]]+/', ' ', $owner);
+        $owner = is_string($owner) ? trim($owner) : '';
+
+        return array(
+            'present' => true,
+            'owner' => $owner !== '' ? $owner : 'unknown',
+        );
     }
 
     /**
