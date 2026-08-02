@@ -10,6 +10,7 @@ require_once __DIR__ . '/RollupFreshnessProbe.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_HostProbes.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_PlatformFingerprint.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
+require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
 
 /**
  * Environment-extras passthrough probes for the feedback payload's JSON column.
@@ -137,6 +138,10 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // fastcgi_finish_request() no-op), so losing it loses the diagnosis.
         // Same accessor the flight recorder uses (RequestEnvironmentFingerprint).
         $extras['php_sapi'] = PHP_SAPI;
+        $extras['php_disable_functions'] = function_exists('ini_get')
+            ? (string)ini_get('disable_functions') : '';
+        $extras['php_post_response_budget_armable'] =
+            ABJ_404_Solution_PostResponseWorkerBudget::isSupported();
         $extras['php_memory_peak_bytes'] = function_exists('memory_get_peak_usage') ? (int)memory_get_peak_usage(true) : 0;
         $extras['php_opcache_enabled'] = $host->opcacheEnabled();
         $extras['php_max_input_vars'] = function_exists('ini_get') ? (int)ini_get('max_input_vars') : 0;

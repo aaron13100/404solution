@@ -23,6 +23,17 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
     private static $requestId = '';
 
     /**
+     * Report whether this process exposes every primitive needed to arm the
+     * OS-backed post-response deadline.
+     */
+    public static function isSupported(): bool {
+        return defined('SIGALRM')
+            && function_exists('pcntl_async_signals')
+            && function_exists('pcntl_signal')
+            && function_exists('pcntl_alarm');
+    }
+
+    /**
      * Arm the deadline once a response has successfully detached.
      *
      * @return bool True when an OS-backed wall-clock deadline was installed.
@@ -31,10 +42,7 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
         if (self::$armed || $requestId === '') {
             return self::$armed;
         }
-        if (!defined('SIGALRM')
-            || !function_exists('pcntl_async_signals')
-            || !function_exists('pcntl_signal')
-            || !function_exists('pcntl_alarm')) {
+        if (!self::isSupported()) {
             self::record($requestId, 'post_response_worker_budget_unavailable', array(
                 'budget_seconds' => self::BUDGET_SECONDS,
                 'reason' => 'pcntl_alarm_unavailable',
