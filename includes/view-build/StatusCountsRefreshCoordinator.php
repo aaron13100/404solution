@@ -16,9 +16,11 @@ if (!defined('ABSPATH')) {
  * already due, so a site with a cold cache renders "-" in every tab and ships
  * NULL counts in its support reports for as long as the backlog lasts.
  *
- * A cold read therefore also arms a deferred recompute on the `shutdown` hook,
- * which runs after the response body has been produced. That backstop is
- * bounded on four axes so it can never become a foreground cost:
+ * A cold non-AJAX read therefore also arms a deferred recompute on the
+ * `shutdown` hook, which runs after the response body has been produced.
+ * AJAX reads use only the already-enqueued cron writer so they cannot retain
+ * an LSAPI/FPM worker after detaching. The non-AJAX backstop is bounded on
+ * four axes so it can never become a foreground cost:
  *   1. one arming per scope per request (instance flag);
  *   2. a re-read at shutdown, so a refresh another request already completed is
  *      not repeated;
@@ -58,7 +60,7 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
     /**
      * Query budget for the deferred path. Deliberately smaller than the cron
      * budgets: a recompute that cannot finish inside this belongs to cron, and
-     * the shutdown hook runs while the client connection is still open.
+     * the non-AJAX shutdown hook runs while the client connection is still open.
      */
     const DEFERRED_REFRESH_QUERY_TIMEOUT_SECONDS = 10;
 
@@ -278,11 +280,12 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
 
     /**
      * Register the post-response backstop for one scope. Cron requests are
-     * excluded: refresh() runs the aggregate inline there, so arming would
-     * duplicate it.
+     * excluded because refresh() runs the aggregate inline there. AJAX is
+     * excluded because scheduleRefresh() already enqueued the cron writer;
+     * an aggregate on shutdown would retain the request's PHP worker.
      */
     private function armDeferredRefresh(string $scope): void {
-        if ($this->isCronRequest() || !empty($this->deferredArmed[$scope])) {
+        if ($this->isCronRequest() || $this->isAjaxRequest() || !empty($this->deferredArmed[$scope])) {
             return;
         }
         if ($this->refresherFor($scope) === null || !function_exists('add_action')) {
@@ -338,6 +341,18 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
 
     private function isCronRequest(): bool {
         return function_exists('wp_doing_cron') && wp_doing_cron();
+    }
+
+    private function isAjaxRequest(): bool {
+        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) {
+            return true;
+        }
+        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
+            ? $_SERVER['SCRIPT_NAME'] : '';
+        if ($scriptName !== '' && basename($scriptName) === 'admin-ajax.php') {
+            return true;
+        }
+        return isset($GLOBALS['pagenow']) && $GLOBALS['pagenow'] === 'admin-ajax.php';
     }
 
     /**

@@ -5,6 +5,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
+
 /**
  * How a JSON AJAX response actually leaves the server: header + ledger
  * stamping, the measured json_encode + echo boundary, output-buffer drain,
@@ -53,6 +55,12 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         // return before any stage opens. All database work for the request is
         // finished by now; encoding and echoing do none.
         ABJ_404_Solution_AjaxQueryTimeline::flushSummary($checkpointRequestId);
+        // The request's own census row now says it reached the response tail.
+        // Marked BEFORE encoding, so a worker that strands anywhere from here
+        // on leaves a row naming this segment rather than the handler it had
+        // already finished. See ABJ_404_Solution_SameSiteRequestCensus::markPhase().
+        ABJ_404_Solution_SameSiteRequestCensus::markPhase(
+            ABJ_404_Solution_SameSiteRequestCensus::PHASE_RESPONSE_ENCODE);
         if (!headers_sent()) {
             self::checkpointedEmitHeaders($checkpointRequestId, $ledgerRequestId, $httpStatus);
         }
@@ -253,6 +261,8 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * this method's own logic can be exercised and asserted on directly.
      */
     private static function checkpointedFlushAndFinish(string $checkpointRequestId): void {
+        ABJ_404_Solution_SameSiteRequestCensus::markPhase(
+            ABJ_404_Solution_SameSiteRequestCensus::PHASE_OB_DRAIN);
         if (function_exists('ob_end_flush')) {
             // Bounded with a stall check: an ob_end_flush() that does not lower
             // the level (non-removable handler, or a buffer callback that opens
@@ -290,6 +300,12 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         // fastcgi, then litespeed, then neither. Which one was selected, and
         // what it returned, is journaled either way -- including the 'none'
         // case, so "did not detach" is positive evidence rather than a gap.
+        // Marked before the detach attempt, so a row still reading 'ob_drain'
+        // proves the drain never returned, and one reading 'detach' proves it
+        // did and the detach itself is where the worker stopped. Those two need
+        // different fixes and no other signal separates them.
+        ABJ_404_Solution_SameSiteRequestCensus::markPhase(
+            ABJ_404_Solution_SameSiteRequestCensus::PHASE_DETACH);
         $hasFastcgiFinish = function_exists('fastcgi_finish_request');
         $hasLitespeedFinish = function_exists('litespeed_finish_request');
         $finishFunction = 'none';
@@ -334,10 +350,18 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
                 $result = litespeed_finish_request();
             }
         }
+        $detached = !$abDetachSkipped && $finishFunction !== 'none' && $result !== false;
+        $workerBudgetArmed = false;
+        if ($checkpointRequestId !== '' && $detached) {
+            // Connection detach does not release the LSAPI/FPM worker. Bound
+            // everything after this point, including foreign shutdown code.
+            $workerBudgetArmed = ABJ_404_Solution_PostResponseWorkerBudget::arm($checkpointRequestId);
+        }
         if ($checkpointRequestId !== '') {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'finish_request_result', array(
                 'function' => $abDetachSkipped ? 'skipped_by_ab_diagnostic' : $finishFunction,
                 'result' => $result,
+                'worker_budget_armed' => $workerBudgetArmed,
             ));
             ABJ_404_Solution_AjaxStageDiagnostics::recordRequestPhase(
                 $checkpointRequestId,
