@@ -41,12 +41,17 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * the raw checkpoint tail it replaces. The receipt reconstruction section
      * is funded from the generic sanitized log tail instead: reducing this
      * checkpoint floor by another 4 KB evicts the first failing request in the
-     * measured worst-case session. The remaining budget is still far above the
-     * whole-failing-session floor
+     * measured worst-case session. A further 3 KB then funded the
+     * stranded-request block
+     * (ABJ_404_Solution_StrandedRequestSupportSection::MAX_STRANDED_DIAG_BYTES),
+     * which is the one section that CANNOT be funded from a journal: it is a
+     * reading of live registry state, so unlike every byte spent here it cannot
+     * be rotated or elided away before the admin clicks send. The remaining
+     * budget is still far above the whole-failing-session floor
      * SupportExcerptBudgetContractTest pins, and the per-section budgets are
      * proven to sum inside the report contract by that same test.
      */
-    const MAX_SUPPORT_EXCERPT_BYTES = 145408;
+    const MAX_SUPPORT_EXCERPT_BYTES = 142336;
 
     /**
      * Bounded recent checkpoint lines for the support-request payload.

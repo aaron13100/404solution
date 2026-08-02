@@ -19,14 +19,14 @@ if (!defined('ABSPATH')) {
  * admin tab issues its own table request, so the traffic competing for the
  * slot is very often the site's own.
  *
- * This class owns the POLICY: which requests are in scope, this request's
- * membership, how long an entry counts as a live request, when to reap the
- * ones a killed worker left behind, how often the database may actually be
- * asked, and what a checkpoint record reports. The rows themselves belong to
+ * This class owns the POLICY and this request's own place in it: which requests
+ * are in scope, whether this one joined, which lifecycle segment it is inside,
+ * and how long an entry counts as a live request. The rows themselves belong to
  * ABJ_404_Solution_SameSiteRequestRegistry, which is also why a leftover entry
  * is recoverable at all: one row per request, written by that request alone,
  * so a request killed before it could deregister leaves an old row rather than
- * a corrupted counter.
+ * a corrupted counter. Taking a reading of all those rows, and shaping it into
+ * a finding, belongs to ABJ_404_Solution_SameSiteCensusReading.
  *
  * Scope is admin-ajax, wp-cron and admin-screen requests. Ordinary front-end
  * page views are deliberately excluded: they are the hot 404 path, two extra
@@ -55,28 +55,55 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
     const SCOPE = 'admin-ajax+cron+admin';
 
     /**
-     * Minimum gap between real readings, in milliseconds.
+     * The segments of a request's own lifecycle, in the order they are entered.
      *
-     * Every full checkpoint envelope carries this reading, and a table request
-     * emits roughly 27 of them, so an unconditional query per record would add
-     * ~27 queries to the very request whose worker contention is being
-     * measured -- the observer effect gap G2 raised about the recorder itself.
-     * Consecutive checkpoints during healthy phases are milliseconds apart and
-     * say nothing new; consecutive checkpoints during a STALL are seconds
-     * apart, which is longer than this window, so the resolution that matters
-     * is unaffected. Every reading reports its own age, so a memoized value is
-     * never mistaken for a fresh one.
+     * A stranded row's phase is the whole point of recording one. Report 193
+     * showed four pagination workers still alive 121-198 seconds after their
+     * handlers had returned `status: complete` in 1.3-4.7s, and the census
+     * could say only THAT they were stranded -- naming where cost a hunt
+     * through a rotating journal whose decisive records had already been
+     * elided. These names are chosen so that the phase alone answers it:
+     * each one is a segment with a different fix.
+     *
+     * PHASE_SHUTDOWN deliberately covers everything after the connection is
+     * released, because a worker stranded there is holding a process slot
+     * while owing the browser nothing -- a different failure from one
+     * stranded before it, which is still owed a response.
      */
-    const SAMPLE_MEMO_MS = 250;
+    const PHASE_BOOT = 'boot';
+    const PHASE_HANDLER = 'handler';
+    const PHASE_RESPONSE_ENCODE = 'response_encode';
+    const PHASE_OB_DRAIN = 'ob_drain';
+    const PHASE_DETACH = 'detach';
+    const PHASE_SHUTDOWN = 'shutdown';
+
+    /**
+     * Every phase name, so a reader can tell an unrecognised value (a row
+     * written by a newer build, or a corrupted one) from a known segment.
+     */
+    const PHASES = array(
+        self::PHASE_BOOT,
+        self::PHASE_HANDLER,
+        self::PHASE_RESPONSE_ENCODE,
+        self::PHASE_OB_DRAIN,
+        self::PHASE_DETACH,
+        self::PHASE_SHUTDOWN,
+    );
 
     /** @var string Option name this request registered under, or '' when it did not join. */
     private static $ownEntry = '';
 
-    /** @var array<string, mixed>|null Last reading, reused inside SAMPLE_MEMO_MS. */
-    private static $memoSample = null;
+    /**
+     * @var array{started_at_ms: int, channel: string, action: string, pid: int}|null
+     * What this request registered with. Retained so a phase update can rewrite
+     * the row from these values instead of reading it back first -- a
+     * read-modify-write is the one thing that would cost the registry the
+     * single-writer property its whole design rests on.
+     */
+    private static $ownIdentity = null;
 
-    /** @var int When the memoized reading was taken. */
-    private static $memoTakenAtMs = 0;
+    /** @var string The last phase successfully recorded, so a repeat is not re-written. */
+    private static $ownPhase = '';
 
     /**
      * Register this request in the census and arrange for it to leave at
@@ -100,19 +127,72 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
                 return '';
             }
             $optionName = ABJ_404_Solution_SameSiteRequestRegistry::add(
-                $startedAt, $channel, self::actionForThisRequest(), self::processId());
+                $startedAt, $channel, self::actionForThisRequest(), self::processId(),
+                self::PHASE_BOOT);
             if ($optionName === '') {
                 return '';
             }
             self::$ownEntry = $optionName;
-            // This process just changed the census, so any reading taken
-            // before now is wrong, not merely old.
-            self::resetSampleMemo();
+            self::$ownIdentity = array(
+                'started_at_ms' => $startedAt,
+                'channel' => $channel,
+                'action' => self::actionForThisRequest(),
+                'pid' => self::processId(),
+            );
+            self::$ownPhase = self::PHASE_BOOT;
             register_shutdown_function(array(__CLASS__, 'leave'));
             return $optionName;
         } catch (Throwable $e) {
             self::reportFailure('same-site census join failed: ' . $e->getMessage());
             return '';
+        }
+    }
+
+    /**
+     * Record that this request is ENTERING the named segment of its lifecycle.
+     *
+     * Call it immediately before the segment runs, never after it returns: the
+     * rows worth reading belong to requests that never came back, so a phase
+     * written on the way out is the one phase a stranded row can never carry.
+     *
+     * A healthy request deletes its row at shutdown and leaves nothing behind,
+     * so this costs one UPDATE per transition and stores nothing long-term.
+     * An abandoned row keeps the last phase its request survived long enough
+     * to write, which is the segment it was inside when it stopped.
+     *
+     * Never throws: a request must not fail because the census could not
+     * describe it.
+     *
+     * @param string $phase one of self::PHASES.
+     * @return bool whether the phase was recorded.
+     */
+    public static function markPhase(string $phase): bool {
+        try {
+            if (self::$ownEntry === '' || self::$ownIdentity === null
+                    || !in_array($phase, self::PHASES, true)) {
+                return false;
+            }
+            if ($phase === self::$ownPhase) {
+                // Re-entering the same segment says nothing new and the write
+                // is paid on the path being measured.
+                return true;
+            }
+            $identity = self::$ownIdentity;
+            $recorded = ABJ_404_Solution_SameSiteRequestRegistry::advance(
+                self::$ownEntry,
+                $identity['started_at_ms'],
+                $identity['channel'],
+                $identity['action'],
+                $identity['pid'],
+                $phase
+            );
+            if ($recorded) {
+                self::$ownPhase = $phase;
+            }
+            return $recorded;
+        } catch (Throwable $e) {
+            self::reportFailure('same-site census phase update failed: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -127,7 +207,8 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
             }
             $optionName = self::$ownEntry;
             self::$ownEntry = '';
-            self::resetSampleMemo();
+            self::$ownIdentity = null;
+            self::$ownPhase = '';
             ABJ_404_Solution_SameSiteRequestRegistry::remove(array($optionName));
         } catch (Throwable $e) {
             self::reportFailure('same-site census leave failed: ' . $e->getMessage());
@@ -147,177 +228,21 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
      */
     public static function resetRequestState(): void {
         self::$ownEntry = '';
-        self::resetSampleMemo();
+        self::$ownIdentity = null;
+        self::$ownPhase = '';
     }
 
     /**
-     * The current reading.
+     * The option name this request registered under, or '' when it did not
+     * join.
      *
-     * Never returns an empty or absent field: an unavailable census reports a
-     * named reason, because "no reading" and "no concurrent requests" are
-     * opposite findings and a blank would let a blind spot read as quiet.
-     *
-     * @return array<string, mixed>
+     * Public because a reading has to tell this request's own row apart from a
+     * competitor's, and that is the ONLY thing it needs from this class's
+     * private state. Exposing the name rather than letting the reading reach
+     * into the identity is what keeps the dependency one-directional.
      */
-    public static function sample(): array {
-        try {
-            $now = self::nowMs();
-            if ($now === null) {
-                return self::unavailable('clock_unavailable', array(
-                    'abj_clock()->nowFloat()' => 'unavailable',
-                ));
-            }
-            if (self::$memoSample !== null && ($now - self::$memoTakenAtMs) < self::SAMPLE_MEMO_MS
-                    && ($now - self::$memoTakenAtMs) >= 0) {
-                $memo = self::$memoSample;
-                $memo['sample_age_ms'] = $now - self::$memoTakenAtMs;
-                return $memo;
-            }
-            $sample = self::readCensus($now);
-            self::$memoSample = $sample;
-            self::$memoTakenAtMs = $now;
-            return $sample;
-        } catch (Throwable $e) {
-            self::reportFailure('same-site census sample failed: ' . $e->getMessage());
-            return self::unavailable('sample_exception', array(
-                'SameSiteRequestCensus::sample()' => 'exception:' . get_class($e),
-            ));
-        }
-    }
-
-    /**
-     * This class's contribution to a full checkpoint envelope.
-     *
-     * `same_site_requests` rides EVERY record, because a stall is diagnosed
-     * from where the number was when the record was written; -1 means the
-     * census could not be read, never 0, which would be a finding rather than
-     * an absence. `same_site_census` -- the identities, the scope, the TTL and
-     * the reap counters -- rides only the record whose own write actually took
-     * the reading. Repeating that structure on all ~27 records of a request
-     * would spend the support-excerpt budget that decides how much of a
-     * FAILING session reaches the developer, for bytes that say the same thing
-     * 27 times; the same trade the rusage subset and the reduced high-frequency
-     * envelope were both made for. The two are joined by request id and
-     * timestamp, the keys the rest of the journal is already read by.
-     *
-     * @return array<string, mixed>
-     */
-    public static function checkpointFields(): array {
-        $takenAtBefore = self::$memoTakenAtMs;
-        $sample = self::sample();
-        $fields = array(
-            'same_site_requests' => isset($sample['count']) && is_int($sample['count'])
-                ? $sample['count'] : -1,
-        );
-        if (self::$memoTakenAtMs !== $takenAtBefore) {
-            $fields['same_site_census'] = $sample;
-        }
-        return $fields;
-    }
-
-    /**
-     * Forget the memoized reading, so the next sample() re-reads regardless of
-     * timing. Called by join() and leave(), which change the very thing the
-     * memo describes.
-     */
-    public static function resetSampleMemo(): void {
-        self::$memoSample = null;
-        self::$memoTakenAtMs = 0;
-    }
-
-    /**
-     * Split the registry into live requests and leftovers, reap the
-     * leftovers, and report what is left.
-     *
-     * @param int $now
-     * @return array<string, mixed>
-     */
-    private static function readCensus(int $now): array {
-        // What this reading costs the request it is measuring, measured
-        // through the same injected clock everything else here uses, so an
-        // observer effect is visible in the evidence rather than argued about.
-        $startedAt = self::nowFloat();
-        $registry = ABJ_404_Solution_SameSiteRequestRegistry::readAll();
-        $finishedAt = self::nowFloat();
-        if ($registry['status'] !== 'available') {
-            return self::unavailable($registry['reason'], array(
-                'SameSiteRequestRegistry::readAll()' => (string)$registry['reason'],
-            ));
-        }
-
-        $others = array();
-        $stale = array();
-        $live = 0;
-        $selfRegistered = false;
-        foreach ($registry['entries'] as $entry) {
-            $ageMs = max(0, $now - $entry['started_at_ms']);
-            if ($ageMs > self::ENTRY_TTL_MS) {
-                // The failure mode a plain counter cannot survive: the request
-                // under investigation is precisely the one killed before it
-                // could deregister. An entry older than any request that could
-                // still be running is a leftover, not a competitor.
-                $stale[] = $entry['option_name'];
-                continue;
-            }
-            $live++;
-            if ($entry['option_name'] === self::$ownEntry) {
-                $selfRegistered = true;
-                continue;
-            }
-            $others[] = array(
-                'channel' => $entry['channel'],
-                'action' => $entry['action'],
-                'pid' => $entry['pid'],
-                'age_ms' => $ageMs,
-            );
-        }
-        return self::report($live, $others, $stale, $selfRegistered, $registry['truncated'],
-            ($startedAt === null || $finishedAt === null)
-                ? -1.0 : round(($finishedAt - $startedAt) * 1000, 3));
-    }
-
-    /**
-     * Four fields unconditionally, the rest only when they carry information.
-     *
-     * Not terseness for its own sake: this reading rides the checkpoint
-     * channel, and the support excerpt's byte budget is the scarce resource
-     * that decides how much of a FAILING session reaches the developer at all
-     * (see CheckpointJournalReader::MAX_SUPPORT_EXCERPT_BYTES and the rusage trim
-     * that preceded it). Everything omitted here is omitted only at its
-     * documented default and reappears the moment it is not: the entries and
-     * the TTL their ages are read against when there IS other traffic,
-     * self_registered when this request did NOT register, the reap counters
-     * when something was reaped, truncated when the read hit its ceiling.
-     *
-     * @param array<int, array<string, mixed>> $others
-     * @param array<int, string> $stale
-     * @return array<string, mixed>
-     */
-    private static function report(int $live, array $others, array $stale, bool $selfRegistered,
-            bool $truncated, float $readMs): array {
-        $sample = array(
-            'status' => 'available',
-            'count' => $live,
-            'others' => count($others),
-            'sample_age_ms' => 0,
-        );
-        if ($others !== array()) {
-            $sample['scope'] = self::SCOPE;
-            $sample['entries'] = $others;
-            $sample['ttl_ms'] = self::ENTRY_TTL_MS;
-        }
-        if (!$selfRegistered) {
-            $sample['self_registered'] = false;
-        }
-        if ($stale !== array()) {
-            $sample['stale_seen'] = count($stale);
-            $sample['stale_reaped'] = ABJ_404_Solution_SameSiteRequestRegistry::remove($stale);
-        }
-        if ($truncated) {
-            $sample['truncated'] = true;
-        }
-        $sample['read_ms'] = $readMs;
-        return $sample;
+    public static function ownEntryName(): string {
+        return self::$ownEntry;
     }
 
     /**
@@ -369,8 +294,14 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
      * instead: a census with no clock cannot age its entries, and an
      * unavailable reading is the honest answer. The same window has no DAO
      * either, so nothing is lost that was otherwise obtainable.
+     *
+     * Public because deciding what time means for a census -- one injected
+     * clock, null rather than a raw fallback during boot -- is this class's
+     * policy, and ABJ_404_Solution_SameSiteCensusReading has to age entries
+     * against the same one. A second time source inside one reading is exactly
+     * what this null is here to prevent.
      */
-    private static function nowFloat(): ?float {
+    public static function nowFloat(): ?float {
         if (!function_exists('abj_clock')) {
             return null;
         }
@@ -382,29 +313,10 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
         }
     }
 
-    private static function nowMs(): ?int {
+    /** Milliseconds from the census clock, or null when there is none yet. */
+    public static function nowMs(): ?int {
         $now = self::nowFloat();
         return $now === null ? null : (int)round($now * 1000);
-    }
-
-    /**
-     * @param array<string, string> $attemptedPaths
-     * @return array<string, mixed>
-     */
-    private static function unavailable(string $reason, array $attemptedPaths): array {
-        return array(
-            'status' => 'unavailable',
-            'reason' => $reason,
-            'attempted_paths' => $attemptedPaths,
-            'scope' => self::SCOPE,
-            // -1, never 0: an unreadable census and a quiet site are opposite
-            // findings, and the per-record number has to stay arithmetically
-            // impossible to confuse.
-            'count' => -1,
-            'others' => -1,
-            'self_registered' => self::$ownEntry !== '',
-            'sample_age_ms' => 0,
-        );
     }
 
     private static function reportFailure(string $message): void {

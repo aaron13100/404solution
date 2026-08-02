@@ -15,27 +15,19 @@ if (!defined('ABSPATH')) {
  * the way beta.1's trace did. Rotation is the only bound on retention.
  * A hard worker kill can skip PHP shutdown, so stale pending files are recovered
  * into the journal by a later request instead of losing the last started stage.
+ *
+ * This class owns the request's stages while it runs. What happens to the
+ * process AFTER the response is complete belongs to
+ * ABJ_404_Solution_AjaxTeardownRecorder, which the sentinels below delegate to.
  */
 final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_DiagnosticInternalHookObserver {
 
-    const SHUTDOWN_INVENTORY_MARKER = 'abj404_ajax_shutdown_inventory.marker';
     const SCHEMA_VERSION = 1;
-
-    /** Teardown sentinel armed with register_shutdown_function(): runs BELOW WordPress. */
-    const MECHANISM_SHUTDOWN_FUNCTION = 'php_shutdown_function';
-    /** Teardown sentinel armed as a WordPress 'shutdown' action callback. */
-    const MECHANISM_WP_ACTION = 'wp_shutdown_action';
-    /** Sentinel registered when the AJAX handler was entered. */
-    const ARMED_HANDLER_ENTRY = 'handler_entry';
-    /** Sentinel registered when the response was emitted, in finish(). */
-    const ARMED_RESPONSE_TIME = 'response_time';
 
     /** @var array<string, scalar> */
     private $context;
     /** @var ABJ_404_Solution_Clock */
     private $clock;
-    /** @var string */
-    private $directory;
     /** @var ABJ_404_Solution_AjaxTraceJournal Durable storage + retention for this request's records. */
     private $journal;
     /** @var float */
@@ -50,19 +42,10 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
     private $active = true;
     /** @var float|null Set when finish() runs; lets the teardown recorder measure PHP-shutdown lag after the response was logically complete. */
     private $responseEmittedAt = null;
-    /** @var ABJ_404_Solution_ShutdownTeardownBracket Splits shutdown time into WordPress-action vs below-WordPress. */
-    private $teardownBracket;
+    /** @var ABJ_404_Solution_AjaxTeardownRecorder Owns everything after the response is complete. */
+    private $teardownRecorder;
     /** @var ABJ_404_Solution_ShutdownCallbackTracer|null */
     private $shutdownCallbackTracer;
-    /**
-     * True once this trace's process lifecycle has been retired by the test
-     * harness (see disarmTeardownSentinelsForTests()). Checked by
-     * recordTeardown() so a sentinel PHP will still invoke at process exit --
-     * register_shutdown_function() cannot be unregistered -- writes nothing.
-     * Never set in production.
-     * @var bool
-     */
-    private $teardownSentinelsDisarmed = false;
     /**
      * Every trace in this process whose PHP-shutdown sentinels are still
      * armed. The shutdown queue itself already keeps each of these traces
@@ -73,14 +56,6 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
      * @var array<int, self>
      */
     private static $tracesWithArmedSentinels = array();
-    /**
-     * Guards the one-time-per-rotation $wp_filter['shutdown'] inventory.
-     * Keyed by trace directory (not a single scalar) so unrelated trace
-     * directories -- distinct sites, or distinct tests in the same worker
-     * process -- never share a dedup decision.
-     * @var array<string, string>
-     */
-    private static $shutdownInventoryCapturedForRotation = array();
 
     /**
      * Start tracing for an authorized AJAX request. Failure is non-fatal.
@@ -130,8 +105,6 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
      */
     private function __construct(array $context, string $directory, ABJ_404_Solution_Clock $clock) {
         $this->clock = $clock;
-        $this->directory = $directory;
-        $this->teardownBracket = new ABJ_404_Solution_ShutdownTeardownBracket();
         $this->requestStartedAt = $clock->nowFloat();
         $this->context = $this->normalizeContext($context);
         $stamp = str_replace('.', '', sprintf('%.6f', $this->requestStartedAt));
@@ -139,6 +112,8 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
             . $this->context['request_id'] . '_' . $this->context['part'] . '_'
             . $this->context['retry_count'] . '_' . getmypid() . '_' . $stamp . '.pending.jsonl';
         $this->journal = new ABJ_404_Solution_AjaxTraceJournal($directory, $pendingPath, $clock);
+        $this->teardownRecorder = new ABJ_404_Solution_AjaxTeardownRecorder(
+            $clock, $directory, $this->journal);
 
         // request_start MUST be the first flushed write for this request: it is
         // the evidence that the trace even started, before any stage runs. If
@@ -278,12 +253,16 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
      * in the timeout matrix).
      */
     public function recordShutdown(): void {
-        $this->recordTeardown('shutdown', self::MECHANISM_SHUTDOWN_FUNCTION, self::ARMED_HANDLER_ENTRY);
+        $this->recordTeardown('shutdown',
+            ABJ_404_Solution_AjaxTeardownRecorder::MECHANISM_SHUTDOWN_FUNCTION,
+            ABJ_404_Solution_AjaxTeardownRecorder::ARMED_HANDLER_ENTRY);
     }
 
     /** Response-time teardown sentinel; armed a second time in finish(). */
     public function recordShutdownAtResponseTime(): void {
-        $this->recordTeardown('shutdown_response_time', self::MECHANISM_SHUTDOWN_FUNCTION, self::ARMED_RESPONSE_TIME);
+        $this->recordTeardown('shutdown_response_time',
+            ABJ_404_Solution_AjaxTeardownRecorder::MECHANISM_SHUTDOWN_FUNCTION,
+            ABJ_404_Solution_AjaxTeardownRecorder::ARMED_RESPONSE_TIME);
     }
 
     /**
@@ -293,9 +272,18 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
      * ABJ_404_Solution_ShutdownTeardownBracket.
      */
     public function recordShutdownActionEarly(): void {
+        // The earliest point at which post-detach work begins. A census row
+        // still reading this phase minutes later is a worker holding its
+        // process slot while owing the browser nothing -- the shape report 193
+        // showed four times over, and a different failure from one stranded
+        // before the response was delivered.
+        ABJ_404_Solution_SameSiteRequestCensus::markPhase(
+            ABJ_404_Solution_SameSiteRequestCensus::PHASE_SHUTDOWN);
         ABJ_404_Solution_AjaxStageDiagnostics::recordRequestPhase((string)($this->context['request_id'] ?? ''), 'wordpress_shutdown');
-        $this->teardownBracket->noteWpActionStart($this->clock->nowFloat());
-        $this->recordTeardown('shutdown_action_min', self::MECHANISM_WP_ACTION, self::ARMED_HANDLER_ENTRY);
+        $this->teardownRecorder->noteWpActionStart($this->clock->nowFloat());
+        $this->recordTeardown('shutdown_action_min',
+            ABJ_404_Solution_AjaxTeardownRecorder::MECHANISM_WP_ACTION,
+            ABJ_404_Solution_AjaxTeardownRecorder::ARMED_HANDLER_ENTRY);
     }
 
     /**
@@ -305,8 +293,10 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
      * Closes the WordPress-shutdown-action bracket.
      */
     public function recordShutdownActionLate(): void {
-        $this->teardownBracket->noteWpActionEnd($this->clock->nowFloat());
-        $this->recordTeardown('shutdown_action_max', self::MECHANISM_WP_ACTION, self::ARMED_HANDLER_ENTRY);
+        $this->teardownRecorder->noteWpActionEnd($this->clock->nowFloat());
+        $this->recordTeardown('shutdown_action_max',
+            ABJ_404_Solution_AjaxTeardownRecorder::MECHANISM_WP_ACTION,
+            ABJ_404_Solution_AjaxTeardownRecorder::ARMED_HANDLER_ENTRY);
         ABJ_404_Solution_AjaxStageDiagnostics::recordRequestPhase((string)($this->context['request_id'] ?? ''), 'wordpress_shutdown', 'complete');
     }
 
@@ -332,101 +322,34 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
      */
     public static function disarmTeardownSentinelsForTests(): void {
         foreach (self::$tracesWithArmedSentinels as $trace) {
-            $trace->teardownSentinelsDisarmed = true;
+            $trace->teardownRecorder->disarm();
         }
         self::$tracesWithArmedSentinels = array();
     }
 
     /**
-     * Shared teardown body for every shutdown-time sentinel. Never disarmed
-     * by finish() and never throws -- a teardown recorder that itself can
-     * fatal would defeat its own purpose.
+     * Hand this request's state to the teardown recorder and retire the trace
+     * if it wrote.
      *
-     * @param string $mechanism  One of the MECHANISM_* constants: which of the
-     *                           two shutdown mechanisms invoked this sentinel.
-     * @param string $armedAt    One of the ARMED_* constants: where the callback
-     *                           was registered, which is what fixes its position
-     *                           in PHP's registration-ordered shutdown queue.
+     * The trace stays active when the write did not happen, which is what lets
+     * a later sentinel try again: a retired recorder and a failed write are
+     * both cases where nothing was recorded, and marking the request torn down
+     * on either would discard the one remaining chance to record it.
+     *
+     * @param string $mechanism One of ABJ_404_Solution_AjaxTeardownRecorder's
+     *                          MECHANISM_* constants.
+     * @param string $armedAt   One of its ARMED_* constants.
      */
     private function recordTeardown(string $event, string $mechanism, string $armedAt): void {
-        if ($this->teardownSentinelsDisarmed) {
-            // Retired by the test harness: this trace's "request" (one PHPUnit
-            // test) already ended and its journal directory was deleted with
-            // that test, so a flush here could only report a vanished path.
-            return;
-        }
-        try {
-            $lastError = error_get_last();
-            $now = $this->clock->nowFloat();
-            $record = array_merge(array(
-                'event' => $event,
-                'elapsed_ms' => max(0, (int)round(($now - $this->requestStartedAt) * 1000)),
-                'elapsed_since_response_emitted_ms' => $this->responseEmittedAt !== null
-                    ? max(0, (int)round(($now - $this->responseEmittedAt) * 1000))
-                    : null,
-                'already_finished' => !$this->active,
-                'current_stage' => $this->currentStage,
-                'peak_memory_bytes' => memory_get_peak_usage(true),
-                'connection_aborted' => function_exists('connection_aborted') ? connection_aborted() : 0,
-                // connection_status() carries the TIMEOUT bit that
-                // connection_aborted() cannot express, and session_status()
-                // turning ACTIVE between request_start and teardown is the
-                // evidence for a session write at shutdown (cause class G).
-                'connection_status' => function_exists('connection_status') ? connection_status() : null,
-                'session_status' => function_exists('session_status') ? session_status() : null,
-                'php_error_type' => is_array($lastError) ? (int)$lastError['type'] : 0,
-                'php_error_message' => is_array($lastError) ? substr((string)$lastError['message'], 0, 500) : '',
-                'php_error_file' => is_array($lastError) ? (string)$lastError['file'] : '',
-                'php_error_line' => is_array($lastError) ? (int)$lastError['line'] : 0,
-            ), $this->teardownBracket->attribution(
-                $mechanism, $armedAt, $mechanism === self::MECHANISM_SHUTDOWN_FUNCTION, $now));
-            $this->appendRecord($record);
+        if ($this->teardownRecorder->record($event, $mechanism, $armedAt, array(
+            'envelope' => $this->baseRecord(),
+            'request_started_at' => $this->requestStartedAt,
+            'response_emitted_at' => $this->responseEmittedAt,
+            'already_finished' => !$this->active,
+            'current_stage' => $this->currentStage,
+        ))) {
             $this->active = false;
-            $this->journal->promote();
-            $this->maybeRecordShutdownEnvironmentInventory();
-        } catch (Throwable $e) {
-            self::reportStaticFailure('AJAX teardown recorder failed (' . $event . '): ' . $e->getMessage());
         }
-    }
-
-    /**
-     * Capture the shutdown-time environment
-     * (ABJ_404_Solution_ShutdownEnvironmentInventory) once per journal rotation
-     * rather than on every request: the roster and extension list are static
-     * within a deploy, so per-request capture would only bloat the journal. The
-     * rotated file's mtime stands in for "which rotation" -- a marker file
-     * records the last rotation actually inventoried, and a same-process static
-     * short-circuits repeat requests inside one worker.
-     *
-     * Called from every teardown sentinel, not just the WordPress-action one:
-     * the case this inventory exists to explain (shutdown work that is not a
-     * WordPress shutdown-action callback) includes the case where the
-     * WordPress shutdown action never runs at all, and an inventory only that
-     * action can write would be missing exactly then.
-     */
-    private function maybeRecordShutdownEnvironmentInventory(): void {
-        $rotatedPath = $this->directory . ABJ_404_Solution_AjaxTraceJournal::ROTATED_FILE;
-        $rotationMtime = @filemtime($rotatedPath);
-        $rotationKey = is_int($rotationMtime) ? (string)$rotationMtime : 'never-rotated';
-        if ((self::$shutdownInventoryCapturedForRotation[$this->directory] ?? null) === $rotationKey) {
-            return;
-        }
-        $markerPath = $this->directory . self::SHUTDOWN_INVENTORY_MARKER;
-        $existingMarker = @file_get_contents($markerPath);
-        if ($existingMarker === $rotationKey) {
-            self::$shutdownInventoryCapturedForRotation[$this->directory] = $rotationKey;
-            return;
-        }
-        self::$shutdownInventoryCapturedForRotation[$this->directory] = $rotationKey;
-        $this->appendRecord(array_merge(array(
-            'event' => 'shutdown_hook_inventory',
-            'rotation_key' => $rotationKey,
-        ), ABJ_404_Solution_ShutdownEnvironmentInventory::capture()));
-        @file_put_contents($markerPath, $rotationKey, LOCK_EX);
-        // Promote here rather than relying on a later sentinel: the sentinel
-        // that writes this may be the last one to run, and an unpromoted spool
-        // waits 300 seconds for another request to recover it.
-        $this->journal->promote();
     }
 
     /**

@@ -50,10 +50,15 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
      * alone and nothing else may ever write it, which is the property that
      * makes the whole registry race-free.
      *
+     * @param string $phase the segment the request is in at registration. The
+     *   caller names it: which segments exist, and what they mean, belongs to
+     *   ABJ_404_Solution_SameSiteRequestCensus. Written with the row rather
+     *   than by a follow-up update so registration still costs one query.
      * @return string the option name the request was registered under, or ''
      *   when it could not be registered at all.
      */
-    public static function add(int $startedAtMs, string $channel, string $action, int $pid): string {
+    public static function add(int $startedAtMs, string $channel, string $action, int $pid,
+            string $phase = ''): string {
         $dbCore = self::dbCore();
         if ($dbCore === null) {
             return '';
@@ -63,7 +68,8 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
         $result = $dbCore->queryAndGetResults(
             "INSERT IGNORE INTO {wp_options} (option_name, option_value, autoload) "
             . "VALUES (%s, %s, 'no')",
-            array('query_params' => array($optionName, self::encode($startedAtMs, $channel, $action, $pid)))
+            array('query_params' => array($optionName,
+                self::encode($startedAtMs, $channel, $action, $pid, $phase)))
         );
         if (!empty($result['last_error'])) {
             // queryAndGetResults already logged it (CLAUDE.md: it is the
@@ -75,13 +81,48 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
     }
 
     /**
+     * Record which segment of its own lifecycle this request has entered.
+     *
+     * A plain UPDATE of one row by primary key, and the single-writer property
+     * that makes the registry race-free is what makes it safe: the row belongs
+     * to this request alone, so there is no read-modify-write and nothing to
+     * interleave with. The other fields are rewritten from the caller's own
+     * values rather than read back and merged, for the same reason.
+     *
+     * ALWAYS CALLED BEFORE ENTERING THE SEGMENT IT NAMES, never after. A
+     * request that dies inside a segment cannot write anything afterwards, so
+     * a phase recorded on the way out would be exactly the one missing from
+     * every row worth reading. Recorded on the way in, an abandoned row's
+     * phase names the segment the worker was inside when it stopped -- which
+     * is the entire question a stranded worker poses.
+     *
+     * @return bool whether the row was updated.
+     */
+    public static function advance(string $optionName, int $startedAtMs, string $channel,
+            string $action, int $pid, string $phase): bool {
+        $dbCore = self::dbCore();
+        if ($dbCore === null || $optionName === '') {
+            return false;
+        }
+        $result = $dbCore->queryAndGetResults(
+            "UPDATE {wp_options} SET option_value = %s WHERE option_name = %s",
+            array('query_params' => array(
+                self::encode($startedAtMs, $channel, $action, $pid, $phase), $optionName))
+        );
+        // queryAndGetResults is the centralized error handler (CLAUDE.md #11).
+        // A phase that cannot be recorded is a coarser reading, never a reason
+        // to affect the request being measured.
+        return empty($result['last_error']);
+    }
+
+    /**
      * Every registered request, decoded, oldest option name first.
      *
      * `truncated` says the read ceiling was reached, so a reader can tell a
      * bounded reading from a complete one instead of quietly believing the
      * smaller number.
      *
-     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int}>, truncated: bool}
+     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int, phase: string}>, truncated: bool}
      */
     public static function readAll(): array {
         $dbCore = self::dbCore();
@@ -139,14 +180,22 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
     }
 
     /**
-     * The stored value: start time, channel, WordPress action, PID.
+     * The stored value: start time, channel, WordPress action, PID, phase.
      *
      * A flat delimited string rather than JSON because every field is a
      * bounded scalar and the row is written on a path whose cost is being
      * measured; the decoder below is the only reader.
+     *
+     * Phase is last so a row written by an older build -- four fields, no
+     * trailing delimiter -- still decodes completely, with an empty phase
+     * rather than a rejected row. The delimiter is stripped from the phase
+     * for the same reason the decoder bounds every field: a value that could
+     * introduce a sixth part would shift the meaning of the parts after it.
      */
-    private static function encode(int $startedAtMs, string $channel, string $action, int $pid): string {
-        return $startedAtMs . '|' . $channel . '|' . $action . '|' . $pid;
+    private static function encode(int $startedAtMs, string $channel, string $action, int $pid,
+            string $phase = ''): string {
+        return $startedAtMs . '|' . $channel . '|' . $action . '|' . $pid
+            . '|' . str_replace('|', '', $phase);
     }
 
     /**
@@ -154,7 +203,7 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
      * class wrote in a format it understands.
      *
      * @param mixed $row
-     * @return array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int}|null
+     * @return array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int, phase: string}|null
      */
     private static function decode($row): ?array {
         if (!is_array($row)) {
@@ -171,7 +220,7 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
         if ($name === '' || $raw === '') {
             return null;
         }
-        $parts = explode('|', $raw, 4);
+        $parts = explode('|', $raw, 5);
         if (!isset($parts[0]) || !ctype_digit($parts[0])) {
             return null;
         }
@@ -181,11 +230,15 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
             'channel' => isset($parts[1]) ? substr($parts[1], 0, 16) : '',
             'action' => isset($parts[2]) ? substr($parts[2], 0, 64) : '',
             'pid' => isset($parts[3]) && ctype_digit($parts[3]) ? (int)$parts[3] : 0,
+            // A row from a build that predates phases has four parts. Reported
+            // as an empty phase, which the census names explicitly, rather than
+            // being confused with a request that reached no phase at all.
+            'phase' => isset($parts[4]) ? substr($parts[4], 0, 32) : '',
         );
     }
 
     /**
-     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int}>, truncated: bool}
+     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int, phase: string}>, truncated: bool}
      */
     private static function unreadable(string $reason): array {
         return array('status' => 'unavailable', 'reason' => $reason, 'entries' => array(),

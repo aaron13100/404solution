@@ -76,9 +76,9 @@ final class ABJ_404_Solution_CheckpointRecordFactory {
         // whose box looks idle, so the two answer different questions and a
         // record carrying only the first cannot tell them apart. The census
         // owns the shape of its own contribution; see
-        // ABJ_404_Solution_SameSiteRequestCensus::checkpointFields().
-        $record += class_exists('ABJ_404_Solution_SameSiteRequestCensus')
-            ? ABJ_404_Solution_SameSiteRequestCensus::checkpointFields()
+        // ABJ_404_Solution_SameSiteCensusReading::checkpointFields().
+        $record += class_exists('ABJ_404_Solution_SameSiteCensusReading')
+            ? ABJ_404_Solution_SameSiteCensusReading::checkpointFields()
             : array('same_site_requests' => -1);
         $record['previous_checkpoint_write'] = $context['previous_checkpoint_write'];
         $record['request_id'] = $context['request_id'];

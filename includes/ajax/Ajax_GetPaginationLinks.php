@@ -12,11 +12,13 @@ if (!defined('ABSPATH')) {
  * serveable, so there is no view-build gate: the table is rendered
  * synchronously on every request. All exceptions route through
  * handlePaginationLinksException for a consistent diagnostics envelope.
+ *
+ * This class owns the request boundary only: reading and normalizing the input,
+ * authorization, rate limiting, choosing between the background poll and the
+ * foreground build, and emitting a response or an error envelope. Building the
+ * response body belongs to ABJ_404_Solution_AdminTableResponseParts.
  */
 class ABJ_404_Solution_Ajax_GetPaginationLinks {
-
-    private const QUERY_TIMEOUT_SECONDS = 20;
-    private const DETECT_ONLY_QUERY_TIMEOUT_SECONDS = 10;
 
     /** @return void */
     public function handle() {
@@ -89,6 +91,13 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         ABJ_404_Solution_AjaxRequestLedger::recordHeaderMismatchIfAny(
             $requestId, (string)$ledger['header_request_id']);
 
+        // Entering the handler proper: authorization, queries and rendering.
+        // A census row stranded here is a request that never finished its own
+        // work, which is a different bug from one that finished in 1.3s and
+        // then held its worker for three minutes (report 193's actual shape).
+        ABJ_404_Solution_SameSiteRequestCensus::markPhase(
+            ABJ_404_Solution_SameSiteRequestCensus::PHASE_HANDLER);
+
         try {
             if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
                 'abj404_updatePaginationLink',
@@ -136,18 +145,20 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             // a full render uses (so the signature still matches), and return
             // {tableSignature, hasUpdate}. The logs tab keeps the full path
             // (bounded, append-only; not the constant-write pressure case).
-            if ($detectOnly && self::detectOnlyCanComputeCheapSignature($subpage)
+            if ($detectOnly && ABJ_404_Solution_AdminTableResponseParts::canComputeCheapSignature($subpage)
                     && is_object($view) && method_exists($view, 'computeTableDataSignature')) {
                 $tableSignature = (string)ABJ_404_Solution_AjaxStageDiagnostics::runStage(
                     $context,
                     'detectOnlySignature',
                     static function () use ($view, $subpage) {
-                        return $view->computeTableDataSignature($subpage, self::queryBudgetOptions(true));
+                        return $view->computeTableDataSignature(
+                            $subpage, ABJ_404_Solution_AdminTableResponseParts::queryBudgetOptions(true));
                     }
                 );
                 $data = array(
                     'tableSignature' => $tableSignature,
-                    'hasUpdate' => self::hasSignatureUpdate($currentSignature, $tableSignature),
+                    'hasUpdate' => ABJ_404_Solution_AdminTableResponseParts::hasSignatureUpdate(
+                        $currentSignature, $tableSignature),
                     'requestId' => $requestId,
                     'retryCount' => $retryCount,
                 );
@@ -158,7 +169,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                 return;
             }
 
-            $data = self::buildRequestedResponseParts(
+            $data = ABJ_404_Solution_AdminTableResponseParts::build(
                 $part,
                 $subpage,
                 $view,
@@ -167,7 +178,8 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             );
             if ($detectOnly && isset($data['tableSignature'])) {
                 $tableSignature = is_scalar($data['tableSignature']) ? (string)$data['tableSignature'] : '';
-                $data['hasUpdate'] = self::hasSignatureUpdate($currentSignature, $tableSignature);
+                $data['hasUpdate'] = ABJ_404_Solution_AdminTableResponseParts::hasSignatureUpdate(
+                    $currentSignature, $tableSignature);
             }
             $data['requestId'] = $requestId;
             $data['retryCount'] = $retryCount;
@@ -195,15 +207,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     private static function normalizePart(string $partRaw): string {
         return in_array($partRaw, array('all', 'table', 'counts', 'pagination'), true)
             ? $partRaw : 'all';
-    }
-
-    /** @return array<string, int> */
-    private static function queryBudgetOptions(bool $detectOnly = false): array {
-        return array(
-            '_abj404_query_timeout' => $detectOnly
-                ? self::DETECT_ONLY_QUERY_TIMEOUT_SECONDS
-                : self::QUERY_TIMEOUT_SECONDS,
-        );
     }
 
     private static function normalizeCurrentSignature(string $currentSignature): string {
@@ -257,189 +260,6 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         if (method_exists($abj404logic, 'updatePerPageOption')) {
             $abj404logic->updatePerPageOption($rowsPerPage);
         }
-    }
-
-    /**
-     * @param ABJ_404_Solution_View $view
-     */
-    private static function getCurrentTableSignature($view, string $subpage): string {
-        if (is_object($view) && method_exists($view, 'getCurrentTableDataSignature')) {
-            return (string)$view->getCurrentTableDataSignature($subpage);
-        }
-        return '';
-    }
-
-    /**
-     * Whether a subpage supports the cheap detect-only signature path. The
-     * redirects and captured tabs both read through getRedirectsForView, so the
-     * View can compute their signature from a single one-page read. The logs tab
-     * reads a different source and keeps the full path.
-     */
-    private static function detectOnlyCanComputeCheapSignature(string $subpage): bool {
-        return $subpage === 'abj404_redirects' || $subpage === 'abj404_captured';
-    }
-
-    private static function hasSignatureUpdate(string $currentSignature, string $tableSignature): bool {
-        if ($currentSignature === '' || $tableSignature === '') {
-            return false;
-        }
-        if (function_exists('hash_equals')) {
-            return !hash_equals($currentSignature, $tableSignature);
-        }
-        return $currentSignature !== $tableSignature;
-    }
-
-    /**
-     * @param ABJ_404_Solution_View $view
-     * @param ABJ_404_Solution_ViewReadServiceInterface $viewReadService
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>
-     */
-    private static function buildRequestedResponseParts(
-        string $requestedPart,
-        string $subpage,
-        $view,
-        $viewReadService,
-        array &$context
-    ): array {
-        $builders = array(
-            'table' => 'buildTablePart',
-            'counts' => 'buildCountsPart',
-            'pagination' => 'buildPaginationPart',
-        );
-        $parts = $requestedPart === 'all' ? array_keys($builders) : array($requestedPart);
-        $data = array();
-        foreach ($parts as $part) {
-            $method = $builders[$part] ?? '';
-            if ($method === '') {
-                continue;
-            }
-            $data = array_merge($data, self::$method($subpage, $view, $viewReadService, $context));
-        }
-        return $data;
-    }
-
-    /**
-     * @param ABJ_404_Solution_View $view
-     * @param mixed $viewReadService
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>
-     */
-    private static function buildTablePart(string $subpage, $view, $viewReadService, array &$context): array {
-        $renderers = array(
-            'abj404_redirects' => array('stage' => 'table_redirects', 'method' => 'getAdminRedirectsPageTable'),
-            'abj404_captured' => array('stage' => 'table_captured', 'method' => 'getCapturedURLSPageTable'),
-            'abj404_logs' => array('stage' => 'table_logs', 'method' => 'getAdminLogsPageTable'),
-        );
-        if (!isset($renderers[$subpage])) {
-            return array('table' => 'Error: Unexpected subpage requested.');
-        }
-        $renderer = $renderers[$subpage];
-        $method = $renderer['method'];
-        return ABJ_404_Solution_AjaxStageDiagnostics::runStage(
-            $context,
-            $renderer['stage'],
-            static function () use ($subpage, $view, $viewReadService, $method, &$context) {
-                if (($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
-                        && is_object($viewReadService)
-                        && method_exists($viewReadService, 'sortReadinessStatusForOrderby')) {
-                    $orderby = is_scalar($context['orderby'] ?? null) ? (string)$context['orderby'] : '';
-                    ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array(
-                        'sort_readiness' => $viewReadService->sortReadinessStatusForOrderby($orderby),
-                    ));
-                }
-                return array(
-                    'table' => $view->$method($subpage, self::queryBudgetOptions()),
-                    'tableSignature' => self::getCurrentTableSignature($view, $subpage),
-                );
-            }
-        );
-    }
-
-    /**
-     * @param ABJ_404_Solution_View $view
-     * @param ABJ_404_Solution_ViewReadServiceInterface $viewReadService
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>
-     */
-    private static function buildCountsPart(string $subpage, $view, $viewReadService, array &$context): array {
-        unset($view);
-        $queryOptions = self::queryBudgetOptions();
-        if ($subpage === 'abj404_redirects') {
-            $counts = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
-                $context,
-                'redirect_status_counts',
-                static function () use ($viewReadService, $queryOptions) {
-                    $result = $viewReadService->getRedirectStatusCounts(false, $queryOptions);
-                    ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array(
-                        'cache' => !empty($result['_incomplete']) ? 'miss' : 'hit',
-                    ));
-                    return $result;
-                }
-            );
-            if (!empty($counts['_incomplete'])) {
-                return array('countsIncomplete' => true);
-            }
-            return array('tabCounts' => array(
-                '0' => $counts['all'] ?? 0,
-                (string)ABJ404_STATUS_MANUAL => $counts['manual'] ?? 0,
-                (string)ABJ404_STATUS_AUTO => $counts['auto'] ?? 0,
-                (string)ABJ404_TRASH_FILTER => $counts['trash'] ?? 0,
-            ));
-        }
-        if ($subpage !== 'abj404_captured') {
-            return array();
-        }
-        $counts = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
-            $context,
-            'captured_status_counts',
-            static function () use ($viewReadService, $queryOptions) {
-                $result = $viewReadService->getCapturedStatusCounts(false, $queryOptions);
-                ABJ_404_Solution_AjaxStageDiagnostics::addStageMetadata(array(
-                    'cache' => !empty($result['_incomplete']) ? 'miss' : 'hit',
-                ));
-                return $result;
-            }
-        );
-        if (!empty($counts['_incomplete'])) {
-            return array('countsIncomplete' => true);
-        }
-        return array(
-            'statusCounts' => $counts,
-            'tabCounts' => array(
-                '0' => $counts['all'] ?? 0,
-                (string)ABJ404_STATUS_CAPTURED => $counts['captured'] ?? 0,
-                (string)ABJ404_STATUS_IGNORED => $counts['ignored'] ?? 0,
-                (string)ABJ404_STATUS_LATER => $counts['later'] ?? 0,
-                (string)ABJ404_TRASH_FILTER => $counts['trash'] ?? 0,
-                (string)ABJ404_HANDLED_FILTER => ($counts['ignored'] ?? 0) + ($counts['later'] ?? 0) + ($counts['trash'] ?? 0),
-            ),
-        );
-    }
-
-    /**
-     * @param ABJ_404_Solution_View $view
-     * @param mixed $viewReadService
-     * @param array<string, mixed> $context
-     * @return array<string, string>
-     */
-    private static function buildPaginationPart(string $subpage, $view, $viewReadService, array &$context): array {
-        unset($viewReadService);
-        $queryOptions = self::queryBudgetOptions();
-        $top = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
-            $context,
-            'paginationLinksTop',
-            static fn() => $view->getPaginationLinks($subpage, true, $queryOptions)
-        );
-        $bottom = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
-            $context,
-            'paginationLinksBottom',
-            static fn() => $view->getPaginationLinks($subpage, false, $queryOptions)
-        );
-        return array(
-            'paginationLinksTop' => $top,
-            'paginationLinksBottom' => $bottom,
-        );
     }
 
     /**
