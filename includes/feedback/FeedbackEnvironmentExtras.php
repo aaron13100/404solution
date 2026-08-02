@@ -145,6 +145,23 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         $extras['php_memory_peak_bytes'] = function_exists('memory_get_peak_usage') ? (int)memory_get_peak_usage(true) : 0;
         $extras['php_opcache_enabled'] = $host->opcacheEnabled();
         $extras['php_max_input_vars'] = function_exists('ini_get') ? (int)ini_get('max_input_vars') : 0;
+        $extras['php_output_buffering'] = function_exists('ini_get')
+            ? (string)ini_get('output_buffering') : '';
+        $extras['php_zlib_output_compression'] = function_exists('ini_get')
+            ? (string)ini_get('zlib.output_compression') : '';
+        $obStatuses = function_exists('ob_get_status') ? ob_get_status(true) : array();
+        $obHandlerNames = array();
+        foreach ($obStatuses as $obStatus) {
+            if (is_array($obStatus) && isset($obStatus['name']) && is_string($obStatus['name'])) {
+                $obHandlerNames[] = $obStatus['name'];
+            }
+        }
+        $extras['php_ob_level_at_collect'] = array(
+            'level' => function_exists('ob_get_level') ? (int)ob_get_level() : 0,
+            // Handler names identify stack ownership. Other status fields,
+            // especially byte counts, are unnecessary diagnostic surface.
+            'handlers' => $obHandlerNames,
+        );
         $extras['php_realpath_cache_size_bytes'] = function_exists('realpath_cache_size') ? (int)realpath_cache_size() : 0;
 
         // Plugin table sizes beyond logsv2 (which has its own typed
