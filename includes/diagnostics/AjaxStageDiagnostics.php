@@ -30,7 +30,11 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
      * @return void
      */
     public static function beginRequest(array $context): void {
-        $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? '');
+        $requestId = ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestId($context);
+        if ($requestId === '') {
+            unset($GLOBALS['abj404_ajax_request_trace']);
+            return;
+        }
         self::recordRequestPhase($requestId, 'request_handler');
 
         ABJ_404_Solution_DiagnosticDirectoryProbe::run($requestId);
@@ -150,8 +154,7 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
      * that do not otherwise have the raw request context in hand.
      */
     private static function currentRequestIdForCheckpoints(): string {
-        $ctx = $GLOBALS['abj404_ajax_context'] ?? null;
-        return ABJ_404_Solution_AjaxRequestLedger::normalizeId(is_array($ctx) ? ($ctx['request_id'] ?? '') : '');
+        return ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestIdFromGlobalContext();
     }
 
     /**

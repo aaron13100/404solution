@@ -58,6 +58,11 @@ final class ABJ_404_Solution_AjaxRequestLedger {
         'ajaxRunCanaryStep' => true,
     );
 
+    /** Whether the existing debug setting opts into AJAX diagnostics. */
+    public static function isAjaxDiagnosticsEnabled(): bool {
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::isEnabled();
+    }
+
     /**
      * Normalize a raw ID to the ledger format, degrading anything else to
      * $fallback. Every channel that reads client input normalizes through
@@ -130,11 +135,24 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * @param array<array-key, mixed> $context
      */
     public static function instrumentedRequestId(array $context): string {
-        $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
-        if ($action !== self::INSTRUMENTED_ACTION) {
-            return '';
-        }
-        return self::normalizeId($context['request_id'] ?? null);
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestId($context);
+    }
+
+    /**
+     * Normalized ID for a request whose durable diagnostic trace is enabled.
+     * This includes the real table endpoint and its explicit canary ladder;
+     * instrumentedRequestId() remains narrower for table-only micro-boundaries.
+     *
+     * @param array<array-key, mixed> $context
+     */
+    public static function diagnosticRequestId(array $context): string {
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::diagnosticRequestId($context);
+    }
+
+    /** diagnosticRequestId() against the shared AJAX debug context global. */
+    public static function diagnosticRequestIdFromGlobalContext(): string {
+        $ctx = $GLOBALS['abj404_ajax_context'] ?? null;
+        return is_array($ctx) ? self::diagnosticRequestId($ctx) : '';
     }
 
     /** instrumentedRequestId() against the shared AJAX debug context global. */
@@ -143,35 +161,9 @@ final class ABJ_404_Solution_AjaxRequestLedger {
         return is_array($ctx) ? self::instrumentedRequestId($ctx) : '';
     }
 
-    /**
-     * Normalized request ID for a boot-phase checkpoint, or '' when this
-     * request is out of scope. Reads $_REQUEST directly (unlike
-     * instrumentedRequestId(), which reads an already-built $context array)
-     * because boot waypoints fire before any handler has parsed the
-     * request -- the earliest one runs at the plugin file's own first
-     * executable line, long before routing, auth, or the request-reader
-     * service exist.
-     *
-     * wp_doing_ajax() (core since WP 4.7, wrapping the DOING_AJAX constant
-     * that wp-admin/admin-ajax.php defines before wp-load.php even runs) is
-     * already accurate by the time our plugin file is required. That is
-     * what keeps every ordinary front-end request (the hot 404 path) out of
-     * scope without waiting for WordPress routing. Read through the
-     * function, not the raw constant directly: the function is filterable
-     * (matching how WordPress itself lets other code correct the signal)
-     * and, unlike a constant, it can be stubbed in tests instead of leaking
-     * a permanent process-wide `true` the moment one test defines it.
-     */
+    /** Normalized request ID for an opted-in boot-phase checkpoint. */
     public static function bootWaypointRequestId(): string {
-        if (!function_exists('wp_doing_ajax') || !wp_doing_ajax()) {
-            return '';
-        }
-        $action = isset($_REQUEST['action']) && is_scalar($_REQUEST['action']) ? (string)$_REQUEST['action'] : '';
-        if (!isset(self::BOOT_WAYPOINT_ACTIONS[$action])) {
-            return '';
-        }
-        $rawId = $_REQUEST['requestId'] ?? '';
-        return self::normalizeId(is_scalar($rawId) ? $rawId : '');
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::bootWaypointRequestId();
     }
 
     /**

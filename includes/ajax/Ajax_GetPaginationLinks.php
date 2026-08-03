@@ -30,15 +30,19 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         // to this request from their very first boundary.
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
             $requestReader->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
+        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId(array(
+            'action' => 'ajaxUpdatePaginationLinks',
+            'request_id' => $requestId,
+        ));
 
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = ABJ_404_Solution_AjaxCheckpointLogger::around(
-            $requestId,
+            $checkpointRequestId,
             'service_resolve_view_read_service',
             static fn() => abj_service('view_read_service')
         );
         $abj404logic = ABJ_404_Solution_AjaxCheckpointLogger::around(
-            $requestId,
+            $checkpointRequestId,
             'service_resolve_plugin_logic',
             static fn() => abj_service('plugin_logic')
         );
@@ -89,7 +93,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_GetPaginationLinks::handle');
 
         ABJ_404_Solution_AjaxRequestLedger::recordHeaderMismatchIfAny(
-            $requestId, (string)$ledger['header_request_id']);
+            $checkpointRequestId, (string)$ledger['header_request_id']);
 
         // Entering the handler proper: authorization, queries and rendering.
         // A census row stranded here is a request that never finished its own
@@ -126,7 +130,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             // callbacks other plugins have registered (matrix coverage req. 2).
             if ($part === 'all' || $part === 'table') {
                 ABJ_404_Solution_AjaxCheckpointLogger::around(
-                    $requestId,
+                    $checkpointRequestId,
                     'update_per_page_option',
                     static function () use ($abj404logic, $rowsPerPage) {
                         self::updatePerPageOption($abj404logic, $rowsPerPage);

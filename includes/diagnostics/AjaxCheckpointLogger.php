@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = '1ce4ef8c4450efa645e5c9a8f58303c8c8ba5525';
+    const DIAGNOSTIC_BUILD_ID = '6e9f5d90db681224c8b8c10c472a3f98f6216e19';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -140,6 +140,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * @param array<string, mixed> $fields
      */
     public static function record(string $requestId, string $event, array $fields = array()): void {
+        if ($requestId === '') {
+            return;
+        }
         self::$recordingDepth++;
         try {
             $callStartedNs = self::monotonicNanoseconds();
@@ -229,6 +232,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * @param array<string, mixed> $fields
      */
     public static function recordFrequent(string $requestId, string $event, array $fields = array()): void {
+        if ($requestId === '') {
+            return;
+        }
         self::$recordingDepth++;
         try {
             $checkpointId = self::checkpointId(self::monotonicNanoseconds());
@@ -279,6 +285,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         string $state,
         array $fields
     ): void {
+        if ($requestId === '') {
+            return;
+        }
         ABJ_404_Solution_DurableOperationRecorder::recordActiveOperation(
             $requestId,
             $boundary,
@@ -308,6 +317,9 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
         array $startFields = array(),
         ?array &$endFields = null
     ) {
+        if ($requestId === '') {
+            return $work();
+        }
         self::record($requestId, $label . '_start', $startFields);
         $startedAt = self::nowFloat();
         $status = 'complete';

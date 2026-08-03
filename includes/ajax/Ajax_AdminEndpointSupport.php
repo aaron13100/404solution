@@ -289,36 +289,32 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         }
 
         $GLOBALS['abj404_ajax_context'] = $context;
-        ABJ_404_Solution_FileSystemService::setOperationTracer(
-            static fn(string $operation, string $path, array $fields, callable $work) =>
-                ABJ_404_Solution_TemplateFileReadTracer::trace(
-                    $operation,
-                    $path,
-                    $fields,
-                    $work
-                )
-        );
-        ABJ_404_Solution_RoutineLoggingBridge::setTracer(
-            static fn(string $operation, array $fields, callable $work) =>
+        $diagnosticsEnabled = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId($context) !== '';
+        $fileTracer = $diagnosticsEnabled
+            ? static fn(string $operation, string $path, array $fields, callable $work) =>
+                ABJ_404_Solution_TemplateFileReadTracer::trace($operation, $path, $fields, $work)
+            : null;
+        $routineTracer = $diagnosticsEnabled
+            ? static fn(string $operation, array $fields, callable $work) =>
                 ABJ_404_Solution_RoutineLogTracer::trace($operation, $fields, $work)
-        );
-        ABJ_404_Solution_RoutineLoggingBridge::setAuthorizationTracer(
-            static fn(
-                string $authorizationOperation,
-                string $routineOperation,
-                callable $work
-            ) => ABJ_404_Solution_AuthorizationLogTracer::aroundRoutineOperation(
-                $authorizationOperation,
-                $routineOperation,
-                $work
-            )
-        );
-        ABJ_404_Solution_RedirectsDenormSchemaReadiness::setOperationTracer(
-            static fn(string $operation, array $fields, callable $work) =>
+            : null;
+        $authorizationTracer = $diagnosticsEnabled
+            ? static fn(string $authorizationOperation, string $routineOperation, callable $work) =>
+                ABJ_404_Solution_AuthorizationLogTracer::aroundRoutineOperation(
+                    $authorizationOperation, $routineOperation, $work)
+            : null;
+        $sortReadinessTracer = $diagnosticsEnabled
+            ? static fn(string $operation, array $fields, callable $work) =>
                 ABJ_404_Solution_SortReadinessTracer::trace($operation, $fields, $work)
-        );
-        $statusCountTracer = static fn(string $operation, array $fields, callable $work) =>
-            ABJ_404_Solution_StatusCountsForegroundTracer::trace($operation, $fields, $work);
+            : null;
+        $statusCountTracer = $diagnosticsEnabled
+            ? static fn(string $operation, array $fields, callable $work) =>
+                ABJ_404_Solution_StatusCountsForegroundTracer::trace($operation, $fields, $work)
+            : null;
+        ABJ_404_Solution_FileSystemService::setOperationTracer($fileTracer);
+        ABJ_404_Solution_RoutineLoggingBridge::setTracer($routineTracer);
+        ABJ_404_Solution_RoutineLoggingBridge::setAuthorizationTracer($authorizationTracer);
+        ABJ_404_Solution_RedirectsDenormSchemaReadiness::setOperationTracer($sortReadinessTracer);
         ABJ_404_Solution_StatusCountsRepository::setOperationTracer($statusCountTracer);
         ABJ_404_Solution_StatusCountsRefreshCoordinator::setOperationTracer($statusCountTracer);
         ABJ_404_Solution_CronScheduler::setStatusCountOperationTracer($statusCountTracer);
