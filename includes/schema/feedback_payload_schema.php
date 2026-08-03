@@ -54,6 +54,11 @@ return (function (): array {
     // unioned in below.
     $base = [
         // Plugin and request metadata
+        'payload_schema_version' => [
+            'type' => 'int',
+            'enum' => [2],
+            'description' => 'Additive feedback wire-contract version. Version 2 adds the optional plugin_settings diagnostic snapshot.',
+        ],
         'plugin_version'  => ['type' => 'string', 'description' => 'ABJ404_VERSION at send time. Empty string is allowed only in early-boot test contexts.'],
         'report_type'     => ['type' => 'string', 'enum' => ['error', 'heartbeat', 'uninstall', 'support_request']],
         'is_uninstall'    => ['type' => 'bool', 'description' => 'Back-compat alias for report_type=uninstall. True iff report_type=uninstall.'],
@@ -176,6 +181,13 @@ return (function (): array {
             // value_type intentionally omitted: this is the JSON
             // passthrough, mixed scalar/object/array values allowed.
             'description' => 'Best-effort site diagnostics: MySQL globals + status counters + session probe, disk free/total, PHP SAPI / opcache (on/off + detail settings), plugin table sizes (with data_free fragmentation), view-build freshness state, active connection count, per-index cardinality, hosting + panel class, object-cache backend, DB charset/collate + per-column collation, WP+PHP timezone, plugin install/upgrade lifecycle, top recurring error signatures, opcache revalidate/validate/cli detail, open_basedir restriction, multisite role + network-activation, .htaccess writability, /tmp filesystem free bytes. Anything new diagnosed for a recurring-user failure goes here first, then optionally graduates to a typed column.',
+        ],
+
+        'plugin_settings' => [
+            'type' => 'object',
+            'key_type' => 'string',
+            'required' => false,
+            'description' => 'Deny-by-default snapshot of allowlisted behavioral settings. Credentials, emails, free text, and paths are never included.',
         ],
     ];
 

@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/FeedbackDatabaseIdentity.php';
 require_once __DIR__ . '/FeedbackDiagnosticsCollector.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras.php';
+require_once __DIR__ . '/FeedbackPluginSettingsSnapshot.php';
 require_once __DIR__ . '/FeedbackPayloadSchemaGuard.php';
 require_once __DIR__ . '/FeedbackReportUuid.php';
 require_once __DIR__ . '/FeedbackRuntimeEnvironment.php';
@@ -21,6 +22,9 @@ require_once __DIR__ . '/FeedbackWordPressInventory.php';
  * schema validation.
  */
 class ABJ_404_Solution_FeedbackPayloadBuilder {
+
+    /** Current additive feedback payload contract version. */
+    public const PAYLOAD_SCHEMA_VERSION = 2;
 
     /**
      * Build a payload from current site state. $extra carries type-specific
@@ -38,6 +42,7 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
         $inventory = new ABJ_404_Solution_FeedbackWordPressInventory();
 
         $payload = array(
+            'payload_schema_version' => self::PAYLOAD_SCHEMA_VERSION,
             'plugin_version' => defined('ABJ404_VERSION') ? ABJ404_VERSION : '',
             'db_type' => $databaseIdentity['type'],
             'db_version' => $databaseIdentity['version'],
@@ -63,6 +68,10 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
 
         $payload += (new ABJ_404_Solution_FeedbackDiagnosticsCollector())->collect($type);
         $payload['environment_extras'] = (new ABJ_404_Solution_FeedbackEnvironmentExtras())->collect();
+        $settingsSnapshot = (new ABJ_404_Solution_FeedbackPluginSettingsSnapshot())->collect();
+        if ($settingsSnapshot !== array()) {
+            $payload['plugin_settings'] = $settingsSnapshot;
+        }
 
         if ($environment->isDevelopmentEnvironment()) {
             $payload['environment_type'] = 'development';
@@ -89,6 +98,7 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
      */
     public static function buildMinimal(string $type, array $extra = array()): array {
         $payload = array(
+            'payload_schema_version' => self::PAYLOAD_SCHEMA_VERSION,
             'plugin_version' => defined('ABJ404_VERSION') ? ABJ404_VERSION : '',
             'report_type'    => $type,
             'is_uninstall'   => ($type === 'uninstall'),

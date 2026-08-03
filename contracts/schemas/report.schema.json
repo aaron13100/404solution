@@ -6,6 +6,7 @@
   "required": ["plugin_version", "db_type"],
   "additionalProperties": true,
   "properties": {
+    "payload_schema_version": { "type": "integer", "const": 2 },
     "plugin_version": { "type": "string", "minLength": 1, "maxLength": 32 },
     "wp_version": { "type": "string", "maxLength": 32 },
     "php_version": { "type": "string", "maxLength": 32 },
@@ -95,6 +96,54 @@
             "matched_marker": { "type": "string" }
           }
         }
+      }
+    },
+
+    "plugin_settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_redirect": { "type": "integer" },
+        "capture_404": { "type": "boolean" },
+        "capture_deletion": { "type": "integer" },
+        "manual_deletion": { "type": "integer" },
+        "log_deletion": { "type": "integer" },
+        "send_error_logs": { "type": "boolean" },
+        "debug_mode": { "type": "boolean" },
+        "log_raw_ips": { "type": "boolean" },
+        "maximum_log_disk_usage": { "type": "integer" },
+        "remove_matches": { "type": "boolean" },
+        "suggest_max": { "type": "integer" },
+        "suggest_cats": { "type": "boolean" },
+        "suggest_tags": { "type": "boolean" },
+        "suggest_minscore": { "type": "integer" },
+        "suggest_minscore_enabled": { "type": "boolean" },
+        "update_suggest_url": { "type": "boolean" },
+        "auto_redirects": { "type": "boolean" },
+        "old_permalink_structure_redirects": { "type": "boolean" },
+        "auto_slugs": { "type": "boolean" },
+        "auto_trash_redirect": { "type": "boolean" },
+        "auto_score": { "type": "integer" },
+        "auto_score_title": { "type": "integer" },
+        "auto_score_category_tag": { "type": "integer" },
+        "auto_score_content": { "type": "integer" },
+        "auto_deletion": { "type": "integer" },
+        "auto_302_expiration_days": { "type": "integer" },
+        "auto_cats": { "type": "boolean" },
+        "auto_tags": { "type": "boolean" },
+        "template_redirect_priority": { "type": "integer" },
+        "dest404_behavior": { "type": "string" },
+        "redirect_all_requests": { "type": "boolean" },
+        "auto_trash_junk_urls": { "type": "boolean" },
+        "perpage": { "type": "integer" },
+        "page_redirects_order_by": { "type": "string" },
+        "page_redirects_order": { "type": "string" },
+        "captured_order_by": { "type": "string" },
+        "captured_order": { "type": "string" },
+        "admin_notification": { "type": "integer" },
+        "admin_notification_frequency": { "type": "string" },
+        "admin_notification_digest_limit": { "type": "integer" },
+        "days_wait_before_major_update": { "type": "integer" }
       }
     },
 

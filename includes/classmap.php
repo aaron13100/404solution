@@ -164,6 +164,7 @@ $abj404ClassesByDirectory = array(
     ),
     'feedback' => array(
         'FeedbackDatabaseIdentity', 'FeedbackDiagnosticsCollector', 'FeedbackEnvironmentExtras',
+        'FeedbackPluginSettingsSnapshot',
         'MysqlServerStateProbe', 'PluginSchemaMetadataProbe', 'RollupFreshnessProbe',
         'FeedbackEnvironmentExtras_HostProbes',
         'FeedbackEnvironmentExtras_PlatformFingerprint',
