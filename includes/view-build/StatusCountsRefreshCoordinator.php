@@ -29,8 +29,8 @@ if (!defined('ABSPATH')) {
  *      page view;
  *   4. a shorter query budget than the cron path gets.
  *
- * @see ABJ_404_Solution_LogsHitsRollupService::scheduleHitsTableRebuild() the
- *      same cron-or-shutdown shape for the logs/hits rollup rebuild.
+ * Unlike the bounded status-count backstop here, the logs/hits rollup rebuild
+ * is unbounded full-table work and therefore runs only from its WP-Cron hook.
  */
 class ABJ_404_Solution_StatusCountsRefreshCoordinator {
 

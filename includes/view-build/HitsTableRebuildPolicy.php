@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
  *
  * The decision short-circuits in four cases:
  *   1. Non-essential DB writes are in cooldown.
- *   2. Hits table is missing -- defer creation to the rebuild scheduler.
+ *   2. Hits table is missing -- defer creation to the cron rebuild scheduler.
  *   3. logsRepo reports no rebuild needed.
  *   4. Otherwise, ask logsRepo to schedule the deferred rebuild.
  *
@@ -57,7 +57,7 @@ class ABJ_404_Solution_HitsTableRebuildPolicy {
         }
 
         if (!$this->logsRepo->logsHitsTableExists()) {
-            $this->logger->debugMessage(__METHOD__ . " table doesn't exist, deferring creation to shutdown hook.");
+            $this->logger->debugMessage(__METHOD__ . " table doesn't exist, deferring creation to WP-Cron.");
             $this->logsRepo->scheduleHitsTableRebuild();
             return;
         }

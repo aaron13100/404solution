@@ -331,19 +331,18 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             if ($lastScheduled > 0 && (abj_clock()->now() - $lastScheduled) < self::HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling due to cooldown."); return; }
             self::$hitsTableRebuildScheduled = true;
             $this->noticeState->setRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG, abj_clock()->now(), 86400);
-            if ($this->shouldScheduleHitsTableRebuildViaCron()) { $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild via WP-Cron."); abj_cron_scheduler()->scheduleSingle(ABJ_404_Solution_CronScheduler::HOOK_UPDATE_LOGS_HITS_TABLE, 5); return; }
-            $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild for shutdown hook.");
-            add_action('shutdown', function(): void { $this->createRedirectsForViewHitsTable(); });
+            // A full rollup rebuild is background work in every request
+            // context. PHP/LSAPI servers may send response headers early but
+            // buffer the body until WordPress shutdown callbacks finish, so a
+            // shutdown rebuild can keep the admin page blank for the entire
+            // database operation. The cron listener is the single execution
+            // boundary for this expensive pipeline.
+            $this->logger->debugMessage(__FUNCTION__ . " scheduling hits table rebuild via WP-Cron.");
+            abj_cron_scheduler()->scheduleSingle(
+                ABJ_404_Solution_CronScheduler::HOOK_UPDATE_LOGS_HITS_TABLE,
+                5
+            );
         }
-    }
-
-    /** @return bool */
-    private function shouldScheduleHitsTableRebuildViaCron(): bool {
-        if (function_exists('wp_doing_ajax') && wp_doing_ajax()) { return true; }
-        $scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
-        if ($scriptName !== '' && basename($scriptName) === 'admin-ajax.php') { return true; }
-        $pagenow = isset($GLOBALS['pagenow']) && is_string($GLOBALS['pagenow']) ? $GLOBALS['pagenow'] : '';
-        return $pagenow === 'admin-ajax.php';
     }
 
     private function getHitsTableRebuildLockOptionName(): string { return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_logs_hits_rebuild_lock'; }
