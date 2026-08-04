@@ -5,18 +5,16 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Owns the WP-Cron driven asynchronous N-gram cache rebuild loop.
+ * Decides whether the asynchronous N-gram cache rebuild needs to be started
+ * or resumed, and arms the WP-Cron chain when it does.
  *
- * Two distinct responsibilities, both belonging to this collaborator:
- *
- * 1. SCHEDULE: enqueue a wp_schedule_single_event for the rebuild
- *    cron hook the first time, with diagnostics + infra-error
- *    classification on cron-scheduling failure.
- *
- * 2. RUN: the cron callback that processes one bounded chunk of
- *    batches per invocation, reschedules itself until done, and
- *    tracks per-site progress through the network option store on
- *    multisite installs.
+ * Arming is a decision with many callers -- the 404 request path on an empty
+ * cache, the daily reconciler when its backlog is beyond incremental repair,
+ * the admin rebuild button, the activation/upgrade initializer -- and it is
+ * the half of the rebuild lifecycle where the "is a rebuild already running?"
+ * question has to be answered correctly. Running the batches once armed is a
+ * separate concern with exactly one caller (the cron callback) and lives in
+ * {@see ABJ_404_Solution_NGramCacheRebuildBatchRunner}.
  *
  * Lock acquisition is owned by the orchestrator
  * (DatabaseUpgradeNGram). This collaborator assumes the appropriate
@@ -29,14 +27,11 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
-    /** WP-Cron hook this scheduler enqueues and consumes. */
+    /** WP-Cron hook this scheduler enqueues. */
     const REBUILD_CRON_HOOK = 'abj404_rebuild_ngram_cache_hook';
 
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
-
-    /** @var mixed */
-    private $rebuilder;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -49,14 +44,12 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
-     * @param mixed $rebuilder Object exposing rebuildCache().
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_NGramNetworkOptionStore $optionStore
      * @param ABJ_404_Solution_CronScheduler|null $cronScheduler
      */
-    public function __construct($dbCore, $rebuilder, $logger, $optionStore, ?ABJ_404_Solution_CronScheduler $cronScheduler = null) {
+    public function __construct($dbCore, $logger, $optionStore, ?ABJ_404_Solution_CronScheduler $cronScheduler = null) {
         $this->dbCore = $dbCore;
-        $this->rebuilder = $rebuilder;
         $this->logger = $logger;
         $this->optionStore = $optionStore;
         $this->cronScheduler = $cronScheduler instanceof ABJ_404_Solution_CronScheduler
@@ -68,6 +61,16 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
      * Enqueue a single cron-driven rebuild if one is not already
      * pending or in progress.
      *
+     * "In progress" is decided by whether the cron chain is still armed, NOT
+     * by whether the offset is non-zero. A partially-advanced offset with no
+     * queued event is a rebuild whose chain DIED (cron refused, request
+     * killed, plugin update mid-walk); reading that as "already in progress"
+     * is what left wedged rebuilds unrecoverable for months, because every
+     * caller that asked for a rebuild -- the 404 request path, the daily
+     * reconciler, the activation initializer -- was told one was already
+     * running. A stalled chain is resumed from its own offset rather than
+     * restarted from zero, so no completed work is repeated.
+     *
      * @return bool true when scheduling succeeded or was a no-op
      *              because a rebuild is already pending/in progress;
      *              false when WP-Cron rejected the schedule call.
@@ -76,26 +79,33 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         $rawCurrentOffset = $this->optionStore->getOption('abj404_ngram_rebuild_offset', 0);
         $currentOffset = is_scalar($rawCurrentOffset) ? (int)$rawCurrentOffset : 0;
 
+        $hookName = self::REBUILD_CRON_HOOK;
+        $armedAt = $this->armedRebuildTimestamp($hookName, $currentOffset);
+        if ($armedAt !== false) {
+            $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $armedAt));
+            return true;
+        }
+
         $totalPages = $this->countTotalPagesForRebuild();
 
-        // A positive offset means a prior batch started. If total-page counting
-        // is unavailable, skip scheduling rather than resetting in-flight state.
-        if ($currentOffset > 0 && ($totalPages <= 0 || $currentOffset < $totalPages)) {
-            $this->logger->debugMessage("N-gram cache rebuild already in progress at offset {$currentOffset} of {$totalPages}");
-            return true;
-        }
+        // A positive offset with nothing queued is a stalled walk. Resume it
+        // where it stopped. If total-page counting is unavailable we cannot
+        // tell "stalled mid-walk" from "finished", so treat in-flight state as
+        // resumable rather than discarding it.
+        $resuming = $currentOffset > 0 && ($totalPages <= 0 || $currentOffset < $totalPages);
 
-        $hookName = self::REBUILD_CRON_HOOK;
-        $nextScheduled = $this->cronScheduler->nextScheduled($hookName);
-        if ($nextScheduled) {
-            $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $nextScheduled));
-            return true;
+        if ($resuming) {
+            $this->logger->infoMessage(
+                "N-gram cache rebuild stalled at offset {$currentOffset} of {$totalPages} with no queued event. Resuming.");
+        } else {
+            $this->optionStore->updateOption('abj404_ngram_rebuild_offset', 0);
         }
-
-        $this->optionStore->updateOption('abj404_ngram_rebuild_offset', 0);
 
         $scheduleTime = $this->cronScheduler->now() + 30;
-        $scheduled = $this->cronScheduler->scheduleSingle($hookName, 30);
+        // Resumed events carry the offset as their cron argument, exactly like
+        // the chain's own reschedules, so armedRebuildTimestamp() recognizes
+        // them and a second caller cannot start a parallel chain.
+        $scheduled = $this->cronScheduler->scheduleSingle($hookName, 30, $resuming ? [$currentOffset] : []);
 
         if ($scheduled === false) {
             $this->reportScheduleFailure($hookName, $scheduleTime);
@@ -108,22 +118,32 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
     }
 
     /**
-     * WP-Cron callback: process one chunk of rebuild batches and
-     * reschedule for the next chunk until the entire content set is
-     * covered. Multisite-aware: drains one site at a time before
-     * moving on.
+     * Timestamp of the queued rebuild event, or false when the chain is not
+     * armed.
      *
-     * @return void
+     * Two probes are needed because WP-Cron identifies an event by hook AND
+     * arguments: the first tick of a chain (and every multisite reschedule) is
+     * enqueued with no arguments, while a single-site chain in flight
+     * reschedules itself as scheduleSingle($hook, 10, [$offset]). A no-args
+     * probe alone cannot see an in-flight chain, so it would report every
+     * healthy mid-walk rebuild as unarmed and spawn a second chain beside it.
+     *
+     * @param string $hookName
+     * @param int $currentOffset
+     * @return int|false
      */
-    public function runAsyncBatch() {
-        $batchSize = 50;
-        $maxBatchesPerRun = 20;
-
-        if ($this->optionStore->isNetworkActivated()) {
-            $this->runMultisiteBatch($batchSize, $maxBatchesPerRun);
-        } else {
-            $this->runSingleSiteBatch($batchSize, $maxBatchesPerRun);
+    private function armedRebuildTimestamp(string $hookName, int $currentOffset) {
+        $nextScheduled = $this->cronScheduler->nextScheduled($hookName);
+        if ($nextScheduled !== false) {
+            return $nextScheduled;
         }
+        if ($currentOffset > 0) {
+            $nextForOffset = $this->cronScheduler->nextScheduled($hookName, [$currentOffset]);
+            if ($nextForOffset !== false) {
+                return $nextForOffset;
+            }
+        }
+        return false;
     }
 
     /**
@@ -151,212 +171,6 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         }
 
         return $totalPages;
-    }
-
-    /**
-     * Per-batch worker for multisite: switch to a pending site,
-     * process up to $maxBatchesPerRun batches of $batchSize, then
-     * either advance to the next site (when current site is drained)
-     * or reschedule for the next chunk of the same site.
-     */
-    private function runMultisiteBatch(int $batchSize, int $maxBatchesPerRun): void {
-        $pendingSitesRaw = $this->optionStore->getOption('abj404_ngram_pending_sites', null);
-        /** @var array<int, int> $pendingSites */
-        $pendingSites = is_array($pendingSitesRaw) ? $pendingSitesRaw : [];
-
-        if ($pendingSitesRaw === null) {
-            // First run: Initialize site list and tracking
-            $sites = get_sites(array('fields' => 'ids', 'number' => 0));
-            $this->optionStore->updateOption('abj404_ngram_pending_sites', $sites);
-            $this->optionStore->updateOption('abj404_ngram_total_sites', count($sites));
-            $this->optionStore->updateOption('abj404_ngram_current_site_offset', 0);
-            $pendingSites = $sites;
-        }
-
-        if (empty($pendingSites)) {
-            // All sites processed!
-            $this->optionStore->updateOption('abj404_ngram_cache_initialized', '1');
-            $this->optionStore->updateOption('abj404_ngram_pending_sites', null);
-            $this->optionStore->updateOption('abj404_ngram_total_sites', null);
-            $this->optionStore->updateOption('abj404_ngram_current_site_offset', null);
-            $this->logger->infoMessage("N-gram cache rebuild complete for all sites in network!");
-            return;
-        }
-
-        $currentSiteId = (int)$pendingSites[0];
-        $rawOffset = $this->optionStore->getOption('abj404_ngram_current_site_offset', 0);
-        $offset = is_scalar($rawOffset) ? (int)$rawOffset : 0;
-        $rawTotalSites = $this->optionStore->getOption('abj404_ngram_total_sites', count($pendingSites));
-        $totalSites = is_scalar($rawTotalSites) ? (int)$rawTotalSites : count($pendingSites);
-        $completedSites = $totalSites - count($pendingSites);
-
-        switch_to_blog($currentSiteId);
-
-        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
-        $sitePages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
-
-        if ($sitePages == 0) {
-            array_shift($pendingSites);
-            $this->optionStore->updateOption('abj404_ngram_pending_sites', $pendingSites);
-            $this->optionStore->updateOption('abj404_ngram_current_site_offset', 0);
-            restore_current_blog();
-
-            $this->logger->infoMessage(sprintf(
-                "Site %d has no pages. Moving to next site. Progress: %d/%d sites completed.",
-                $currentSiteId,
-                $completedSites + 1,
-                $totalSites
-            ));
-
-            $this->cronScheduler->scheduleSingle(self::REBUILD_CRON_HOOK);
-            return;
-        }
-
-        $this->logger->infoMessage(sprintf(
-            "Processing N-gram cache for site %d (Site %d of %d): Offset %d of %d pages",
-            $currentSiteId,
-            $completedSites + 1,
-            $totalSites,
-            $offset,
-            $sitePages
-        ));
-
-        $batchesProcessed = 0;
-        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-        while ($batchesProcessed < $maxBatchesPerRun && $offset < $sitePages) {
-            try {
-                $stats = $this->runRebuildBatch($batchSize, $offset);
-
-                $totalStats['processed'] += $stats['processed'];
-                $totalStats['success'] += $stats['success'];
-                $totalStats['failed'] += $stats['failed'];
-
-                $offset += $batchSize;
-                $batchesProcessed++;
-
-                $this->optionStore->updateOption('abj404_ngram_current_site_offset', $offset);
-
-                if ($stats['processed'] < $batchSize) {
-                    break;
-                }
-
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Error during N-gram rebuild for site {$currentSiteId} at offset {$offset}: " . $e->getMessage());
-                $totalStats['failed'] += $batchSize;
-                $offset += $batchSize;
-                $batchesProcessed++;
-                $this->optionStore->updateOption('abj404_ngram_current_site_offset', $offset);
-            }
-        }
-
-        $progress = $sitePages > 0 ? min(100, round(($offset / $sitePages) * 100, 1)) : 100;
-
-        $this->logger->infoMessage(sprintf(
-            "Site %d progress: %d%% complete (%d/%d pages), %d success, %d failed",
-            $currentSiteId,
-            $progress,
-            $offset,
-            $sitePages,
-            $totalStats['success'],
-            $totalStats['failed']
-        ));
-
-        if ($offset >= $sitePages) {
-            array_shift($pendingSites);
-            $this->optionStore->updateOption('abj404_ngram_pending_sites', $pendingSites);
-            $this->optionStore->updateOption('abj404_ngram_current_site_offset', 0);
-
-            $this->logger->infoMessage(sprintf(
-                "Site %d complete! Progress: %d/%d sites completed.",
-                $currentSiteId,
-                $completedSites + 1,
-                $totalSites
-            ));
-        }
-
-        restore_current_blog();
-
-        $this->cronScheduler->scheduleSingle(self::REBUILD_CRON_HOOK, 10);
-    }
-
-    /**
-     * Per-batch worker for single-site: process up to
-     * $maxBatchesPerRun batches against the current site, then either
-     * complete (mark initialized) or reschedule for the next chunk.
-     */
-    private function runSingleSiteBatch(int $batchSize, int $maxBatchesPerRun): void {
-        $rawSingleOffset = $this->optionStore->getOption('abj404_ngram_rebuild_offset', 0);
-        $offset = is_scalar($rawSingleOffset) ? (int)$rawSingleOffset : 0;
-        $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
-        $totalPages = $this->dbCore->queryScalarInt("SELECT COUNT(*) AS c FROM {$permalinkCacheTable}");
-
-        if ($totalPages == 0) {
-            $this->logger->debugMessage("No pages to process. Setting initialized flag.");
-            $this->optionStore->updateOption('abj404_ngram_cache_initialized', '1');
-            $this->optionStore->updateOption('abj404_ngram_rebuild_offset', 0);
-            return;
-        }
-
-        $this->logger->infoMessage(sprintf(
-            "Async N-gram rebuild: Processing batch at offset %d of %d total pages",
-            $offset,
-            $totalPages
-        ));
-
-        $batchesProcessed = 0;
-        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-
-        while ($batchesProcessed < $maxBatchesPerRun && $offset < $totalPages) {
-            try {
-                $stats = $this->runRebuildBatch($batchSize, $offset);
-
-                $totalStats['processed'] += $stats['processed'];
-                $totalStats['success'] += $stats['success'];
-                $totalStats['failed'] += $stats['failed'];
-
-                $offset += $batchSize;
-                $batchesProcessed++;
-
-                $this->optionStore->updateOption('abj404_ngram_rebuild_offset', $offset);
-
-                if ($stats['processed'] < $batchSize) {
-                    break;
-                }
-
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Error during async N-gram cache rebuild at offset {$offset}: " . $e->getMessage());
-                $totalStats['failed'] += $batchSize;
-                $offset += $batchSize;
-                $batchesProcessed++;
-                $this->optionStore->updateOption('abj404_ngram_rebuild_offset', $offset);
-            }
-        }
-
-        $progress = $totalPages > 0 ? min(100, round(($offset / $totalPages) * 100, 1)) : 100;
-
-        $this->logger->infoMessage(sprintf(
-            "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
-            $progress,
-            $offset,
-            $totalPages,
-            $totalStats['success'],
-            $totalStats['failed']
-        ));
-
-        if ($offset < $totalPages) {
-            $scheduleTime = $this->cronScheduler->now() + 10;
-            $hookName = self::REBUILD_CRON_HOOK;
-            $scheduled = $this->cronScheduler->scheduleSingle($hookName, 10, [$offset]);
-
-            if ($scheduled === false) {
-                $this->reportRescheduleFailure($hookName, $scheduleTime, $offset, $progress);
-            }
-        } else {
-            $this->optionStore->updateOption('abj404_ngram_cache_initialized', '1');
-            $this->optionStore->updateOption('abj404_ngram_rebuild_offset', 0);
-            $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
-        }
     }
 
     /**
@@ -401,7 +215,7 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
 
         // Pattern 7 (defense-in-depth): a concurrent infra-level DB
         // error (disk full, read-only, crashed table) may have
-        // contributed to wp_schedule_single_event() failing — surface
+        // contributed to wp_schedule_single_event() failing: surface
         // the hosting cause as an admin notice while keeping the cron
         // failure ERROR level so the user must act on it.
         if (!empty($wpdb->last_error)) {
@@ -411,67 +225,4 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         $this->logger->errorMessage($errorMsg);
     }
 
-    /**
-     * Re-schedule for the next chunk failed: emit a diagnostic error
-     * log (no return value matters; the in-flight batch already
-     * committed its work).
-     */
-    private function reportRescheduleFailure(string $hookName, int $scheduleTime, int $offset, float $progress): void {
-        if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {
-            $this->logger->errorMessage(
-                "Cannot schedule next N-gram rebuild batch at offset {$offset}: WP-Cron is disabled (DISABLE_WP_CRON=true). " .
-                "Consider enabling WP-Cron or using server-side cron with a fallback mechanism."
-            );
-            return;
-        }
-
-        global $wpdb;
-
-        $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
-        $alreadyScheduled = $this->cronScheduler->nextScheduled($hookName, [$offset]);
-        $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
-        $rawCacheInit2 = $this->optionStore->getOption('abj404_ngram_cache_initialized', 'not set');
-        $cacheInitialized = is_scalar($rawCacheInit2) ? (string)$rawCacheInit2 : 'not set';
-
-        $errorMsg = sprintf(
-            "Failed to schedule next N-gram rebuild batch at offset %d. Hook: %s, Schedule time: %d (current: %d), " .
-            "Already scheduled: %s, WP-Cron disabled: %s, DB error: %s, " .
-            "Cache initialized: %s, Progress: %.1f%%, Multisite: %s, Blog ID: %d",
-            $offset,
-            $hookName,
-            $scheduleTime,
-            $this->cronScheduler->now(),
-            $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
-            $cronDisabled ? 'yes' : 'no',
-            $dbError,
-            $cacheInitialized,
-            $progress,
-            is_multisite() ? 'yes' : 'no',
-            get_current_blog_id()
-        );
-
-        if (!empty($wpdb->last_error)) {
-            $this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($wpdb->last_error);
-        }
-
-        $this->logger->errorMessage($errorMsg);
-    }
-
-    /**
-     * @param int $batchSize
-     * @param int $offset
-     * @return array{processed: int, success: int, failed: int}
-     */
-    private function runRebuildBatch(int $batchSize, int $offset): array {
-        $rebuilder = $this->rebuilder;
-        if (!is_object($rebuilder) || !method_exists($rebuilder, 'rebuildCache')) {
-            throw new RuntimeException('NGramCacheRebuildScheduler requires a rebuilder with rebuildCache().');
-        }
-        $stats = $rebuilder->rebuildCache($batchSize, $offset);
-        return [
-            'processed' => is_array($stats) && isset($stats['processed']) && is_numeric($stats['processed']) ? (int)$stats['processed'] : 0,
-            'success' => is_array($stats) && isset($stats['success']) && is_numeric($stats['success']) ? (int)$stats['success'] : 0,
-            'failed' => is_array($stats) && isset($stats['failed']) && is_numeric($stats['failed']) ? (int)$stats['failed'] : 0,
-        ];
-    }
 }

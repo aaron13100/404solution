@@ -210,8 +210,10 @@ $abj404ClassesByDirectory = array(
         'OldPermalinkCandidateStructureProvider', 'OldPermalinkPostResolver',
     ),
     'ngram' => array(
-        'NGramNetworkOptionStore', 'NGramCacheRebuildScheduler', 'NGramCacheSyncRebuilder',
-        'NGramCacheReconciler', 'NGramLastUpdatedEpochMigration', 'NGramFilter',
+        'NGramNetworkOptionStore', 'NGramCacheRebuildScheduler', 'NGramCacheRebuildBatchRunner',
+        'NGramCacheSyncRebuilder',
+        'NGramCacheReconciler', 'NGramTermCacheReconciler', 'NGramLastUpdatedEpochMigration',
+        'NGramFilter',
         'NGramFilterCollaboratorResolver', 'TermNGramCoveragePolicy', 'TermCandidateSource',
         'NGramExtractor', 'NGramSimilarity', 'NGramCacheRepository', 'NGramCoveragePolicy',
         'NGramRebuilder', 'NGramRebuilderDependencies', 'NGramUsageTelemetry',

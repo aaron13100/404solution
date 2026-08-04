@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/NGramTermCacheReconciler.php';
+
 /**
  * Incremental maintenance of the n-gram cache: keep it in sync with
  * the canonical content sources (permalink_cache for posts/pages,
@@ -16,6 +18,14 @@ if (!defined('ABSPATH')) {
  *    n-gram entries, and add them.
  *  - cleanupOrphaned(): find n-gram rows whose source row no longer
  *    exists, and delete them.
+ *
+ * Owns the POST side of both operations directly (permalink_cache as the
+ * source, the bulk rebuilder as the writer, and the drift-vs-backlog
+ * measurement that decides whether an incremental pass is even the right
+ * tool). The taxonomy-term side reconciles a different source through a
+ * different writer and lives in
+ * {@see ABJ_404_Solution_NGramTermCacheReconciler}, which this class composes
+ * so both public operations stay one call for the orchestrator.
  *
  * Lock ownership: the orchestrator (DatabaseUpgradeNGram) acquires
  * the shared 'ngram_rebuild' SyncUtils lock before calling
@@ -33,22 +43,16 @@ class ABJ_404_Solution_NGramCacheReconciler {
     private $rebuilder;
 
     /** @var mixed */
-    private $extractor;
-
-    /** @var mixed */
-    private $repo;
-
-    /** @var mixed */
     private $coveragePolicy;
 
     /** @var ABJ_404_Solution_ContentRepositoryInterface */
     private $contentRepo;
 
-    /** @var ABJ_404_Solution_Functions */
-    private $f;
-
     /** @var ABJ_404_Solution_Logging */
     private $logger;
+
+    /** @var ABJ_404_Solution_NGramTermCacheReconciler */
+    private $termReconciler;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
@@ -63,29 +67,35 @@ class ABJ_404_Solution_NGramCacheReconciler {
     public function __construct($dbCore, $rebuilder, $extractor, $repo, $coveragePolicy, $contentRepo, $f, $logger) {
         $this->dbCore = $dbCore;
         $this->rebuilder = $rebuilder;
-        $this->extractor = $extractor;
-        $this->repo = $repo;
         $this->coveragePolicy = $coveragePolicy;
         $this->contentRepo = $contentRepo;
-        $this->f = $f;
         $this->logger = $logger;
+        $this->termReconciler = new ABJ_404_Solution_NGramTermCacheReconciler(
+            $dbCore, $extractor, $repo, $coveragePolicy, $f, $logger);
     }
 
     /**
      * Find post and category ids that exist in the source but are
      * missing from the n-gram cache, and add entries for them.
      *
+     * Sized for DRIFT: the handful of rows a day that slipped past the
+     * real-time post-save hooks. A gap this call cannot finish by its next
+     * run is a BACKLOG that belongs to the bulk rebuild path instead, and is
+     * reported as such through the 'posts_backlogged' key so the caller can
+     * hand it off (see ABJ_404_Solution_DatabaseUpgradeNGram::syncMissingNGrams).
+     *
      * @param int $batchSize maximum number of missing posts to add
      *                       per call (categories are processed in full
      *                       because the published category set is
      *                       small).
-     * @return array<string, mixed> ['posts_added' => int, 'posts_failed' => int, 'categories_added' => int, 'categories_failed' => int, 'tags_added' => int, 'tags_failed' => int]
+     * @return array<string, mixed> ['posts_added' => int, 'posts_failed' => int, 'posts_missing_total' => int|null, 'posts_remaining' => int|null, 'posts_backlogged' => bool, 'categories_added' => int, 'categories_failed' => int, 'tags_added' => int, 'tags_failed' => int]
      */
     public function syncMissing($batchSize = 50) {
         $ngramTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_ngram_cache');
         $permalinkCacheTable = $this->dbCore->tableNameResolver()->getPrefixedTableName('abj404_permalink_cache');
 
-        $stats = ['posts_added' => 0, 'posts_failed' => 0, 'categories_added' => 0, 'categories_failed' => 0, 'tags_added' => 0, 'tags_failed' => 0];
+        $stats = ['posts_added' => 0, 'posts_failed' => 0, 'posts_missing_total' => 0, 'posts_remaining' => 0,
+            'posts_backlogged' => false, 'categories_added' => 0, 'categories_failed' => 0, 'tags_added' => 0, 'tags_failed' => 0];
 
         $postsResult = $this->syncMissingPosts($ngramTable, $permalinkCacheTable, $batchSize);
         if (isset($postsResult['error'])) {
@@ -93,16 +103,23 @@ class ABJ_404_Solution_NGramCacheReconciler {
         }
         $stats['posts_added'] = $postsResult['added'];
         $stats['posts_failed'] = $postsResult['failed'];
+        $stats['posts_missing_total'] = $postsResult['missing_total'];
+        $stats['posts_remaining'] = $postsResult['remaining'];
+        $stats['posts_backlogged'] = $postsResult['backlogged'];
 
-        $categoriesResult = $this->syncMissingTerms($ngramTable, 'category', $this->contentRepo->getPublishedCategories());
+        $categoriesResult = $this->termReconciler->syncMissingTerms($ngramTable, 'category', $this->contentRepo->getPublishedCategories());
         $stats['categories_added'] = $categoriesResult['added'];
         $stats['categories_failed'] = $categoriesResult['failed'];
 
-        $tagsResult = $this->syncMissingTerms($ngramTable, 'tag', $this->contentRepo->getPublishedTags());
+        $tagsResult = $this->termReconciler->syncMissingTerms($ngramTable, 'tag', $this->contentRepo->getPublishedTags());
         $stats['tags_added'] = $tagsResult['added'];
         $stats['tags_failed'] = $tagsResult['failed'];
 
-        $this->logger->infoMessage("Ngram sync complete: {$stats['posts_added']} posts added, {$stats['posts_failed']} posts failed, {$stats['categories_added']} categories added, {$stats['categories_failed']} categories failed, {$stats['tags_added']} tags added, {$stats['tags_failed']} tags failed.");
+        $remainingText = $stats['posts_remaining'] === null ? 'unknown' : (string)$stats['posts_remaining'];
+        $this->logger->infoMessage("Ngram sync complete: {$stats['posts_added']} posts added, {$stats['posts_failed']} posts failed, "
+            . "{$remainingText} posts still missing after this run, "
+            . "{$stats['categories_added']} categories added, {$stats['categories_failed']} categories failed, "
+            . "{$stats['tags_added']} tags added, {$stats['tags_failed']} tags failed.");
 
         return $stats;
     }
@@ -127,11 +144,11 @@ class ABJ_404_Solution_NGramCacheReconciler {
         $stats['posts_deleted'] = $postsResult['deleted'];
         $stats['errors'] += $postsResult['errors'];
 
-        $categoriesResult = $this->cleanupOrphanedTerms($ngramTable, 'category', $this->contentRepo->getPublishedCategories());
+        $categoriesResult = $this->termReconciler->cleanupOrphanedTerms($ngramTable, 'category', $this->contentRepo->getPublishedCategories());
         $stats['categories_deleted'] = $categoriesResult['deleted'];
         $stats['errors'] += $categoriesResult['errors'];
 
-        $tagsResult = $this->cleanupOrphanedTerms($ngramTable, 'tag', $this->contentRepo->getPublishedTags());
+        $tagsResult = $this->termReconciler->cleanupOrphanedTerms($ngramTable, 'tag', $this->contentRepo->getPublishedTags());
         $stats['tags_deleted'] = $tagsResult['deleted'];
         $stats['errors'] += $tagsResult['errors'];
 
@@ -141,9 +158,17 @@ class ABJ_404_Solution_NGramCacheReconciler {
     }
 
     /**
-     * @return array{added:int, failed:int}|array{error:string, added:int, failed:int}
+     * @return array{added:int, failed:int, missing_total:int|null, remaining:int|null, backlogged:bool}|array{error:string, added:int, failed:int, missing_total:null, remaining:null, backlogged:bool}
      */
     private function syncMissingPosts(string $ngramTable, string $permalinkCacheTable, int $batchSize): array {
+        // Measure the WHOLE gap before taking a batch out of it. Counting the
+        // rows that came back from a LIMITed SELECT can only ever report the
+        // batch size, so a 12,000-row backlog and a 50-row drift logged the
+        // same line ("Found 50 posts missing ngram entries") and neither the
+        // user nor we could tell them apart -- which is how a months-long
+        // drain read as a stuck 50-row loop.
+        $missingTotal = $this->countMissingPosts($ngramTable, $permalinkCacheTable);
+
         $missingResult = $this->dbCore->queryAndGetResults(
             "SELECT pc.id
              FROM {$permalinkCacheTable} pc
@@ -158,7 +183,8 @@ class ABJ_404_Solution_NGramCacheReconciler {
             if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($missingError)) {
                 $this->logger->errorMessage("Failed to query for missing post ngram entries: " . $missingError);
             }
-            return ['error' => $missingError, 'added' => 0, 'failed' => 0];
+            return ['error' => $missingError, 'added' => 0, 'failed' => 0,
+                'missing_total' => null, 'remaining' => null, 'backlogged' => false];
         }
 
         $missingRows = isset($missingResult['rows']) && is_array($missingResult['rows']) ? $missingResult['rows'] : [];
@@ -171,81 +197,95 @@ class ABJ_404_Solution_NGramCacheReconciler {
 
         if (empty($missingIds)) {
             $this->logger->debugMessage("No missing post ngram entries found. All posts are synced.");
-            return ['added' => 0, 'failed' => 0];
+            return ['added' => 0, 'failed' => 0, 'missing_total' => 0, 'remaining' => 0, 'backlogged' => false];
         }
 
-        $this->logger->infoMessage("Found " . count($missingIds) . " posts missing ngram entries. Adding...");
+        $batchCount = count($missingIds);
+        $this->logger->infoMessage(sprintf(
+            "Found %s posts missing ngram entries. Adding %d of them in this batch...",
+            $missingTotal === null ? 'an unknown number of' : (string)$missingTotal,
+            $batchCount
+        ));
 
         $result = $this->updateNGramsForPages($missingIds);
 
-        return ['added' => $result['success'], 'failed' => $result['failed']];
+        $remaining = $missingTotal === null ? null : max(0, $missingTotal - $result['success']);
+        $backlogged = $this->isBacklog($remaining, $batchCount, $batchSize);
+
+        $this->logger->infoMessage(sprintf(
+            "Ngram post sync: closed %d of %s missing entries this run; %s still missing.",
+            $result['success'],
+            $missingTotal === null ? 'an unknown number of' : (string)$missingTotal,
+            $remaining === null ? 'an unknown number' : (string)$remaining
+        ));
+
+        return ['added' => $result['success'], 'failed' => $result['failed'],
+            'missing_total' => $missingTotal, 'remaining' => $remaining, 'backlogged' => $backlogged];
     }
 
     /**
-     * Add n-gram entries for published terms of one taxonomy type
-     * ('category' or 'tag') that are missing from the cache. Category and tag
-     * sync are identical apart from the type label and source rows, so they
-     * share this one implementation.
+     * Count every permalink-cache row with no post-type n-gram entry.
      *
-     * @param string $ngramTable
-     * @param string $type 'category' or 'tag'.
-     * @param array<int, object> $terms Published terms of this type (term_id, url).
-     * @return array{added:int, failed:int}
+     * Deliberately NOT routed through queryScalarInt(): that helper returns 0
+     * both for "nothing is missing" and for "the query failed", and those two
+     * answers drive opposite recovery decisions here. Null means "unknown".
+     *
+     * @return int|null
      */
-    private function syncMissingTerms(string $ngramTable, string $type, array $terms): array {
-        $stats = ['added' => 0, 'failed' => 0];
+    private function countMissingPosts(string $ngramTable, string $permalinkCacheTable): ?int {
+        $countResult = $this->dbCore->queryAndGetResults(
+            "SELECT COUNT(*) AS c
+             FROM {$permalinkCacheTable} pc
+             LEFT JOIN {$ngramTable} ng ON pc.id = ng.id AND ng.type = 'post'
+             WHERE ng.id IS NULL"
+        );
 
-        if (empty($terms)) {
-            return $stats;
-        }
-
-        $missing = [];
-        foreach ($terms as $term) {
-            /** @var object{term_id: int, url: string} $term */
-            $termId = (int)$term->term_id;
-            $exists = $this->dbCore->queryScalarInt(
-                "SELECT COUNT(*) AS c FROM {$ngramTable} WHERE id = %d AND type = %s",
-                ['query_params' => [$termId, $type]]
-            );
-            if ($exists == 0) {
-                $missing[] = $term;
+        $countError = isset($countResult['last_error']) && is_string($countResult['last_error']) ? $countResult['last_error'] : '';
+        if ($countError !== '') {
+            if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($countError)) {
+                $this->logger->warn("Could not measure the missing post ngram backlog: " . $countError);
             }
+            return null;
         }
 
-        if (empty($missing)) {
-            $this->logger->debugMessage("No missing {$type} ngram entries found. All {$type}s are synced.");
-            return $stats;
+        $rows = isset($countResult['rows']) && is_array($countResult['rows']) ? $countResult['rows'] : [];
+        if (empty($rows) || !is_array($rows[0])) {
+            return null;
         }
+        $first = reset($rows[0]);
+        return is_scalar($first) ? (int)$first : null;
+    }
 
-        $this->logger->infoMessage("Found " . count($missing) . " {$type}s missing ngram entries. Adding...");
-
-        foreach ($missing as $term) {
-            try {
-                /** @var object{term_id: int, url: string} $term */
-                $termId = (int)$term->term_id;
-                $url = (string)$term->url;
-
-                if (empty($url) || $url === 'in code') {
-                    $this->logger->debugMessage("Skipping {$type} {$termId} - no valid URL");
-                    continue;
-                }
-
-                $urlNormalized = $this->f->strtolower(trim($url));
-                $ngrams = $this->extractNGrams($urlNormalized);
-                $success = $this->storeNGrams($termId, $url, $urlNormalized, $ngrams, $type);
-
-                if ($success) {
-                    $stats['added']++;
-                } else {
-                    $stats['failed']++;
-                }
-            } catch (Exception $e) {
-                $this->logger->errorMessage("Failed to add ngram for {$type} {$termId}: " . $e->getMessage());
-                $stats['failed']++;
-            }
+    /**
+     * DRIFT or BACKLOG: is what is left over more than this incremental path
+     * can finish on its next run?
+     *
+     * The discriminator is the exact remaining row count, not the N-gram
+     * coverage ratio. The ratio is ngram_cache rows over permalink_cache rows,
+     * but ngram_cache also holds category and tag rows while permalink_cache
+     * holds only posts and pages -- so a site with enough terms reports a
+     * healthy ratio (11,000 posts + 1,100 tags over 12,028 permalinks = 1.006)
+     * while a thousand posts are missing. The ratio is the harm signal that
+     * gates the spell prefilter; it is structurally incapable of measuring
+     * this backlog.
+     *
+     * A leftover of at most one batch converges on the next daily run, so it
+     * stays here. Anything larger would take days-to-months at this batch size
+     * and belongs to the bulk rebuild (1,000 rows per cron run, self
+     * rescheduling). When the backlog could not be measured, a saturated batch
+     * is the fallback signal: it proves this run could not see the end of the
+     * gap.
+     *
+     * @param int|null $remaining Rows still missing after this run, null when unmeasurable.
+     * @param int $batchCount Rows this run took out of the gap.
+     * @param int $batchSize The per-run cap.
+     * @return bool
+     */
+    private function isBacklog(?int $remaining, int $batchCount, int $batchSize): bool {
+        if ($remaining === null) {
+            return $batchCount >= $batchSize;
         }
-
-        return $stats;
+        return $remaining > $batchSize;
     }
 
     /**
@@ -310,79 +350,6 @@ class ABJ_404_Solution_NGramCacheReconciler {
     }
 
     /**
-     * Delete n-gram rows of one taxonomy type ('category' or 'tag') whose
-     * source term is no longer published. Category and tag cleanup are
-     * identical apart from the type label and source rows, so they share this
-     * one implementation.
-     *
-     * @param string $ngramTable
-     * @param string $type 'category' or 'tag'.
-     * @param array<int, object> $publishedTerms Currently-published terms of this type.
-     * @return array{deleted:int, errors:int}
-     */
-    private function cleanupOrphanedTerms(string $ngramTable, string $type, array $publishedTerms): array {
-        $publishedIds = [];
-        foreach ($publishedTerms as $term) {
-            /** @var object{term_id: int, url: string} $term */
-            $publishedIds[] = (int)$term->term_id;
-        }
-
-        $entriesResult = $this->dbCore->queryAndGetResults(
-            "SELECT DISTINCT id FROM {$ngramTable} WHERE type = %s",
-            ['query_params' => [$type], 'result_type' => OBJECT]
-        );
-        $ngramEntries = isset($entriesResult['rows']) && is_array($entriesResult['rows']) ? $entriesResult['rows'] : [];
-
-        if (empty($ngramEntries)) {
-            return ['deleted' => 0, 'errors' => 0];
-        }
-
-        $orphaned = [];
-        foreach ($ngramEntries as $entry) {
-            if (!is_object($entry)) {
-                continue;
-            }
-            /** @var object{id: int} $entry */
-            $entId = (int)$entry->id;
-            if (!in_array($entId, $publishedIds)) {
-                $orphaned[] = $entId;
-            }
-        }
-
-        if (empty($orphaned)) {
-            $this->logger->debugMessage("No orphaned {$type} ngram entries found.");
-            return ['deleted' => 0, 'errors' => 0];
-        }
-
-        $this->logger->infoMessage("Found " . count($orphaned) . " orphaned {$type} ngram entries. Deleting...");
-
-        $deleted = 0;
-        $errors = 0;
-        foreach ($orphaned as $termId) {
-            $deleteResult = $this->dbCore->queryAndGetResults(
-                "DELETE FROM {$ngramTable} WHERE id = %d AND type = %s",
-                ['query_params' => [$termId, $type]]
-            );
-
-            $deleteError = isset($deleteResult['last_error']) && is_string($deleteResult['last_error']) ? $deleteResult['last_error'] : '';
-            if ($deleteError !== '') {
-                if (!$this->dbCore->errorClassifier()->classifyAndHandleInfrastructureError($deleteError)) {
-                    $this->logger->errorMessage("Failed to delete orphaned {$type} ngram entry ID {$termId}: " . $deleteError);
-                }
-                $errors++;
-            } else {
-                $deleted++;
-            }
-        }
-
-        if ($deleted > 0) {
-            $this->invalidateCoverageCaches();
-        }
-
-        return ['deleted' => $deleted, 'errors' => $errors];
-    }
-
-    /**
      * @param array<int, int> $pageIds
      * @return array{processed: int, success: int, failed: int}
      */
@@ -399,35 +366,6 @@ class ABJ_404_Solution_NGramCacheReconciler {
         ];
     }
 
-    /**
-     * @param string $url
-     * @return array{bi: array<int, string>, tri: array<int, string>}
-     */
-    private function extractNGrams(string $url): array {
-        $extractor = $this->extractor;
-        if (!is_object($extractor) || !method_exists($extractor, 'extractNGrams')) {
-            throw new RuntimeException('NGramCacheReconciler requires an extractor with extractNGrams().');
-        }
-        $ngrams = $extractor->extractNGrams($url);
-        return $this->normalizeNGramPayload($ngrams);
-    }
-
-    /**
-     * @param int $pageId
-     * @param string $url
-     * @param string $urlNormalized
-     * @param array<string, mixed> $ngrams
-     * @param string $type
-     * @return bool
-     */
-    private function storeNGrams(int $pageId, string $url, string $urlNormalized, array $ngrams, string $type): bool {
-        $repo = $this->repo;
-        if (!is_object($repo) || !method_exists($repo, 'storeNGrams')) {
-            throw new RuntimeException('NGramCacheReconciler requires a repository with storeNGrams().');
-        }
-        return (bool)$repo->storeNGrams($pageId, $url, $urlNormalized, $ngrams, $type);
-    }
-
     /** @return void */
     private function invalidateCoverageCaches(): void {
         $coveragePolicy = $this->coveragePolicy;
@@ -437,27 +375,4 @@ class ABJ_404_Solution_NGramCacheReconciler {
         $coveragePolicy->invalidateCoverageCaches();
     }
 
-    /**
-     * @param mixed $ngrams
-     * @return array{bi: array<int, string>, tri: array<int, string>}
-     */
-    private function normalizeNGramPayload($ngrams): array {
-        $bi = [];
-        $tri = [];
-        if (is_array($ngrams)) {
-            $biRaw = isset($ngrams['bi']) && is_array($ngrams['bi']) ? $ngrams['bi'] : [];
-            foreach ($biRaw as $ngram) {
-                if (is_string($ngram)) {
-                    $bi[] = $ngram;
-                }
-            }
-            $triRaw = isset($ngrams['tri']) && is_array($ngrams['tri']) ? $ngrams['tri'] : [];
-            foreach ($triRaw as $ngram) {
-                if (is_string($ngram)) {
-                    $tri[] = $ngram;
-                }
-            }
-        }
-        return ['bi' => $bi, 'tri' => $tri];
-    }
 }

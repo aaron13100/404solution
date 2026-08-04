@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/../../ngram/NGramNetworkOptionStore.php';
 require_once __DIR__ . '/../../ngram/NGramCacheRebuildScheduler.php';
+require_once __DIR__ . '/../../ngram/NGramCacheRebuildBatchRunner.php';
 require_once __DIR__ . '/../../ngram/NGramCacheSyncRebuilder.php';
 require_once __DIR__ . '/../../ngram/NGramCacheReconciler.php';
 require_once __DIR__ . '/../../ngram/NGramLastUpdatedEpochMigration.php';
@@ -19,7 +20,10 @@ require_once __DIR__ . '/../../ngram/NGramLastUpdatedEpochMigration.php';
  *   - NGramNetworkOptionStore: network-aware option storage + multisite
  *     detection (also reached from DatabaseUpgradeBootstrap via the
  *     cross-component dispatcher).
- *   - NGramCacheRebuildScheduler: WP-Cron driven async rebuild loop.
+ *   - NGramCacheRebuildScheduler: decides whether the WP-Cron rebuild
+ *     chain needs arming (fresh start or resume of a stalled walk).
+ *   - NGramCacheRebuildBatchRunner: the cron callback's batch loop that
+ *     drains the content set and reschedules the chain.
  *   - NGramCacheSyncRebuilder: synchronous TRUNCATE+rebuild used by
  *     manual rebuild tools and the all-content composer.
  *   - NGramCacheReconciler: incremental sync-missing + cleanup-orphaned
@@ -105,7 +109,7 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
         }
 
         try {
-            $this->newScheduler()->runAsyncBatch();
+            $this->newBatchRunner()->runAsyncBatch();
         } finally {
             $this->syncUtils->synchronizerReleaseLock($uniqueID, $lockKey);
         }
@@ -141,8 +145,18 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
     }
 
     /**
+     * Transient key for the backlog-escalation cooldown. Mirrors the
+     * self-healing cooldown pattern used by the logsv2 auto-trim.
+     */
+    const BACKLOG_REBUILD_COOLDOWN_KEY = 'abj404_ngram_backlog_rebuild_cooldown';
+
+    /**
      * Sync entries that exist in the source but are missing from the
      * cache. Same lock as rebuild to keep mutations serialized.
+     *
+     * The incremental path owns drift only. When the reconciler reports a
+     * backlog it cannot finish, the bulk rebuild is re-armed here so the gap
+     * closes in cron runs instead of draining at one batch per daily tick.
      *
      * @param int $batchSize
      * @return array<string, mixed>
@@ -156,15 +170,69 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
         }
 
         try {
-            return $this->newReconciler()->syncMissing($batchSize);
+            $stats = $this->newReconciler()->syncMissing($batchSize);
         } finally {
             $this->syncUtils->synchronizerReleaseLock($uniqueID, $lockKey);
+        }
+
+        // Outside the rebuild lock on purpose: scheduling takes the
+        // 'ngram_schedule' lock and the batch driver this arms takes
+        // 'ngram_rebuild' itself.
+        if (is_array($stats) && !empty($stats['posts_backlogged'])) {
+            $this->escalateBacklogToBulkRebuild($stats);
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Hand a backlog the incremental reconciler cannot close to the bulk
+     * rebuild path, which processes 1,000 rows per cron run and reschedules
+     * itself until the whole content set is covered.
+     *
+     * Idempotent by construction -- scheduleNGramCacheRebuild() no-ops while a
+     * rebuild chain is already armed -- and additionally rate limited by a
+     * one-hour transient cooldown so a rebuild that cannot make progress
+     * cannot be re-armed in a hot loop by repeated sync calls.
+     *
+     * @param array<string, mixed> $stats Reconciler stats for this run.
+     * @return void
+     */
+    private function escalateBacklogToBulkRebuild(array $stats): void {
+        $cooldownKey = self::BACKLOG_REBUILD_COOLDOWN_KEY;
+        if (function_exists('get_transient') && get_transient($cooldownKey)) {
+            $this->logger->debugMessage(
+                "N-gram backlog rebuild already armed within the cooldown window. Skipping.");
+            return;
+        }
+
+        $remaining = isset($stats['posts_remaining']) && is_numeric($stats['posts_remaining'])
+            ? (string)(int)$stats['posts_remaining']
+            : 'an unknown number of';
+
+        $this->logger->infoMessage(
+            "N-gram cache backlog of {$remaining} posts is beyond incremental sync capacity. "
+            . "Handing off to the bulk rebuild.");
+
+        $scheduled = $this->scheduleNGramCacheRebuild();
+
+        if (function_exists('set_transient')) {
+            $ttl = defined('HOUR_IN_SECONDS') ? (int) HOUR_IN_SECONDS : 3600;
+            // @cache-write-audit: opt-out - escalation cooldown marker, not query result data.
+            // allow-cache-empty: fixed rate-limit marker, not a cached query payload.
+            set_transient($cooldownKey, 1, $ttl);
+        }
+
+        if (!$scheduled) {
+            $this->logger->warn(
+                "N-gram cache backlog rebuild could not be scheduled; the incremental sync "
+                . "keeps draining it until the next attempt.");
         }
     }
 
     /**
      * Delete cache rows whose source no longer exists. Runs without
-     * the rebuild lock — it only deletes by primary key.
+     * the rebuild lock; it only deletes by primary key.
      *
      * @return array<string, mixed>
      */
@@ -223,6 +291,15 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
 
     private function newScheduler(): ABJ_404_Solution_NGramCacheRebuildScheduler {
         return new ABJ_404_Solution_NGramCacheRebuildScheduler(
+            $this->dbCore,
+            $this->logger,
+            $this->newOptionStore(),
+            $this->cronScheduler instanceof ABJ_404_Solution_CronScheduler ? $this->cronScheduler : null
+        );
+    }
+
+    private function newBatchRunner(): ABJ_404_Solution_NGramCacheRebuildBatchRunner {
+        return new ABJ_404_Solution_NGramCacheRebuildBatchRunner(
             $this->dbCore,
             $this->resolveNGramRebuilder(),
             $this->logger,
