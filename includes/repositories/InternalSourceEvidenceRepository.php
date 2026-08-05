@@ -78,6 +78,11 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
     /**
      * Return source evidence keyed by captured requested URL.
      *
+     * source_count is the number of distinct same-site source paths OBSERVED
+     * for that captured URL. When the underlying aggregate saturates its
+     * MAX_AGGREGATE_ROWS cap it is a floor rather than a total; that condition
+     * is warned about in queryAggregateRows() so it is never silent.
+     *
      * @param array<int, string> $capturedUrls Visible captured URLs only.
      * @param int $maxSources Maximum source rows to display per captured URL.
      * @return array<string, array{source_count:int,displayed_source_count:int,sources:array<int,array<string,mixed>>}>
@@ -173,6 +178,21 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
 
         $result = $this->db->queryAndGetResults($query, array('query_params' => $cleanUrls));
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+
+        // A saturated result set means the LIMIT truncated the aggregate, so
+        // every count derived from these rows is a floor rather than a total.
+        // Say so: a capped result that reads as a complete one is how a
+        // backlog stays invisible (see the n-gram reconciler's post-LIMIT
+        // "Found 50 posts missing" line, i582).
+        if (count($rows) >= self::MAX_AGGREGATE_ROWS) {
+            $this->logger()->warn(sprintf(
+                'InternalSourceEvidenceRepository: source-evidence aggregate hit its %d-row cap for %d captured URLs. '
+                . 'Reported source counts are floors, not totals, and trailing captured URLs may show no sources.',
+                self::MAX_AGGREGATE_ROWS,
+                count($cleanUrls)
+            ));
+        }
+
         $typedRows = array();
         foreach ($rows as $row) {
             if (is_array($row)) {
@@ -180,6 +200,11 @@ class ABJ_404_Solution_InternalSourceEvidenceRepository {
             }
         }
         return $typedRows;
+    }
+
+    /** @return ABJ_404_Solution_Logging */
+    private function logger() {
+        return abj_service('logging');
     }
 
     /**
