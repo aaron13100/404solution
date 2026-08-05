@@ -126,11 +126,11 @@ class ABJ_404_Solution_ViewDiagnostics {
             $redirectsTable => $this->safeProbeIndexCoverage($redirectsTable, array(
                 'PRIMARY', 'status', 'type', 'code', 'timestamp', 'disabled', 'url', 'final_dest',
                 'idx_url_disabled_status', 'idx_status_disabled', 'idx_canonical_url',
-            )),
+            ), 'createRedirectsTable.sql'),
             $logsv2Table => $this->safeProbeIndexCoverage($logsv2Table, array(
                 'PRIMARY', 'timestamp', 'requested_url', 'username', 'min_log_id',
                 'idx_requested_url_timestamp', 'idx_canonical_url',
-            )),
+            ), 'createLogTable.sql'),
         );
 
         $diag['canonical_url_state'] = array(
@@ -294,15 +294,32 @@ class ABJ_404_Solution_ViewDiagnostics {
     }
 
     /**
+     * Which indexes a table has, which of the ones this failure bundle cares
+     * about are gone, and which are present under the right name but no longer
+     * match the shipped DDL.
+     *
+     * The `drifted` bucket exists because a name-only answer is not diagnostic:
+     * MySQL and MariaDB silently strip a dropped column out of every index that
+     * named it and keep the rest, so a table can report every expected index as
+     * `present` while the sort those indexes were built for filesorts the whole
+     * partition. A bundle that says "all indexes present" for a page timing out
+     * on an unindexed sort sends the reader in the wrong direction.
+     *
+     * `drifted` covers every index in the DDL, not just $expectedKeys: the
+     * composites the derived-sort reads depend on are exactly the ones a column
+     * drop narrows, and they were never in the hand-listed set.
+     *
      * @param string $tableName
      * @param array<int, string> $expectedKeys
-     * @return array{expected: array<int,string>, present: array<int,string>, missing: array<int,string>, error?: string}
+     * @param string $ddlFileName create*Table.sql to compare definitions against.
+     * @return array{expected: array<int,string>, present: array<int,string>, missing: array<int,string>, drifted: array<string,string>, error?: string}
      */
-    private function safeProbeIndexCoverage(string $tableName, array $expectedKeys): array {
+    private function safeProbeIndexCoverage(string $tableName, array $expectedKeys, string $ddlFileName = ''): array {
         $out = array(
             'expected' => array_values($expectedKeys),
             'present' => array(),
             'missing' => array(),
+            'drifted' => array(),
         );
         try {
             $result = $this->dbCore->queryAndGetResults('SHOW INDEX FROM `' . $tableName . '`', array(
@@ -318,17 +335,10 @@ class ABJ_404_Solution_ViewDiagnostics {
                 return $out;
             }
             $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+            $definitions = ABJ_404_Solution_TableIndexDefinitions::fromShowIndexRows($rows);
             $present = array();
-            foreach ($rows as $row) {
-                if (!is_array($row)) {
-                    continue;
-                }
-                foreach ($row as $key => $value) {
-                    if (strtolower((string)$key) === 'key_name' && is_scalar($value)) {
-                        $present[(string)$value] = true;
-                        break;
-                    }
-                }
+            foreach ($definitions as $definition) {
+                $present[(string)$definition['name']] = true;
             }
             $out['present'] = array_keys($present);
             $missing = array();
@@ -338,11 +348,41 @@ class ABJ_404_Solution_ViewDiagnostics {
                 }
             }
             $out['missing'] = $missing;
+            $out['drifted'] = $this->describeDriftedIndexes($definitions, $ddlFileName);
         } catch (Throwable $e) {
             $out['error'] = $e->getMessage();
             $out['missing'] = $out['expected'];
         }
         return $out;
+    }
+
+    /**
+     * Present-but-wrong indexes, as "index name" => "has (...), schema says (...)".
+     *
+     * @param array<string, array{name: string, columns: array<int, array{column: string, prefix: int|null}>, unique: bool}> $definitions
+     * @param string $ddlFileName
+     * @return array<string, string>
+     */
+    private function describeDriftedIndexes(array $definitions, string $ddlFileName): array {
+        if ($ddlFileName === '') {
+            return array();
+        }
+        $ddl = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/../sql/' . $ddlFileName);
+        $drifted = array();
+        foreach (ABJ_404_Solution_TableIndexDefinitions::fromCreateTableSql((string)$ddl) as $name => $spec) {
+            $live = $definitions[strtolower((string)$name)] ?? null;
+            if (!is_array($live)) {
+                continue;
+            }
+            $goalSignature = ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec);
+            if (ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($live) === $goalSignature) {
+                continue;
+            }
+            $drifted[(string)$name] = 'has (' .
+                ABJ_404_Solution_TableIndexDefinitions::describeColumns($live) .
+                '), schema says ' . trim((string)$spec['columns']);
+        }
+        return $drifted;
     }
 
     /**

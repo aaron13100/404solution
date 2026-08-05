@@ -270,4 +270,90 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
         }
         return false;
     }
+
+    /**
+     * Add the canonical_url column to logsv2 with online DDL when supported.
+     *
+     * A small idempotent helper that runs ahead of the generic
+     * verifyColumns() flow so the column add can use
+     * ALGORITHM=INPLACE, LOCK=NONE on InnoDB 5.6 or newer (no table lock during the
+     * rewrite). On engines that don't support online DDL for ADD COLUMN the
+     * explicit clause causes the statement to fail with
+     * ER_ALTER_OPERATION_NOT_SUPPORTED, so we fall back to a bare ALTER, which
+     * is what verifyColumns() also runs as the safety net.
+     *
+     * The matching idx_canonical_url is added by the standard
+     * ABJ_404_Solution_DatabaseUpgradeIndexes::verifyIndexes() flow. Index adds
+     * use online DDL by default on InnoDB 5.6 or newer, so a separate ensure
+     * helper isn't required for the index.
+     *
+     * @param string $logsTable
+     * @return void
+     */
+    public function ensureLogsv2CanonicalUrlColumn(string $logsTable): void {
+        if ($this->columnExists($logsTable, 'canonical_url')) {
+            return;
+        }
+        $inplaceQuery = "ALTER TABLE " . $logsTable .
+            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
+            " ALGORITHM=INPLACE, LOCK=NONE";
+        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
+            array('log_too_slow' => false, 'log_errors' => false));
+        if (empty($result['last_error'])) {
+            $this->logger->infoMessage("Added canonical_url to {$logsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
+            return;
+        }
+        // Engine didn't support online DDL for ADD COLUMN, so the bare ALTER
+        // falls back to whatever algorithm the engine picks (COPY on MyISAM / very
+        // old InnoDB). On modern InnoDB the bare ALTER is itself implicitly
+        // INPLACE for ADD COLUMN ... DEFAULT NULL, so this branch only runs
+        // on legacy engines where some lock is unavoidable.
+        $bareQuery = "ALTER TABLE " . $logsTable .
+            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
+        $bare = $this->dbCore->queryAndGetResults($bareQuery,
+            array('log_too_slow' => false));
+        if (empty($bare['last_error'])) {
+            $this->logger->infoMessage("Added canonical_url to {$logsTable} (bare ALTER fallback).");
+        }
+    }
+
+    /**
+     * Add the canonical_url column to the redirects table with online DDL
+     * when supported.
+     *
+     * Sibling of {@see ensureLogsv2CanonicalUrlColumn()} applied to the
+     * redirects side. The column shipped in 4.1.11 and is normally added by dbDelta
+     * on plugin update. On hosts where dbDelta silently fails to ALTER ADD
+     * it, every captured-404 INSERT errors out with "Unknown column
+     * 'canonical_url' in 'field list'" until verifyColumns eventually
+     * retries the column add. One site in the May 10 debug zip emitted
+     * 1671 such errors over 10 days on 4.1.12. Calling this helper eagerly
+     * from runInitialCreateTables() shortens that window: every cron tick
+     * that runs the bootstrap loop retries the ALTER on its own,
+     * independent of the verifyColumns DDL diff path.
+     *
+     * @param string $redirectsTable
+     * @return void
+     */
+    public function ensureRedirectsCanonicalUrlColumn(string $redirectsTable): void {
+        if ($this->columnExists($redirectsTable, 'canonical_url')) {
+            return;
+        }
+        $inplaceQuery = "ALTER TABLE " . $redirectsTable .
+            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
+            " ALGORITHM=INPLACE, LOCK=NONE";
+        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
+            array('log_too_slow' => false, 'log_errors' => false));
+        if (empty($result['last_error'])) {
+            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
+            return;
+        }
+        $bareQuery = "ALTER TABLE " . $redirectsTable .
+            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
+        $bare = $this->dbCore->queryAndGetResults($bareQuery,
+            array('log_too_slow' => false));
+        if (empty($bare['last_error'])) {
+            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (bare ALTER fallback).");
+        }
+    }
 }

@@ -213,7 +213,7 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
             // engine doesn't support it the helper falls back silently and
             // verifyColumns() picks up the column add as a safety net.
             if ($bareTableName === 'abj404_logsv2') {
-                $this->coordinator->indexesUpgrade()->ensureLogsv2CanonicalUrlColumn($tableName);
+                $this->coordinator->canonicalUrlBackfillUpgrade()->ensureLogsv2CanonicalUrlColumn($tableName);
             }
             // Same logic for the redirects side. canonical_url is required by
             // setupRedirect() and was added in 4.1.11; on a small fraction of
@@ -222,13 +222,13 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
             // verifyColumns eventually retries. Eagerly running the targeted
             // add closes that window.
             if ($bareTableName === 'abj404_redirects') {
-                $this->coordinator->indexesUpgrade()->ensureRedirectsCanonicalUrlColumn($tableName);
+                $this->coordinator->canonicalUrlBackfillUpgrade()->ensureRedirectsCanonicalUrlColumn($tableName);
                 // Denorm Step 3a (i459): same eager online-DDL add for the four
                 // derived columns (logshits, last_used, dest_for_view,
                 // published_status) so they exist before verifyColumns() and
                 // before the chunked backfill reads them. Idempotent: each
                 // column is SHOW COLUMNS-guarded, so this is a no-op once added.
-                $this->coordinator->indexesUpgrade()->ensureRedirectsDenormColumns($tableName);
+                $this->coordinator->redirectsDenormBackfillUpgrade()->ensureRedirectsDenormColumns($tableName);
             }
             if ($bareTableName === 'abj404_ngram_cache' && !$ngramEpochMigrationSafe) {
                 continue;

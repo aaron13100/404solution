@@ -5,14 +5,24 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Index discovery, parsing, verification, and add-index DDL helpers for
- * ABJ_404_Solution_DatabaseUpgradesEtc, plus the small ensureLogs* helpers
- * that gate online DDL on the logsv2 table.
+ * Index verification and repair for ABJ_404_Solution_DatabaseUpgradesEtc: for
+ * every create*Table.sql, bring the live table's indexes into agreement with
+ * the shipped definition -- adding what is missing, and rebuilding what exists
+ * under the right name with the wrong definition.
  *
- * Extracted from DatabaseUpgradesEtc.php in 4.1.12 to keep the host class
- * under the FileSizeLimitsTest line budget. No behavior change.
+ * Extracted from DatabaseUpgradesEtc.php in 4.1.12. The eager targeted
+ * column-add helpers it also carried for a while now live with the components
+ * that own those columns' backfills: canonical_url on
+ * {@see ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill}, the Step 3a
+ * denorm columns on {@see ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill}.
  */
 class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseUpgradeComponent {
+
+    /** Transient name prefix for the per-index rebuild-attempt marker. */
+    private const REBUILD_GUARD_PREFIX = 'abj404_index_rebuilt_';
+
+    /** How long a rebuild attempt suppresses a repeat of the same rebuild. */
+    private const REBUILD_GUARD_SECONDS = 30 * 24 * 60 * 60;
 
     /** @return void */
     function createIndexes() {
@@ -34,83 +44,221 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 		// Pattern matches lines starting with "KEY" / "UNIQUE KEY" - handles composite indexes with commas inside parens
 		// Indexes: treat the CREATE TABLE SQL as source of truth, and treat the database as truth
 		// for what exists (SHOW INDEX). Avoid parsing SHOW CREATE TABLE output, which is vendor/format dependent.
-		$goalSpecsByName = $this->parseIndexSpecsFromCreateTableSql($createTableStatementGoal);
+		$goalSpecsByName = ABJ_404_Solution_TableIndexDefinitions::fromCreateTableSql($createTableStatementGoal);
+		if (empty($goalSpecsByName)) {
+			return;
+		}
+
+		// An index is verified by its DEFINITION, never by its name alone. An
+		// index can exist under exactly the right name and still be the wrong
+		// index: MySQL and MariaDB silently strip a dropped column out of every
+		// index that named it and keep the rest, so a table that once ran a
+		// build whose DDL predated a column comes back with, say,
+		// idx_status_disabled_logshits_id defined as (status, disabled, id).
+		// A name-only check called that present and left the admin sort it was
+		// built for filesorting the whole table on every load, forever.
+		$definitions = new ABJ_404_Solution_TableIndexDefinitions($this->dbCore);
+		$liveDefinitions = $definitions->readLive($tableName);
+		if ($liveDefinitions === null) {
+			// Could not read the schema (missing table, denied permission, dead
+			// connection). Never treat that as "no indexes exist" -- that would
+			// issue DDL against a table we cannot even introspect.
+			$this->logger->debugMessage("Skipping the index check on {$tableName}: its index metadata could not be read.");
+			return;
+		}
 
 		$missingIndexNames = [];
-		foreach (array_keys($goalSpecsByName) as $indexName) {
-			if (!$this->indexExists($tableName, $indexName)) {
+		$driftedIndexNames = [];
+		foreach ($goalSpecsByName as $indexName => $spec) {
+			$live = $liveDefinitions[strtolower((string)$indexName)] ?? null;
+			if ($live === null) {
 				$missingIndexNames[] = $indexName;
+			} else if (ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($live)
+					!== ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec)) {
+				$driftedIndexNames[] = $indexName;
 			}
 		}
 		$missingIndexNames = $this->prioritizeMissingIndexNames($missingIndexNames);
+		$driftedIndexNames = $this->prioritizeMissingIndexNames($driftedIndexNames);
 
 		if (count($missingIndexNames) > 0) {
 			$this->logger->infoMessage($this->getUpgradeRuntimeId() . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
 		}
 
-		// Get actual columns in the table so we can skip indexes that reference missing columns.
-		$existingColumns = [];
-		$showColResult = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
-		$showColRows = is_array($showColResult['rows'] ?? null) ? $showColResult['rows'] : [];
-		foreach ($showColRows as $colRow) {
-			if (!is_array($colRow)) { continue; }
-			foreach ($colRow as $key => $value) {
-				if (strtolower((string)$key) === 'field' && is_scalar($value)) {
-					$existingColumns[] = strtolower((string)$value);
-					break;
-				}
-			}
-		}
+		$existingColumns = $this->readExistingColumnNames($tableName);
 
 		foreach ($missingIndexNames as $indexName) {
 			$spec = $goalSpecsByName[$indexName] ?? null;
-			if (empty($spec)) {
+			if (empty($spec) || !$this->indexColumnsAllExist($tableName, $spec, $existingColumns)) {
 				continue;
 			}
-
-			// Verify all columns referenced by this index actually exist in the table.
-			if (!empty($existingColumns)) {
-				$indexColNames = [];
-				preg_match_all('/`([^`]+)`/', $spec['columns'], $colMatches);
-				if (!empty($colMatches[1])) {
-					$indexColNames = array_map('strtolower', $colMatches[1]);
-				}
-				$missingCols = array_diff($indexColNames, $existingColumns);
-				if (!empty($missingCols)) {
-					$this->logger->warn("Skipping index {$indexName} on {$tableName}: " .
-						"column(s) " . implode(', ', $missingCols) . " do not exist in the table.");
-					continue;
-				}
-			}
-
-				$spellingCacheTableName = $this->dbCore->doTableNameReplacements('{wp_abj404_spelling_cache}');
-				$tableNameLower = strtolower($tableName);
-				if ($tableNameLower == $spellingCacheTableName && !empty($spec['unique'])) {
-					$this->contentRepo->deleteSpellingCache();
-				}
-
+			$this->deleteSpellingCacheBeforeUniqueIndex($tableName, $spec);
 			$this->addIndexWithOnlineFallback($tableName, $spec['name'], $spec['columns'], $spec['unique']);
+		}
+
+		foreach ($driftedIndexNames as $indexName) {
+			$spec = $goalSpecsByName[$indexName] ?? null;
+			if (empty($spec) || !$this->indexColumnsAllExist($tableName, $spec, $existingColumns)) {
+				continue;
+			}
+			$this->rebuildDriftedIndex($tableName, $spec,
+				$liveDefinitions[strtolower((string)$indexName)]);
 		}
 	    }
 
 	    /**
-	     * Add one missing index. Try online/no-lock DDL first; if the server or
-	     * storage engine rejects those hints, retry the legacy plain ADD INDEX.
+	     * Rebuild one index whose live definition no longer matches the DDL.
+	     *
+	     * DROP and ADD go in a single ALTER so the index is never absent between
+	     * two statements, and so the engine makes one pass over the table
+	     * instead of two. The online-DDL hints are tried first and fall back to
+	     * a plain ALTER exactly as the missing-index add does.
+	     *
+	     * Two guards keep this from ever becoming a recurring cost on a large
+	     * table:
+	     *
+	     *  - the non-essential-write cooldown, so a host that is already out of
+	     *    disk or in read-only is not handed a table rewrite; and
+	     *  - a per-(table, index, goal) marker written BEFORE the attempt and
+	     *    cleared only once the engine confirms it now reports what we asked
+	     *    for. An engine that describes an index differently from the way we
+	     *    wrote it (or an ALTER that dies partway) therefore costs one
+	     *    rebuild per month, not one per upgrade tick. Changing the DDL
+	     *    changes the goal signature, which re-arms the repair.
+	     *
+	     * @param string $tableName
+	     * @param array{name: string, columns: string, unique: bool} $spec
+	     * @param array{columns: array<int, array{column: string, prefix: int|null}>, unique: bool} $liveDefinition
+	     * @return void
+	     */
+	    private function rebuildDriftedIndex($tableName, array $spec, array $liveDefinition): void {
+	        if ($this->dbCore->noticeState()->shouldSkipNonEssentialDbWrites()) {
+	            $this->logger->debugMessage("Deferring the rebuild of {$spec['name']} on {$tableName} " .
+	                "until the database write cooldown ends.");
+	            return;
+	        }
+	        $goalSignature = ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec);
+	        $guardName = self::REBUILD_GUARD_PREFIX . md5(strtolower($tableName) . '|' .
+	            strtolower((string)$spec['name']) . '|' . $goalSignature);
+	        if (function_exists('get_transient') && get_transient($guardName) !== false) {
+	            return;
+	        }
+	        if (function_exists('set_transient')) {
+	            set_transient($guardName, 1, self::REBUILD_GUARD_SECONDS);
+	        }
+
+	        $this->logger->infoMessage($this->getUpgradeRuntimeId() . ": On {$tableName} I'm rebuilding " .
+	            "{$spec['name']}: the table has (" .
+	            ABJ_404_Solution_TableIndexDefinitions::describeColumns($liveDefinition) .
+	            ") but the schema defines " . trim((string)$spec['columns']) . ".");
+
+	        $this->deleteSpellingCacheBeforeUniqueIndex($tableName, $spec);
+	        $this->addIndexWithOnlineFallback($tableName, $spec['name'], $spec['columns'], $spec['unique'], true);
+
+	        $after = (new ABJ_404_Solution_TableIndexDefinitions($this->dbCore))->readLive($tableName);
+	        $rebuilt = is_array($after) ? ($after[strtolower((string)$spec['name'])] ?? null) : null;
+	        if (is_array($rebuilt)
+	                && ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($rebuilt) === $goalSignature) {
+	            if (function_exists('delete_transient')) {
+	                delete_transient($guardName);
+	            }
+	            return;
+	        }
+	        $this->logger->warn("After rebuilding {$spec['name']} on {$tableName} the server still describes it " .
+	            "differently from " . trim((string)$spec['columns']) . ". Treating that as a difference in how this " .
+	            "server reports indexes rather than as schema drift, and not rebuilding it again.");
+	    }
+
+	    /**
+	     * The lowercased column names the table actually has, so an index that
+	     * references a column this install does not carry can be skipped rather
+	     * than attempted (schema-drift tolerance, defensive philosophy #1/#7).
+	     * An unreadable probe yields an empty list, which disables the check
+	     * rather than blocking every index.
+	     *
+	     * @param string $tableName
+	     * @return array<int, string>
+	     */
+	    private function readExistingColumnNames($tableName): array {
+	        $existingColumns = [];
+	        $showColResult = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
+	        $showColRows = is_array($showColResult['rows'] ?? null) ? $showColResult['rows'] : [];
+	        foreach ($showColRows as $colRow) {
+	            if (!is_array($colRow)) { continue; }
+	            foreach ($colRow as $key => $value) {
+	                if (strtolower((string)$key) === 'field' && is_scalar($value)) {
+	                    $existingColumns[] = strtolower((string)$value);
+	                    break;
+	                }
+	            }
+	        }
+	        return $existingColumns;
+	    }
+
+	    /**
+	     * Whether every column an index spec names exists on the table. Applies
+	     * to the rebuild path as much as the add path: dropping a drifted index
+	     * whose replacement cannot be created would leave the table with neither.
+	     *
+	     * @param string $tableName
+	     * @param array{name: string, columns: string, unique: bool} $spec
+	     * @param array<int, string> $existingColumns
+	     * @return bool
+	     */
+	    private function indexColumnsAllExist($tableName, array $spec, array $existingColumns): bool {
+	        if (empty($existingColumns)) {
+	            return true;
+	        }
+	        $indexColNames = [];
+	        foreach (ABJ_404_Solution_TableIndexDefinitions::ddlColumnList($spec['columns']) as $column) {
+	            $indexColNames[] = $column['column'];
+	        }
+	        $missingCols = array_diff($indexColNames, $existingColumns);
+	        if (empty($missingCols)) {
+	            return true;
+	        }
+	        $this->logger->warn("Skipping index {$spec['name']} on {$tableName}: " .
+	            "column(s) " . implode(', ', $missingCols) . " do not exist in the table.");
+	        return false;
+	    }
+
+	    /**
+	     * Adding (or rebuilding) the spelling cache's UNIQUE index fails if the
+	     * table already holds duplicate rows, which is exactly the state a
+	     * missing unique index allows. Emptying a cache costs nothing.
+	     *
+	     * @param string $tableName
+	     * @param array{name: string, columns: string, unique: bool} $spec
+	     * @return void
+	     */
+	    private function deleteSpellingCacheBeforeUniqueIndex($tableName, array $spec): void {
+	        $spellingCacheTableName = $this->dbCore->doTableNameReplacements('{wp_abj404_spelling_cache}');
+	        if (strtolower($tableName) == $spellingCacheTableName && !empty($spec['unique'])) {
+	            $this->contentRepo->deleteSpellingCache();
+	        }
+	    }
+
+	    /**
+	     * Add one missing index, or replace one whose definition drifted. Try
+	     * online/no-lock DDL first; if the server or storage engine rejects
+	     * those hints, retry the legacy plain ALTER.
 	     *
 	     * @param string $tableName
 	     * @param string $indexName
 	     * @param string $columnsSql
 	     * @param bool $unique
+	     * @param bool $replaceExisting Drop the same-named index in the same ALTER first.
 	     * @return void
 	     */
-	    private function addIndexWithOnlineFallback($tableName, $indexName, $columnsSql, $unique): void {
-	        $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, true);
+	    private function addIndexWithOnlineFallback($tableName, $indexName, $columnsSql, $unique,
+	            $replaceExisting = false): void {
+	        $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, true, $replaceExisting);
 	        $result = $this->dbCore->queryAndGetResults($addStatement);
 	        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
 	        if ($lastError !== '') {
 	            $this->logger->warn("Online index add for {$indexName} on {$tableName} failed; retrying without online DDL hints: " .
 	                $lastError . " (query: {$addStatement})");
-	            $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, false);
+	            $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, false, $replaceExisting);
 	            $result = $this->dbCore->queryAndGetResults($addStatement);
 	            $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
 	            if ($lastError !== '') {
@@ -166,78 +314,6 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	        return $missingIndexNames;
 	    }
 
-    /**
-     * @param string $tableName
-     * @param string $indexName
-     * @return bool
-     */
-    private function indexExists($tableName, $indexName) {
-        global $wpdb;
-        $sql = $wpdb->prepare("SHOW INDEX FROM {$tableName} WHERE Key_name = %s", $indexName);
-        // DAO-bypass-approved: indexExists() schema-introspection helper (already prepared); DDL pre-check before ALTER TABLE
-        $results = $wpdb->get_results($sql, ARRAY_A);
-        return !empty($results);
-    }
-
-	    /**
-	     * Parse an index DDL line from our CREATE TABLE SQL into a structured spec.
-	     *
-	     * Accepts forms like:
-	     * - KEY `name` (`col`(190), `other`)
-	     * - UNIQUE KEY `name` (`col`)
-	     * - KEY `name` (`col`) USING BTREE
-	     *
-	     * Returns null if the line doesn't look like a KEY/UNIQUE KEY definition.
-	     *
-	     * @param string $indexDDL
-	     * @return array{name: string, columns: string, unique: bool}|null
-	     */
-	    private function parseIndexDDLToSpec($indexDDL) {
-	        $indexDDL = trim($indexDDL);
-	        // Tolerate a trailing comma — the line-extracting regex pulls each
-	        // KEY definition out as-is from the surrounding CREATE TABLE list,
-	        // and any KEY that isn't the LAST one will end with a comma. Same
-	        // canonical form either way.
-	        $indexDDL = rtrim($indexDDL, ',');
-	        $matches = [];
-	        if (!preg_match('/^(unique\\s+)?key\\s+`?([^`\\s]+)`?\\s*(\\(.+\\))\\s*(?:using\\s+\\w+)?\\s*$/i', $indexDDL, $matches)) {
-	            return null;
-	        }
-
-	        return [
-	            'name' => $matches[2],
-	            'columns' => $matches[3],
-	            'unique' => !empty($matches[1]),
-	        ];
-	    }
-
-	    /**
-	     * Extract index specs from a CREATE TABLE statement (plugin SQL templates).
-	     *
-	     * @param string $createTableSql
-	     * @return array<string, array{name:string, columns:string, unique:bool}> keyed by index name
-	     */
-	    private function parseIndexSpecsFromCreateTableSql($createTableSql) {
-	        if (!is_string($createTableSql) || $createTableSql === '') {
-	            return [];
-	        }
-
-	        $matches = [];
-	        preg_match_all('/^\\s*(?:unique\\s+)?key\\s+.+?\\s*$/im', $createTableSql, $matches);
-	        $lines = $matches[0];
-
-	        $specsByName = [];
-	        foreach ($lines as $line) {
-	            $spec = $this->parseIndexDDLToSpec($line);
-	            if (empty($spec) || empty($spec['name'])) {
-	                continue;
-	            }
-	            $specsByName[$spec['name']] = $spec;
-	        }
-
-	        return $specsByName;
-	    }
-
 	    /**
 	     * Build a valid ALTER TABLE ... ADD INDEX statement from structured parts.
 	     *
@@ -246,9 +322,14 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	     * @param string $columnsSql Must include surrounding parentheses, e.g. "(`a`, `b`(190))"
 	     * @param bool $unique
 	     * @param bool $online Whether to append ALGORITHM=INPLACE, LOCK=NONE.
+	     * @param bool $replaceExisting Emit "drop index `n`, add ..." so a drifted index is
+	     *        swapped in ONE statement: the table is never left without it, and the engine
+	     *        makes a single pass. IF NOT EXISTS is suppressed here -- the index provably
+	     *        exists, and pairing it with the drop in one ALTER is ambiguous across engines.
 	     * @return string
 	     */
-	    private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, $online = false) {
+	    private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique,
+	            $online = false, $replaceExisting = false) {
 	        global $wpdb;
 	        /** @var \wpdb $wpdb */
 	        $serverVersion = is_object($wpdb) && method_exists($wpdb, 'db_version') ? ($wpdb->db_version() ?: '') : '';
@@ -259,10 +340,11 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	        $supportsIfNotExists = $isMaria && version_compare($cleanedVersion, '10.5', '>=');
 
 	        $indexType = $unique ? 'unique index' : 'index';
-	        $ifNotExists = $supportsIfNotExists ? ' if not exists' : '';
+	        $ifNotExists = ($supportsIfNotExists && !$replaceExisting) ? ' if not exists' : '';
 	        $onlineClause = $online ? ', ALGORITHM=INPLACE, LOCK=NONE' : '';
+	        $dropClause = $replaceExisting ? " drop index `" . $indexName . "`," : '';
 
-	        return "alter table " . $tableName . " add " . $indexType . $ifNotExists . " `" . $indexName . "` " . trim($columnsSql) . $onlineClause;
+	        return "alter table " . $tableName . $dropClause . " add " . $indexType . $ifNotExists . " `" . $indexName . "` " . trim($columnsSql) . $onlineClause;
 	    }
 
 	    /**
@@ -273,17 +355,28 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	    public function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
 	        $indexName = 'idx_requested_url_timestamp';
 	        $createSql = is_string($createSqlOverride) ? $createSqlOverride : ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/createLogTable.sql");
-	        $specsByName = $this->parseIndexSpecsFromCreateTableSql($createSql);
+	        $specsByName = ABJ_404_Solution_TableIndexDefinitions::fromCreateTableSql($createSql);
 	        $spec = $specsByName[$indexName] ?? null;
 	        if (empty($spec)) {
 	            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: index definition not found in createLogTable.sql");
 	            return;
 	        }
 
-	        if ($this->indexExists($logsTable, $indexName)) {
+	        // Same rule as verifyIndexes(): the NAME being present proves nothing.
+	        // A logsv2 table whose requested_url column was ever dropped carries
+	        // this composite narrowed to (timestamp) alone.
+	        $liveDefinitions = (new ABJ_404_Solution_TableIndexDefinitions($this->dbCore))->readLive($logsTable);
+	        if ($liveDefinitions === null) {
 	            return;
 	        }
-	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'], $spec['unique']);
+	        $live = $liveDefinitions[strtolower($indexName)] ?? null;
+	        if (is_array($live)
+	                && ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($live)
+	                    === ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec)) {
+	            return;
+	        }
+	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'],
+	            $spec['unique'], false, is_array($live));
 	        $results = $this->dbCore->queryAndGetResults($query);
         $lastError = isset($results['last_error']) && is_scalar($results['last_error'])
             ? (string)$results['last_error']
@@ -294,167 +387,5 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
             $this->logger->infoMessage("Added {$indexName} to {$logsTable} using query: {$query}");
         }
     }
-
-	    /**
-	     * Add the canonical_url column to logsv2 with online DDL when supported.
-	     *
-	     * Mirrors ensureLogsCompositeIndex(): a small idempotent helper that runs
-	     * ahead of the generic verifyColumns() flow so the column add can use
-	     * ALGORITHM=INPLACE, LOCK=NONE on InnoDB ≥ 5.6 (no table lock during the
-	     * rewrite). On engines that don't support online DDL for ADD COLUMN the
-	     * explicit clause causes the statement to fail with
-	     * ER_ALTER_OPERATION_NOT_SUPPORTED; we then fall back to a bare ALTER —
-	     * which is what verifyColumns() also runs as the safety net.
-	     *
-	     * The matching idx_canonical_url is added by the standard verifyIndexes()
-	     * flow — index adds use online DDL by default on InnoDB ≥ 5.6 so a
-	     * separate ensure helper isn't required for the index.
-	     *
-	     * @param string $logsTable
-	     * @return void
-	     */
-	    public function ensureLogsv2CanonicalUrlColumn(string $logsTable): void {
-	        if ($this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($logsTable, 'canonical_url')) {
-	            return;
-	        }
-	        $inplaceQuery = "ALTER TABLE " . $logsTable .
-	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
-	            " ALGORITHM=INPLACE, LOCK=NONE";
-	        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
-	            array('log_too_slow' => false, 'log_errors' => false));
-	        if (empty($result['last_error'])) {
-	            $this->logger->infoMessage("Added canonical_url to {$logsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
-	            return;
-	        }
-	        // Engine didn't support online DDL for ADD COLUMN — bare ALTER falls
-	        // back to whatever algorithm the engine picks (COPY on MyISAM / very
-	        // old InnoDB). On modern InnoDB the bare ALTER is itself implicitly
-	        // INPLACE for ADD COLUMN ... DEFAULT NULL, so this branch only runs
-	        // on legacy engines where some lock is unavoidable.
-	        $bareQuery = "ALTER TABLE " . $logsTable .
-	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
-	        $bare = $this->dbCore->queryAndGetResults($bareQuery,
-	            array('log_too_slow' => false));
-	        if (empty($bare['last_error'])) {
-	            $this->logger->infoMessage("Added canonical_url to {$logsTable} (bare ALTER fallback).");
-	        }
-	    }
-
-	    /**
-	     * Add the canonical_url column to the redirects table with online DDL
-	     * when supported.
-	     *
-	     * Sibling of ensureLogsv2CanonicalUrlColumn() applied to the redirects
-	     * side. The column shipped in 4.1.11 and is normally added by dbDelta
-	     * on plugin update. On hosts where dbDelta silently fails to ALTER ADD
-	     * it, every captured-404 INSERT errors out with "Unknown column
-	     * 'canonical_url' in 'field list'" until verifyColumns eventually
-	     * retries the column add. One site in the May 10 debug zip emitted
-	     * 1671 such errors over 10 days on 4.1.12. Calling this helper eagerly
-	     * from runInitialCreateTables() shortens that window: every cron tick
-	     * that runs the bootstrap loop retries the ALTER on its own,
-	     * independent of the verifyColumns DDL diff path.
-	     *
-	     * @param string $redirectsTable
-	     * @return void
-	     */
-	    public function ensureRedirectsCanonicalUrlColumn(string $redirectsTable): void {
-	        if ($this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($redirectsTable, 'canonical_url')) {
-	            return;
-	        }
-	        $inplaceQuery = "ALTER TABLE " . $redirectsTable .
-	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL," .
-	            " ALGORITHM=INPLACE, LOCK=NONE";
-	        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
-	            array('log_too_slow' => false, 'log_errors' => false));
-	        if (empty($result['last_error'])) {
-	            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
-	            return;
-	        }
-	        $bareQuery = "ALTER TABLE " . $redirectsTable .
-	            " ADD COLUMN `canonical_url` VARCHAR(2048) DEFAULT NULL";
-	        $bare = $this->dbCore->queryAndGetResults($bareQuery,
-	            array('log_too_slow' => false));
-	        if (empty($bare['last_error'])) {
-	            $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (bare ALTER fallback).");
-	        }
-	    }
-
-	    /**
-	     * The four denormalized derived columns added to the redirects table in
-	     * Denorm Step 3a (i459), keyed by column name with the exact column DDL
-	     * fragment used in ADD COLUMN. Single source of truth shared by the
-	     * targeted online-DDL add here and the backfill component's
-	     * column-exists guards. Must stay in sync with createRedirectsTable.sql.
-	     *
-	     * @var array<string, string>
-	     */
-	    private const REDIRECTS_DENORM_COLUMN_DDL = array(
-	        'logshits'         => '`logshits` BIGINT(20) NOT NULL DEFAULT 0',
-	        'last_used'        => '`last_used` BIGINT(20) DEFAULT NULL',
-	        'dest_for_view'    => '`dest_for_view` VARCHAR(2048) DEFAULT NULL',
-	        'dest_sort_key'    => '`dest_sort_key` VARCHAR(191) DEFAULT NULL',
-	        'url_sort_key'     => '`url_sort_key` VARCHAR(191) DEFAULT NULL',
-	        'published_status' => '`published_status` TINYINT(4) DEFAULT NULL',
-	    );
-
-	    /**
-	     * Add the four denormalized derived columns (logshits, last_used,
-	     * dest_for_view, published_status) to the redirects table with online
-	     * DDL when supported.
-	     *
-	     * Sibling of {@see ensureRedirectsCanonicalUrlColumn()}: a small
-	     * idempotent helper that runs ahead of the generic verifyColumns() flow
-	     * so the column adds can use ALGORITHM=INPLACE, LOCK=NONE on InnoDB 5.6
-	     * or newer (no table lock during the rewrite; 21K-row redirects tables
-	     * add in seconds). Only the columns actually missing are added, so
-	     * re-running this on a fully-migrated table is a no-op (each column is
-	     * SHOW COLUMNS-guarded per defensive philosophy #1/#7).
-	     *
-	     * On engines that don't support online DDL for ADD COLUMN the explicit
-	     * ALGORITHM clause causes ER_ALTER_OPERATION_NOT_SUPPORTED; we then fall
-	     * back to a bare ALTER, which is what verifyColumns() also runs as the
-	     * safety net. The derived columns carry sensible defaults (logshits 0;
-	     * the rest NULL) so existing rows are valid immediately;
-	     * backfillRedirectsDenormColumns() populates the real values across
-	     * later cron ticks without ever blocking activation.
-	     *
-	     * @param string $redirectsTable Fully-qualified redirects table name.
-	     * @return void
-	     */
-	    public function ensureRedirectsDenormColumns(string $redirectsTable): void {
-	        $backfill = $this->upgrades()->redirectsDenormBackfillUpgrade();
-	        $missingClauses = array();
-	        foreach (self::REDIRECTS_DENORM_COLUMN_DDL as $columnName => $columnDdl) {
-	            if (!$backfill->columnExists($redirectsTable, $columnName)) {
-	                $missingClauses[] = 'ADD COLUMN ' . $columnDdl;
-	            }
-	        }
-	        if (empty($missingClauses)) {
-	            return;
-	        }
-
-	        $addClause = implode(', ', $missingClauses);
-	        $inplaceQuery = "ALTER TABLE " . $redirectsTable . " " . $addClause .
-	            ", ALGORITHM=INPLACE, LOCK=NONE";
-	        $result = $this->dbCore->queryAndGetResults($inplaceQuery,
-	            array('log_too_slow' => false, 'log_errors' => false));
-	        if (empty($result['last_error'])) {
-	            $this->logger->infoMessage("Added denorm columns to {$redirectsTable} " .
-	                "(ALGORITHM=INPLACE, LOCK=NONE): " . $addClause);
-	            return;
-	        }
-	        // Engine didn't support online DDL for ADD COLUMN, fall back to a
-	        // bare ALTER, same as verifyColumns() would run. On modern InnoDB the
-	        // bare ALTER is itself implicitly INSTANT/INPLACE for ADD COLUMN with
-	        // a default, so this branch only runs on legacy engines.
-	        $bareQuery = "ALTER TABLE " . $redirectsTable . " " . $addClause;
-	        $bare = $this->dbCore->queryAndGetResults($bareQuery,
-	            array('log_too_slow' => false));
-	        if (empty($bare['last_error'])) {
-	            $this->logger->infoMessage("Added denorm columns to {$redirectsTable} " .
-	                "(bare ALTER fallback): " . $addClause);
-	        }
-	    }
 
 }
