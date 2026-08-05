@@ -104,7 +104,10 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
             . ' request_id=' . self::$requestId
             . ' budget_seconds=' . self::BUDGET_SECONDS
             . ' signal=' . $signal;
-        error_log($message);
+        // Same terminal-handler sink as every other last-resort path: this
+        // runs inside a signal handler that is about to end the process, so
+        // plugin logging may already be torn down.
+        abj404_logPhpFallback('fatal-handler-fallback', $message);
         exit(0);
     }
 
@@ -134,7 +137,8 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
     }
 
     private static function reportFailure(string $context, \Throwable $error): void {
-        error_log('[404 Solution] ' . $context . ': ' . get_class($error)
+        abj404_logPhpFallback('fatal-handler-fallback',
+            '[404 Solution] ' . $context . ': ' . get_class($error)
             . ' code=' . $error->getCode() . ' message=' . $error->getMessage());
     }
 }

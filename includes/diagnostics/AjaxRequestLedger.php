@@ -58,6 +58,12 @@ final class ABJ_404_Solution_AjaxRequestLedger {
         'ajaxRunCanaryStep' => true,
     );
 
+    /* The wider set of actions whose durable stage trace and operation tracers
+     * are armed once the debug setting opts in lives with the decision that
+     * uses it: ABJ_404_Solution_AjaxDiagnosticRequestPolicy::DIAGNOSTIC_TRACE_ACTIONS.
+     * This class owns request IDENTITY; that one owns whether a request may
+     * activate expensive journals at all. */
+
     /** Whether the existing debug setting opts into AJAX diagnostics. */
     public static function isAjaxDiagnosticsEnabled(): bool {
         return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::isEnabled();

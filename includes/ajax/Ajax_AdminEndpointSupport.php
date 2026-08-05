@@ -289,7 +289,15 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         }
 
         $GLOBALS['abj404_ajax_context'] = $context;
-        $diagnosticsEnabled = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId($context) !== '';
+        // diagnosticRequestId, not instrumentedRequestId: this arming point is
+        // shared by the table endpoint AND the canary ladder, and the
+        // instrumented predicate answers for ajaxUpdatePaginationLinks alone.
+        // Using it here left ajaxRunCanaryStep with every tracer null, so the
+        // ladder -- which exists only to re-run the same boot/auth/dispatch
+        // path and produce a COMPARABLE trace -- came back with none of the
+        // records it is compared against. Both predicates still require the
+        // debug opt-in, so a default GA request stays inert either way.
+        $diagnosticsEnabled = ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestId($context) !== '';
         $fileTracer = $diagnosticsEnabled
             ? static fn(string $operation, string $path, array $fields, callable $work) =>
                 ABJ_404_Solution_TemplateFileReadTracer::trace($operation, $path, $fields, $work)

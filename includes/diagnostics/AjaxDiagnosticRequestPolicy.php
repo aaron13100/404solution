@@ -13,6 +13,29 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
 
+    /**
+     * Actions whose durable stage trace and operation tracers are armed once
+     * the debug setting opts in. A superset of AjaxRequestLedger's
+     * BOOT_WAYPOINT_ACTIONS, and deliberately separate from it: a boot
+     * waypoint is written before the handler is even known, while these are
+     * armed inside
+     * ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext(),
+     * which all three of these endpoints route through.
+     *
+     * ajaxRefreshHealthBar belongs here because the foreground status-count
+     * work it triggers is one of the things the stall investigation is about;
+     * omitting it left that whole record family unattributed on the endpoint
+     * that most often performs it. There is no cost argument for leaving it
+     * out: with the debug setting off every action here is inert anyway, and
+     * with it on this is precisely the evidence the maintainer turned it on
+     * to get.
+     */
+    const DIAGNOSTIC_TRACE_ACTIONS = array(
+        'ajaxUpdatePaginationLinks' => true,
+        'ajaxRunCanaryStep' => true,
+        'ajaxRefreshHealthBar' => true,
+    );
+
     /** Whether the stored debug setting explicitly enables diagnostics. */
     public static function isEnabled(): bool {
         if (!function_exists('abj404_get_settings_options')) {
@@ -37,13 +60,14 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
     }
 
     /**
-     * Request ID for a durable table or canary trace, or an inert empty ID.
+     * Request ID for a durable stage trace on one of the admin AJAX endpoints
+     * that opt into tracing, or an inert empty ID.
      *
      * @param array<array-key, mixed> $context
      */
     public static function diagnosticRequestId(array $context): string {
         $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
-        if (!isset(ABJ_404_Solution_AjaxRequestLedger::BOOT_WAYPOINT_ACTIONS[$action]) || !self::isEnabled()) {
+        if (!isset(self::DIAGNOSTIC_TRACE_ACTIONS[$action]) || !self::isEnabled()) {
             return '';
         }
         return ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? null);
