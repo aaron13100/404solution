@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 4.3.2
+Stable tag: 4.3.3
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -201,6 +201,33 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 6. **Email Digest** — Weekly HTML email summarizing captured 404s, resolution rate, and a ranked table of top 404 URLs with color-coded hit badges.
 
 == Changelog ==
+
+= Version 4.3.3 (August 5, 2026) =
+
+**New Features**
+
+* Regex redirect destinations can now be site-relative paths such as `/archive/$1`, not only full http(s):// URLs.
+
+**Bug Fixes**
+
+* Fixed the Page Redirects and Captured 404s tabs being able to hang after their data was already built, on hosts that compress PHP output. The response could keep trying to flush output buffers until the host's execution limit killed the request. Flushing is now bounded, so the table finishes rendering instead of spinning.
+* Fixed a fatal error that could happen while updating from 4.2.x, when the server's PHP bytecode cache was still handing out the previous version's files as the new ones loaded. This guard protects future updates; it cannot protect the update that installs it.
+* Fixed a crashed or killed request being able to leave an internal lock behind, which left redirect lookups on a slower fallback path until the lock expired (more than 24 hours was observed on one site). Locks are now released even when the request dies, and an abandoned lock is reclaimed after at most 5 minutes instead of after the server's maximum execution time.
+* Fixed "Illegal mix of collations" database errors on sites whose plugin tables do not all share the same collation. This affected 404 log cleanup, the admin list counts, the email digest, and the dead-destination check.
+* Fixed the plugin running a schema-wide collation repair in the middle of an admin page load, which could make that page slow or time out. The repair now happens outside the page request.
+* Fixed slow sorting on the Captured 404s tab. The timestamp sort had no supporting database index, so a large site re-sorted the whole table on every page load.
+* Fixed the plugin trusting one of its own sort indexes by name alone. A database server silently narrows an index when a column it referenced is dropped, and an index narrowed that way was treated as correct forever, so the sorts it was built for scanned the entire table instead of reading a single page of rows. Indexes are now compared against the definition the plugin ships and rebuilt when they differ.
+* Fixed the Page Redirects and Captured 404s tabs waiting on their own row counts on large sites. Pagination and the per-status counts now load in separate stages, and a count that is still being computed is shown as incomplete instead of holding up the table.
+* Fixed a regex redirect whose source pattern starts with an anchor (for example `^/products/(.*)`) being rewritten on save into a pattern that could never match.
+* Fixed the Add Redirect dialog rejecting valid regex destinations, and checking them against a stale copy of the validation rules after an update.
+* Fixed the "Hits" counts on the admin tabs falling behind. The roll-up that keeps them current was no longer running from a page view, and the counts could also sit empty on sites whose WordPress cron is backed up. Both paths are restored.
+* Fixed 404 URLs containing `@` (retina images such as `logo@2x.png`) and PHP static-call frames in stack traces being mangled by the redaction that runs before a debug log or automatic report is written.
+* Fixed page suggestions staying poor for months after an interrupted rebuild. A partially built suggestion cache recovered at about 50 entries a day rather than rebuilding; it is now completed at full rebuild speed.
+
+**Improvements**
+
+* The hit-count roll-up no longer runs at the very end of an admin request, where it added as much as 21 seconds to the page on a 900,000-row test site.
+* On LiteSpeed servers the admin table response is handed back as soon as it is ready, instead of waiting for the rest of the request to finish.
 
 = Version 4.3.2 (July 11, 2026) =
 * FIX: Fixed the email digest sending every day even when the notification frequency was set to Weekly (thanks to gardendarts for reporting this). The weekly/daily cadence is now enforced against the time the last digest was actually sent, and changing the frequency in Settings now takes effect on the very next save instead of the next unrelated one.
@@ -416,72 +443,3 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Permalink keyword cron updates are now issued as a single bulk SQL query instead of up to 500 single-row UPDATEs per cycle, sharply reducing database load on busy sites.
 * The anonymous suggestion-compute endpoint now enforces a per-IP rate limit and rejects unauthorized requests before any plugin classes are loaded.
 
-= Version 4.1.8 (Apr 28, 2026) =
-
-**Bug Fixes**
-
-* Fixed a critical 4.1.7 regression where the `wp_abj404_logs_hits` cache table was dropped during the 4.1.6 → 4.1.7 upgrade and never recreated. Affected sites saw "Table doesn't exist" errors flooding the debug log and triggering email reports. Sites that already upgraded to 4.1.7 will have the table automatically recreated when they upgrade to 4.1.8 — the cache repopulates on the next scheduled rebuild. The destructive table-recreation step that caused this regression has been hardened to require positive evidence before dropping any table.
-* Fixed `mysqli_num_fields()` TypeError on PHP 8.1+ MariaDB sites caused by the new query timeout wrapper (4.1.7) being passed to `wpdb::get_results()` for non-SELECT queries. INSERT/UPDATE/DELETE/DDL queries now route through `wpdb::query()` so the wrapper no longer confuses WordPress's query classifier.
-* Fixed view-cache table self-repair only running on the upgrade path. Activation, scheduled cron runs, and upgrade now all repair a stripped view-cache table before any further table maintenance, so broken installs heal themselves regardless of how the plugin loads.
-* Fixed spurious "Table doesn't exist" debug-log noise and a stale `.notice-error` admin banner during fresh installs. Pre-create maintenance queries are now silent when their target tables don't yet exist.
-
-**Improvements**
-
-* Collation mismatches between database tables are now repaired automatically and silently. Previously these surfaced as admin notices; the plugin now runs collation correction on detection (rate-limited to once per hour), retries the original query, and only logs at debug level — no user action required.
-
-= Version 4.1.7 (Apr 25, 2026) =
-
-**Bug Fixes**
-
-* Fixed HTTP 524 timeout error on the Captured 404s admin tab for sites behind Cloudflare or other reverse proxies. The hits table rebuild query (which joins the logs table with redirects) is now split into a fast chunked pre-aggregation that scales to millions of log rows.
-* Fixed AJAX responses not being flushed before shutdown hooks, which could cause proxy timeouts even when the response data was ready.
-* Fixed ANALYZE TABLE running on every Settings page load, causing unnecessary database overhead.
-
-**Improvements**
-
-* All database queries now have automatic execution time limits (not just SELECT queries). INSERT...SELECT, UPDATE, DELETE, and DDL queries are also protected on MariaDB; INSERT...SELECT is also protected on MySQL.
-
-= Version 4.1.6 (Apr 23, 2026) =
-
-**New Features**
-
-* Automatic query timeout — all SELECT queries now include a server-side execution time limit, preventing runaway queries from locking the database on shared hosting.
-* WordPress URL-guess fallback — when no matching engine finds a redirect, the plugin now tries WordPress's built-in URL guessing as a last-resort redirect before returning a 404.
-
-**Improvements**
-
-* Admin pages now load instantly — all heavy database queries on the Redirects, Captured 404s, Logs, and Settings pages are deferred to AJAX, eliminating blocking page loads on large sites.
-* Optimized three slow view queries that could cause timeouts on sites with large redirect and log tables.
-
-**Bug Fixes**
-
-* Fixed AJAX error state leaving placeholder loading attributes on admin tables, preventing interaction until page reload.
-* Fixed duplicate bottom table separator appearing after AJAX table hydration.
-* Fixed Logs page not loading via AJAX due to missing `.perpage` class on the per-page select element.
-* Fixed stray search filter and unwanted top pagination placeholders appearing on admin pages.
-* Fixed SQL query referencing a non-existent column in the logs-hits join query.
-
-= Version 4.1.5 (Apr 22, 2026) =
-
-**New Features**
-
-* Simple mode Phase 3 — streamlined UI with contextual guidance, suggested destinations for captured 404s, and auto-created redirects for first-time users. Hides advanced columns and options in Simple mode for a cleaner experience.
-* Centralized Google OAuth — one-click Google Search Console connection via a Cloudflare Worker relay, replacing the manual client-ID setup.
-
-**Bug Fixes**
-
-* Fixed "Illegal mix of collations" errors when WordPress core tables use `utf8mb3` and plugin tables use `utf8mb4`. Core columns are now wrapped with `CONVERT(...USING utf8mb4)` before applying `COLLATE`.
-* Fixed collation mismatch in `getPublishedImageIDs` query when comparing term names across tables with different collations.
-* Fixed `opcache_invalidate()` emitting a PHP warning on hosts that restrict the function via `disable_functions` (e.g. some WP Engine/Flywheel configurations).
-* Fixed potential out-of-memory crash when the `logs_hits` fallback query ran without a row limit — now capped at 5,000 rows.
-* Fixed four small correctness issues in redirect filtering, view queries, settings save, and redirect-table rendering.
-
-**Improvements**
-
-* Hardened admin page rendering against out-of-memory errors, corrupted options, and hook failures — the plugin now always shows its admin menu even when dependencies fail, and catches fatal errors with a shutdown handler fallback.
-* Migrated four redirect query methods to the centralized `queryAndGetResults()` handler for consistent error handling and retry logic.
-
-**Internationalization**
-
-* Added Simple mode Phase 3 strings to all 17 locale PO files.
-* Added missing admin error message translations across all locale PO files.

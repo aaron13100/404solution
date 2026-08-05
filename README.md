@@ -204,6 +204,33 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
+## Version 4.3.3 (August 5, 2026) ##
+
+**New Features**
+
+* Regex redirect destinations can now be site-relative paths such as `/archive/$1`, not only full http(s):// URLs.
+
+**Bug Fixes**
+
+* Fixed the Page Redirects and Captured 404s tabs being able to hang after their data was already built, on hosts that compress PHP output. The response could keep trying to flush output buffers until the host's execution limit killed the request. Flushing is now bounded, so the table finishes rendering instead of spinning.
+* Fixed a fatal error that could happen while updating from 4.2.x, when the server's PHP bytecode cache was still handing out the previous version's files as the new ones loaded. This guard protects future updates; it cannot protect the update that installs it.
+* Fixed a crashed or killed request being able to leave an internal lock behind, which left redirect lookups on a slower fallback path until the lock expired (more than 24 hours was observed on one site). Locks are now released even when the request dies, and an abandoned lock is reclaimed after at most 5 minutes instead of after the server's maximum execution time.
+* Fixed "Illegal mix of collations" database errors on sites whose plugin tables do not all share the same collation. This affected 404 log cleanup, the admin list counts, the email digest, and the dead-destination check.
+* Fixed the plugin running a schema-wide collation repair in the middle of an admin page load, which could make that page slow or time out. The repair now happens outside the page request.
+* Fixed slow sorting on the Captured 404s tab. The timestamp sort had no supporting database index, so a large site re-sorted the whole table on every page load.
+* Fixed the plugin trusting one of its own sort indexes by name alone. A database server silently narrows an index when a column it referenced is dropped, and an index narrowed that way was treated as correct forever, so the sorts it was built for scanned the entire table instead of reading a single page of rows. Indexes are now compared against the definition the plugin ships and rebuilt when they differ.
+* Fixed the Page Redirects and Captured 404s tabs waiting on their own row counts on large sites. Pagination and the per-status counts now load in separate stages, and a count that is still being computed is shown as incomplete instead of holding up the table.
+* Fixed a regex redirect whose source pattern starts with an anchor (for example `^/products/(.*)`) being rewritten on save into a pattern that could never match.
+* Fixed the Add Redirect dialog rejecting valid regex destinations, and checking them against a stale copy of the validation rules after an update.
+* Fixed the "Hits" counts on the admin tabs falling behind. The roll-up that keeps them current was no longer running from a page view, and the counts could also sit empty on sites whose WordPress cron is backed up. Both paths are restored.
+* Fixed 404 URLs containing `@` (retina images such as `logo@2x.png`) and PHP static-call frames in stack traces being mangled by the redaction that runs before a debug log or automatic report is written.
+* Fixed page suggestions staying poor for months after an interrupted rebuild. A partially built suggestion cache recovered at about 50 entries a day rather than rebuilding; it is now completed at full rebuild speed.
+
+**Improvements**
+
+* The hit-count roll-up no longer runs at the very end of an admin request, where it added as much as 21 seconds to the page on a 900,000-row test site.
+* On LiteSpeed servers the admin table response is handed back as soon as it is ready, instead of waiting for the rest of the request to finish.
+
 ## Version 4.3.2 (July 11, 2026) ##
 * FIX: Fixed the email digest sending every day even when the notification frequency was set to Weekly (thanks to gardendarts for reporting this). The weekly/daily cadence is now enforced against the time the last digest was actually sent, and changing the frequency in Settings now takes effect on the very next save instead of the next unrelated one.
 * FIX: Fixed automatic error and heartbeat reports silently failing to send on some sites when an internal reporting component was unavailable.
