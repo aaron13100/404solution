@@ -29,6 +29,10 @@ require_once __DIR__ . '/DatabaseSchemaErrorTaxonomy.php';
 // allow-no-test-found: covered through DatabaseErrorClassifier facade by tests/SuppressWpdbErrorsTest.php and tests/DataAccessRetrySemanticsTest.php / tests/DataAccessInfraErrorNoticeLifecycleTest.php
 class ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy {
 
+    public const QUERY_RETRY_NONE = 'none';
+    public const QUERY_RETRY_IMMEDIATE = 'immediate';
+    public const QUERY_RETRY_BACKOFF = 'backoff';
+
     /** @var ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy */
     private $connectivity;
 
@@ -74,6 +78,7 @@ class ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy {
         return $this->hostState->isDiskFullError($errorText)
             || $this->hostState->isReadOnlyError($errorText)
             || $this->hostState->isQuotaLimitError($errorText)
+            || $this->hostState->isOutOfMemoryError($errorText)
             || $this->schema->isInvalidDataError($errorText)
             || $this->schema->isCollationError($errorText)
             || $this->schema->isMissingPluginTableError($errorText)
@@ -83,6 +88,43 @@ class ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy {
             || $this->hostState->isGaleraConflictError($errorText)
             || $this->connectivity->isTransientConnectionError($errorText)
             || $this->connectivity->isQueryTimeoutError($errorText)
+            || $this->connectivity->isCommandsOutOfSyncError($errorText)
             || $this->hostState->isAccessDeniedError($errorText);
+    }
+
+    /**
+     * Classify retryable DAO errors once so observed-error suppression and the
+     * recovery pipeline cannot drift into different string-family policies.
+     *
+     * @param string $errorText
+     * @return array{strategy: string, branch: string, reason: string}
+     */
+    public function classifyQueryRetry(string $errorText): array {
+        if ($this->connectivity->isTransientConnectionError($errorText)) {
+            return array(
+                'strategy' => self::QUERY_RETRY_IMMEDIATE,
+                'branch' => 'transient_connection',
+                'reason' => 'connection_lost',
+            );
+        }
+        if ($this->hostState->isGaleraConflictError($errorText)) {
+            return array(
+                'strategy' => self::QUERY_RETRY_IMMEDIATE,
+                'branch' => 'galera_cluster_state',
+                'reason' => 'galera_retryable',
+            );
+        }
+        if ($this->connectivity->isDeadlockOrLockTimeoutError($errorText)) {
+            return array(
+                'strategy' => self::QUERY_RETRY_BACKOFF,
+                'branch' => 'deadlock',
+                'reason' => 'deadlock_or_lock_timeout',
+            );
+        }
+        return array(
+            'strategy' => self::QUERY_RETRY_NONE,
+            'branch' => '',
+            'reason' => '',
+        );
     }
 }

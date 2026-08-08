@@ -18,6 +18,26 @@ if (!defined('ABSPATH')) {
 // allow-no-test-found: covered through DatabaseInfrastructureErrorTaxonomy facade by tests/ErrorClassifierTest.php and tests/StagedBuildHostQuirksTest.php
 class ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy {
 
+    /** @var array<int, string> */
+    private const COMMANDS_OUT_OF_SYNC_MARKERS = array(
+        'commands out of sync',
+        'cr_commands_out_of_sync',
+        'errno 2014',
+        'errno: 2014',
+        'error 2014:',
+        '[2014]',
+        '(2014)',
+    );
+
+    /** @var array<int, string> */
+    private const DEADLOCK_OR_LOCK_TIMEOUT_MARKERS = array(
+        'deadlock found',
+        'lock wait timeout exceeded',
+        'lock deadlock; retry transaction',
+        'error 1213',
+        'error 1205',
+    );
+
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -37,7 +57,7 @@ class ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy {
         $lower = strtolower($errorText);
         $transientMarkers = array(
             'server has gone away',
-            'lost connection to mysql server during query',
+            'lost connection to mysql server',
             'error while sending query packet',
             'packets out of order',
             'connection was killed',
@@ -47,7 +67,7 @@ class ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy {
                 return true;
             }
         }
-        foreach (array('2006', '2013') as $code) {
+        foreach (array('2006', '2013', '2055') as $code) {
             if ($this->f->strpos($lower, '[' . $code . ']') !== false
                 || $this->f->strpos($lower, '(' . $code . ')') !== false
                 || $this->f->strpos($lower, 'errno ' . $code) !== false
@@ -88,9 +108,25 @@ class ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy {
             return false;
         }
         $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'deadlock found') !== false ||
-            $this->f->strpos($lower, 'lock wait timeout exceeded') !== false ||
-            $this->f->strpos($lower, 'error 1213') !== false ||
-            $this->f->strpos($lower, 'error 1205') !== false);
+        foreach (self::DEADLOCK_OR_LOCK_TIMEOUT_MARKERS as $marker) {
+            if ($this->f->strpos($lower, $marker) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @param string $errorText @return bool */
+    public function isCommandsOutOfSyncError(string $errorText): bool {
+        if ($errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        foreach (self::COMMANDS_OUT_OF_SYNC_MARKERS as $marker) {
+            if ($this->f->strpos($lower, $marker) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 }

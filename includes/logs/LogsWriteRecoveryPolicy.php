@@ -15,20 +15,26 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
     /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
     private $noticeState;
 
+    /** @var ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy */
+    private $connectivityTaxonomy;
+
     /**
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
+     * @param ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy $connectivityTaxonomy
      */
     public function __construct(
         $logger,
-        ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
+        ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState,
+        ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy $connectivityTaxonomy
     ) {
         $this->logger = $logger;
         $this->noticeState = $noticeState;
+        $this->connectivityTaxonomy = $connectivityTaxonomy;
     }
 
     public function isCommandsOutOfSyncError(string $error): bool {
-        return stripos($error, 'commands out of sync') !== false;
+        return $this->connectivityTaxonomy->isCommandsOutOfSyncError($error);
     }
 
     public function isTableFullError(string $error): bool {

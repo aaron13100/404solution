@@ -4,10 +4,10 @@
  *
  * Owns string-based classification of server-side state failures: storage
  * exhaustion (disk, quota, memory), write-blocking modes (read-only,
- * Galera optimistic-concurrency conflicts), and access-control rejections
- * (access denied, missing SUPER privilege for SET STATEMENT). These are the
- * error classes the notice-state side-effects and "permanent host-side
- * staged failure" policies act on.
+ * Galera cluster-readiness and optimistic-concurrency conflicts), and
+ * access-control rejections (access denied, missing SUPER privilege for SET
+ * STATEMENT). These are the error classes the notice-state side-effects and
+ * "permanent host-side staged failure" policies act on.
  *
  * No side effects: callers reuse the matchers without inheriting recovery
  * behavior.
@@ -19,6 +19,23 @@ if (!defined('ABSPATH')) {
 
 // allow-no-test-found: covered through DatabaseInfrastructureErrorTaxonomy facade by tests/ErrorClassifierTest.php and tests/StagedBuildHostQuirksTest.php
 class ABJ_404_Solution_DatabaseHostStateErrorTaxonomy {
+
+    /**
+     * Galera conditions where the same query can succeed after cluster state
+     * or optimistic certification advances. This data table is the single
+     * vocabulary for both warning severity and DAO retry policy.
+     *
+     * @var array<int, string>
+     */
+    private const RETRYABLE_GALERA_MARKERS = array(
+        'record has changed since last read',
+        'wsrep_local_state',
+        'cluster conflict',
+        'wsrep has not yet prepared node for application use',
+        'node is not ready for application use',
+        'non-primary component',
+        'non primary component',
+    );
 
     /** @var ABJ_404_Solution_Functions */
     private $f;
@@ -40,6 +57,7 @@ class ABJ_404_Solution_DatabaseHostStateErrorTaxonomy {
             $this->f->strpos($lower, 'errno: 28') !== false ||
             $this->f->strpos($lower, 'errcode: 28') !== false ||
             $this->f->strpos($lower, 'no space left on device') !== false ||
+            $this->f->strpos($lower, 'disk quota exceeded') !== false ||
             $this->f->strpos($lower, "' is full") !== false ||
             $this->f->strpos($lower, 'table is full') !== false ||
             $this->f->strpos($lower, 'disk full') !== false);
@@ -94,9 +112,12 @@ class ABJ_404_Solution_DatabaseHostStateErrorTaxonomy {
             return false;
         }
         $lower = strtolower($errorText);
-        return ($this->f->strpos($lower, 'record has changed since last read') !== false ||
-            $this->f->strpos($lower, 'wsrep_local_state') !== false ||
-            $this->f->strpos($lower, 'cluster conflict') !== false);
+        foreach (self::RETRYABLE_GALERA_MARKERS as $marker) {
+            if ($this->f->strpos($lower, $marker) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

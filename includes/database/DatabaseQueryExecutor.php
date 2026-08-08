@@ -245,7 +245,9 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $recoveryTracer->recordFirstDriverReturn();
         $recoveryTracer->startRecovery();
         $lastErrorForObservedLog = is_string($result['last_error'] ?? null) ? $result['last_error'] : '';
-        if ($lastErrorForObservedLog === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError($lastErrorForObservedLog)) {
+        $retryDecision = $this->core->errorClassifier()->taxonomy()->classifyQueryRetry($lastErrorForObservedLog);
+        if ($lastErrorForObservedLog === ''
+            || $retryDecision['strategy'] === ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy::QUERY_RETRY_NONE) {
             $this->core->sqlErrorReporter()->logObservedSqlError($query, $result, $options, $producesRows);
         }
 

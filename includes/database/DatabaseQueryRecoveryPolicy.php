@@ -10,9 +10,9 @@ if (!defined('ABSPATH')) {
  * DatabaseQueryExecutor owns normalization, preparation, raw execution, and
  * result harvesting. This policy owns the ordered recovery decisions that run
  * after the first wpdb call has produced an error: timeout-wrapper fallback,
- * transient reconnect retry, missing-table repair, invalid-data retry,
- * deadlock retry and notice, collation recovery, timeout fallback rows, and
- * server-side issue state.
+ * immediate transient-infrastructure retry, missing-table repair,
+ * invalid-data retry, deadlock retry and notice, collation recovery, timeout
+ * fallback rows, and server-side issue state.
  */
 class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
 
@@ -77,7 +77,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
                 $producesRows,
                 $tracer
             );
-            $this->retryTransientConnectionIfNeeded(
+            $this->retryImmediateInfrastructureIfNeeded(
                 $query,
                 $result,
                 $resultType,
@@ -147,7 +147,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
      * @param bool $producesRows
      * @return void
      */
-    private function retryTransientConnectionIfNeeded(
+    private function retryImmediateInfrastructureIfNeeded(
         string $query,
         array &$result,
         string $resultType,
@@ -155,33 +155,40 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
     ): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isTransientConnectionError($lastError)) {
+        $retryDecision = $this->core->errorClassifier()->taxonomy()->classifyQueryRetry($lastError);
+        if ($lastError === ''
+            || $retryDecision['strategy'] !== ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy::QUERY_RETRY_IMMEDIATE) {
             return;
         }
 
-        $tracer->traceBranch('transient_connection', function () use (
+        $retryBranch = $retryDecision['branch'];
+        $retryReason = $retryDecision['reason'];
+
+        $tracer->traceBranch($retryBranch, function () use (
             $query,
             &$result,
             $resultType,
             $producesRows,
-            $tracer
+            $tracer,
+            $retryBranch,
+            $retryReason
         ): void {
             global $wpdb;
             $tracer->traceOperation(
-                'transient_connection',
+                $retryBranch,
                 'connection_recovery',
                 fn(): bool => $this->core->connectionManager()->ensureConnection()
             );
             $tracer->traceOperation(
-                'transient_connection',
+                $retryBranch,
                 'wpdb_flush',
                 static function () use ($wpdb): void {
                     $wpdb->flush();
                 }
             );
             $retried = $tracer->traceAttempt(
-                'transient_connection',
-                'connection_lost',
+                $retryBranch,
+                $retryReason,
                 fn(): array => $this->executeWpdbQuery($query, $resultType, $producesRows)
             );
             $result = array_merge($result, $retried);
@@ -258,7 +265,9 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
     ): void {
         $lastError = $this->lastErrorFromResult($result);
-        if ($lastError === '' || !$this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError)) {
+        $retryDecision = $this->core->errorClassifier()->taxonomy()->classifyQueryRetry($lastError);
+        if ($lastError === ''
+            || $retryDecision['strategy'] !== ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy::QUERY_RETRY_BACKOFF) {
             return;
         }
 
