@@ -5,6 +5,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__DIR__) . '/feedback/SupportLogExcerpt.php';
+
 /* Static functions that can be used from anywhere.  */
 
 class ABJ_404_Solution_Logging {
@@ -389,23 +391,21 @@ class ABJ_404_Solution_Logging {
         );
     }
     
-    /**
-     * @return array{num: int, line: string|null, total_error_count: int}
-     */
+    /** @return array{num: int, line: string|null, total_error_count: int} */
     function getLatestErrorLine(): array {
         return $this->getDebugLogReader()->getLatestErrorLine($this->getDebugFilePath());
     }
-    
-    /**
-     * Get sanitized log excerpt for support emails.
-     * Collects last 15 ERROR/WARN entries (already sanitized at write-time)
-     * plus the last 20 lines for recent context (admin actions, AJAX calls).
-     * If no errors/warnings found, includes only the last 20 lines.
-     *
-     * @return string Sanitized log excerpt or message if no errors found
-     */
+
+    /** @return array<string, mixed> Request-scoped feedback snapshot. */
+    function getDebugLogSnapshot(): array {
+        return $this->getDebugLogReader()->getSnapshot($this->getDebugFilePath());
+    }
+
+    /** @return string Sanitized support excerpt from the same snapshot. */
     function getSanitizedLogExcerptForSupport() {
-        return $this->getDebugLogReader()->getSanitizedLogExcerptForSupport($this->getDebugFilePath());
+        return ABJ_404_Solution_SupportLogExcerpt::formatSnapshot(
+            $this->getDebugLogReader()->getSnapshot($this->getDebugFilePath())
+        );
     }
 
     /**

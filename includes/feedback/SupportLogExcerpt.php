@@ -15,9 +15,8 @@ if (!defined('ABSPATH')) {
  * string is the same defect the collection manifest exists to end, one layer
  * up: a developer holding the report cannot tell "this site has no log" from
  * "the logging service was not registered" from "reading the log threw".
- * ABJ_404_Solution_DebugLogReader already answers in words when the FILE is
- * missing or unreadable ("No log file available"); everything above it threw
- * that discipline away.
+ * formatSnapshot() answers in words when the FILE is missing or unreadable
+ * ("No log file available"); the older repeated collectors lost that fact.
  *
  * So the resolution lives here once, and every branch that yields no excerpt
  * yields a sentence instead. Three copies of a silent path could each be fixed
@@ -30,6 +29,65 @@ final class ABJ_404_Solution_SupportLogExcerpt {
 
     /** Bytes of an underlying exception message carried into the report. */
     const MAX_REASON_DETAIL_LENGTH = 200;
+
+    /** Keeps the latest error header inside the 5 KB support preview. */
+    const LATEST_ERROR_MAX_BYTES = 4096;
+
+    /**
+     * Present one DebugLogReader snapshot without performing another read.
+     *
+     * @param array<string, mixed> $snapshot
+     */
+    public static function formatSnapshot(array $snapshot): string {
+        $status = isset($snapshot['status']) && is_string($snapshot['status'])
+            ? $snapshot['status'] : 'unreadable';
+        if ($status === 'missing') {
+            return 'No log file available';
+        }
+        if ($status !== 'ok') {
+            return 'Log file not readable';
+        }
+        $rawEntries = isset($snapshot['error_entries']) && is_array($snapshot['error_entries'])
+            ? $snapshot['error_entries'] : array();
+        $entries = array();
+        foreach ($rawEntries as $rawEntry) {
+            if (is_array($rawEntry)) {
+                $lines = array_values(array_filter($rawEntry, 'is_string'));
+                if ($lines !== array()) {
+                    $entries[] = $lines;
+                }
+            }
+        }
+        $rawRecent = isset($snapshot['recent_lines']) && is_array($snapshot['recent_lines'])
+            ? $snapshot['recent_lines'] : array();
+        $recent = array_values(array_filter($rawRecent, 'is_string'));
+        if ($entries === array()) {
+            if ($recent === array()) {
+                return 'Log file is empty';
+            }
+            return trim('No ERROR/WARN entries found. Last ' . count($recent)
+                . " log lines:\n\n" . implode('', $recent));
+        }
+
+        $output = 'Last ' . count($entries) . " ERROR/WARN entries:\n\n";
+        foreach ($entries as $entry) {
+            $output .= implode("\n", $entry) . "\n\n";
+        }
+        if ($recent !== array()) {
+            $output .= 'Recent context (last ' . count($recent) . " lines):\n\n"
+                . implode('', $recent);
+        }
+        $latest = isset($snapshot['line']) && is_string($snapshot['line']) ? $snapshot['line'] : '';
+        if ($latest !== '') {
+            $bounded = substr($latest, 0, self::LATEST_ERROR_MAX_BYTES);
+            $output .= "\n\nLatest reportable ERROR evidence:\n\n" . $bounded;
+            if (strlen($latest) > strlen($bounded)) {
+                $output .= "\n[404 Solution] Latest ERROR evidence truncated to "
+                    . self::LATEST_ERROR_MAX_BYTES . ' bytes.';
+            }
+        }
+        return trim($output);
+    }
 
     /**
      * The excerpt, tail-bounded, or a one-line reason.

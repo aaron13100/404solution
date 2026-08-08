@@ -196,7 +196,13 @@ return (function (): array {
         'previously_sent_line' => ['type' => 'int'],
         'debug_log'            => [
             'type' => 'string',
-            'description' => 'Sanitized plugin debug-log tail emitted by FeedbackTransport::debugLogPayload() for opted-in error diagnostics. Server contract accepts this field as debug_log. Not sent for heartbeat: a heartbeat has no error to diagnose, and recent_error_signatures already covers the no-error case in normalized, aggregate form.',
+            'description' => 'Sanitized recent debug-log tail for opted-in error diagnostics. It remains a tail under evidence schema v1; when the named error is older, debug_log_evidence carries a separate non-overlapping anchor and both fields share 262144 bytes.',
+        ],
+        'debug_log_evidence'   => [
+            'type' => 'object',
+            'key_type' => 'string',
+            'required' => false,
+            'description' => 'Additive versioned metadata and anchored excerpt for the error named by this report. schema_version=1 preserves debug_log as a tail and allocates one shared 262144-byte budget across the tail and non-overlapping error_excerpt.',
         ],
     ];
 

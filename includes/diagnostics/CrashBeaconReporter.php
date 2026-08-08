@@ -118,10 +118,18 @@ class ABJ_404_Solution_CrashBeaconReporter {
                 return false;
             }
 
+            $signature = $this->buildSignature($beacon);
             $payload = call_user_func($this->payloadBuilder, 'error', array(
-                'error_signature' => $this->buildSignature($beacon),
+                'error_signature' => $signature,
                 'previously_sent_line' => 0,
-                'error_count_in_log' => 0,
+                'debug_log_evidence' => array(
+                    'schema_version' => 1,
+                    'source' => 'crash_beacon',
+                    'error_excerpt' => $signature,
+                    'error_excerpt_in_debug_log' => false,
+                    'error_line_number' => -1,
+                    'total_evidence_bytes' => strlen($signature),
+                ),
             ));
 
             $sent = (bool) call_user_func($this->sender, $payload, 'error');

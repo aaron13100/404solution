@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/FeedbackDatabaseIdentity.php';
+require_once __DIR__ . '/DebugLogEvidenceBudget.php';
 require_once __DIR__ . '/FeedbackDiagnosticsCollector.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras.php';
 require_once __DIR__ . '/FeedbackPluginSettingsSnapshot.php';
@@ -79,6 +80,10 @@ class ABJ_404_Solution_FeedbackPayloadBuilder {
 
         foreach ($extra as $k => $v) {
             $payload[(string)$k] = $v;
+        }
+
+        if ($type === 'error') {
+            $payload = ABJ_404_Solution_DebugLogEvidenceBudget::normalizePayload($payload);
         }
 
         $payload = ABJ_404_Solution_FeedbackPayloadSchemaGuard::normalize($payload);

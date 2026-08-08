@@ -4,14 +4,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DebugLogEvidenceBudget.php';
+
 /**
  * Collects content, redirect, captured-404, log, and debug-file diagnostics
  * for feedback payloads. Each source degrades independently so one broken
  * optional service cannot abort the whole report.
  */
 class ABJ_404_Solution_FeedbackDiagnosticsCollector {
-
-    const DEBUG_LOG_MAX_BYTES = 262144;
 
     /**
      * Status-count freshness reported alongside the tallies. The three
@@ -66,9 +66,7 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
 
         $payload['log_entries_count']     = $this->tryInt(function () { return $this->logEntriesCount(); });
         $payload['log_table_size_bytes']  = $this->tryInt(function () { return $this->logTableSizeBytes(); });
-        $payload['error_count_in_log']    = $this->tryInt(function () { return $this->errorCountInLog(); });
-        $payload['debug_file_size_bytes'] = $this->tryInt(function () { return $this->debugFileSizeBytes(); });
-        $payload += $this->debugLogPayload($type);
+        $payload += $this->debugLogReportFields($type);
 
         return $payload;
     }
@@ -319,102 +317,102 @@ class ABJ_404_Solution_FeedbackDiagnosticsCollector {
         return $bytes;
     }
 
-    private function errorCountInLog(): int {
-        if (!function_exists('abj_service')) {
-            throw new \RuntimeException('abj_service unavailable');
-        }
-        $logger = abj_service('logging');
-        if (!is_object($logger) || !method_exists($logger, 'getLatestErrorLine')) {
-            throw new \RuntimeException('Logging::getLatestErrorLine unavailable');
-        }
-        $info = $logger->getLatestErrorLine();
-        if (is_array($info) && isset($info['total_error_count']) && is_scalar($info['total_error_count'])) {
-            return (int)$info['total_error_count'];
-        }
-        throw new \RuntimeException('getLatestErrorLine returned unexpected shape');
-    }
-
-    private function debugFileSizeBytes(): int {
-        if (!function_exists('abj_service')) {
-            throw new \RuntimeException('abj_service unavailable');
-        }
-        $logger = abj_service('logging');
-        if (!is_object($logger) || !method_exists($logger, 'getDebugFilePath')) {
-            throw new \RuntimeException('Logging::getDebugFilePath unavailable');
-        }
-        $path = $logger->getDebugFilePath();
-        if (!is_string($path) || $path === '' || !file_exists($path)) {
-            return 0;
-        }
-        $fs = @filesize($path);
-        if (is_int($fs)) {
-            return $fs;
-        }
-        throw new \RuntimeException('filesize() failed');
-    }
-
     /**
-     * @return array{debug_log?: string}
+     * Count, size, tail, and anchor are projected from one reader result. The
+     * production Logging facade exposes the snapshot API; the compatibility
+     * branch keeps older test doubles and partially upgraded installs usable.
+     *
+     * @return array<string, mixed>
      */
-    private function debugLogPayload(string $type): array {
-        // Only 'error' reports need the raw log tail for reproduction context.
-        // A heartbeat has no error to diagnose; recent_error_signatures
-        // (environment_extras) already surfaces any ERROR/WARN lines from the
-        // same window in normalized form, so shipping up to 262144 raw bytes
-        // on every weekly heartbeat is PII/bandwidth over-collection with no
-        // offsetting diagnostic value.
-        if ($type !== 'error') {
-            return array();
+    private function debugLogReportFields(string $type): array {
+        try {
+            $evidence = $this->debugLogReportEvidence();
+            $fields = array(
+                'error_count_in_log' => isset($evidence['total_error_count'])
+                    && is_scalar($evidence['total_error_count'])
+                    ? (int)$evidence['total_error_count'] : null,
+                'debug_file_size_bytes' => isset($evidence['debug_file_size_bytes'])
+                    && is_scalar($evidence['debug_file_size_bytes'])
+                    ? (int)$evidence['debug_file_size_bytes'] : null,
+            );
+            if ($type === 'error') {
+                $fields['debug_log'] = isset($evidence['debug_log']) && is_string($evidence['debug_log'])
+                    ? $evidence['debug_log'] : '';
+                $fields['debug_log_evidence'] = isset($evidence['debug_log_evidence'])
+                    && is_array($evidence['debug_log_evidence'])
+                    ? $evidence['debug_log_evidence'] : ABJ_404_Solution_DebugLogEvidenceBudget::emptyEvidence()['debug_log_evidence'];
+            }
+            return $fields;
+        } catch (\Throwable $e) {
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn',
+                'FeedbackDiagnosticsCollector debug-log snapshot failed: ' . $e->getMessage()
+            );
+            $fields = array('error_count_in_log' => null, 'debug_file_size_bytes' => null);
+            if ($type === 'error') {
+                $fields['debug_log'] = '';
+                $fields['debug_log_evidence'] = ABJ_404_Solution_DebugLogEvidenceBudget::emptyEvidence()['debug_log_evidence'];
+            }
+            return $fields;
         }
-        return array('debug_log' => $this->tryString(function () { return $this->debugLogTail(); }));
     }
 
-    private function debugLogTail(): string {
+    /** @return array<string, mixed> */
+    private function debugLogReportEvidence(): array {
         if (!function_exists('abj_service')) {
             throw new \RuntimeException('abj_service unavailable');
         }
         $logger = abj_service('logging');
-        if (!is_object($logger) || !method_exists($logger, 'getDebugFilePath')) {
-            throw new \RuntimeException('Logging::getDebugFilePath unavailable');
+        if (!is_object($logger)) {
+            throw new \RuntimeException('Logging service unavailable');
         }
-        $path = $logger->getDebugFilePath();
-        if (!is_string($path) || $path === '' || !is_readable($path)) {
-            return '';
-        }
-
-        $size = @filesize($path);
-        if (!is_int($size) || $size <= 0) {
-            return '';
-        }
-
-        $handle = @fopen($path, 'rb');
-        if (!is_resource($handle)) {
-            throw new \RuntimeException('fopen() failed');
-        }
-
-        try {
-            $offset = max(0, $size - self::DEBUG_LOG_MAX_BYTES);
-            if ($offset > 0 && @fseek($handle, $offset) !== 0) {
-                throw new \RuntimeException('fseek() failed');
+        if (method_exists($logger, 'getDebugLogSnapshot')) {
+            $snapshot = $logger->getDebugLogSnapshot();
+            if (is_array($snapshot)) {
+                return $this->shapeDebugLogSnapshot($snapshot);
             }
-
-            $remaining = min($size, self::DEBUG_LOG_MAX_BYTES);
-            $contents = '';
-            while ($remaining > 0 && !feof($handle)) {
-                $chunk = @fread($handle, min(8192, $remaining));
-                if ($chunk === false) {
-                    throw new \RuntimeException('fread() failed');
-                }
-                if ($chunk === '') {
-                    break;
-                }
-                $contents .= $chunk;
-                $remaining -= strlen($chunk);
-            }
-            return $contents;
-        } finally {
-            fclose($handle);
+            throw new \RuntimeException('getDebugLogSnapshot returned unexpected shape');
         }
+        if (method_exists($logger, 'getDebugFilePath')) {
+            $path = $logger->getDebugFilePath();
+            if (is_string($path) && $path !== '' && class_exists('ABJ_404_Solution_DebugLogReader')) {
+                $reader = new ABJ_404_Solution_DebugLogReader(function (string $message): void {
+                    ABJ_404_Solution_FeedbackTransportLog::log('warn', $message);
+                });
+                return $this->shapeDebugLogSnapshot($reader->getSnapshot($path));
+            }
+        }
+        if (!method_exists($logger, 'getLatestErrorLine')) {
+            throw new \RuntimeException('Logging debug-log readers unavailable');
+        }
+        $latest = $logger->getLatestErrorLine();
+        if (!is_array($latest)) {
+            throw new \RuntimeException('getLatestErrorLine returned unexpected shape');
+        }
+        return array(
+            'total_error_count' => isset($latest['total_error_count']) && is_scalar($latest['total_error_count'])
+                ? (int)$latest['total_error_count'] : 0,
+            'debug_file_size_bytes' => 0,
+            'debug_log' => '',
+            'debug_log_evidence' => ABJ_404_Solution_DebugLogEvidenceBudget::emptyEvidence()['debug_log_evidence'],
+        );
+    }
+
+    /** @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $snapshot
+     * @return array<string, mixed>
+     */
+    private function shapeDebugLogSnapshot(array $snapshot): array {
+        $shaped = ABJ_404_Solution_DebugLogEvidenceBudget::fromSnapshot($snapshot);
+        return array(
+            'total_error_count' => isset($snapshot['total_error_count']) && is_scalar($snapshot['total_error_count'])
+                ? (int)$snapshot['total_error_count'] : 0,
+            'debug_file_size_bytes' => isset($snapshot['file_size']) && is_scalar($snapshot['file_size'])
+                ? (int)$snapshot['file_size'] : 0,
+            'debug_log' => $shaped['debug_log'],
+            'debug_log_evidence' => $shaped['debug_log_evidence'],
+        );
     }
 
     private function viewReadService(): ?object {
