@@ -10,12 +10,16 @@ if (!defined('ABSPATH')) {
  * was read from the live engine (SHOW INDEX) or parsed out of one of the
  * plugin's create*Table.sql templates, so the two can actually be compared.
  *
- * This module owns the live-engine reader and the comparison. Turning DDL
- * SOURCE TEXT into a spec is a regex parser over SQL rather than a
- * normalization of driver metadata, and lives next door in
- * {@see ABJ_404_Solution_CreateTableIndexParser}; the comparison below consumes
- * its output, so both representations still reduce to a signature here, which
- * is the property the paragraph below is about.
+ * This module owns the live-engine reader: the SHOW INDEX probe, and the
+ * normalization of whatever the driver reported into a definition. Its two
+ * neighbours own the other halves of the picture. Turning DDL SOURCE TEXT into
+ * a spec is a regex parser over SQL rather than a normalization of driver
+ * metadata, and lives in {@see ABJ_404_Solution_CreateTableIndexParser};
+ * reducing either representation to a comparable signature, and deciding
+ * whether the two agree, lives in
+ * {@see ABJ_404_Solution_IndexDefinitionComparator}. The dependency runs one
+ * way, from the comparator down to both producers, which is what lets this
+ * reader stay ignorant of the DDL parser entirely.
  *
  * Why this exists as its own module: the plugin used to hold those two halves
  * in different places and never compared them. The upgrade path asked "is there
@@ -29,8 +33,9 @@ if (!defined('ABSPATH')) {
  * back with, for example, `idx_status_disabled_logshits_id` still present but
  * defined as (status, disabled, id). Every later upgrade saw the name, declared
  * the index present, and moved on; the admin sort it was built for filesorted
- * the whole table forever after. One module owning BOTH representations is what
- * makes the comparison the natural operation instead of an optional extra.
+ * the whole table forever after. Having one place that answers what an index
+ * ACTUALLY CONTAINS is what makes comparing it the natural operation instead of
+ * an optional extra.
  *
  * Everything here is read-only: it reads schema metadata and normalizes it. It
  * issues no DDL and makes no repair decisions -- that is
@@ -40,6 +45,16 @@ if (!defined('ABSPATH')) {
  * and #5 (case-insensitive metadata access): SHOW INDEX column names come back
  * in varying case depending on the driver, and index/column names are compared
  * case-insensitively because MySQL identifiers are.
+ *
+ * The contract this reader owes its consumers: AN UNKNOWN STAYS UNKNOWN. Every
+ * field of an index's identity -- its column order, its prefix lengths, its
+ * uniqueness -- is either read or it is not, and a field that was not read
+ * makes the index undescribable rather than taking a default. An index left
+ * with no readable columns is not describable either, because there is no such
+ * index. {@see isDescribable()} is how that answer travels; the comparator
+ * refuses to produce a signature for anything it says no to, so the caller
+ * cannot end up comparing an index nobody described and reading the mismatch as
+ * a reason to rewrite the table.
  */
 class ABJ_404_Solution_TableIndexDefinitions {
 
@@ -156,6 +171,7 @@ class ABJ_404_Solution_TableIndexDefinitions {
     public static function fromShowIndexRows(array $rows) {
         $names = array();
         $unique = array();
+        $uniqueReported = array();
         $bySeq = array();
         $opaque = array();
         foreach ($rows as $row) {
@@ -178,6 +194,32 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 // reasoning as above: fail the probe rather than under-report.
                 return null;
             }
+            $key = strtolower($name);
+            if (!isset($bySeq[$key])) {
+                $names[$key] = $name;
+                $bySeq[$key] = array();
+                // Placeholder only. It is meaningless while $opaque[$key] is
+                // set, and the block immediately below is what decides whether
+                // it ever becomes meaningful.
+                $unique[$key] = false;
+            }
+            // Uniqueness is part of an index's identity exactly as its column
+            // order and prefix lengths are, so it gets the same treatment they
+            // do: unreadable means undescribable, never a default. Reading a
+            // missing Non_unique as "not unique" made the three UNIQUE KEYs the
+            // plugin ships compare as drifted against their own DDL, and the
+            // repair path answers drift by emptying the spelling cache and
+            // rewriting the index -- destruction over metadata nobody read.
+            // Rows that contradict each other describe two different indexes,
+            // so taking the first one's word for it picks one at random.
+            $reportedUnique = self::readUniqueFlag($fields);
+            if ($reportedUnique === null
+                    || (isset($uniqueReported[$key]) && $uniqueReported[$key] !== $reportedUnique)) {
+                $opaque[$key] = true;
+            } else {
+                $uniqueReported[$key] = $reportedUnique;
+                $unique[$key] = $reportedUnique;
+            }
             if ($column === '') {
                 // A MariaDB/MySQL functional index reports a NULL Column_name and
                 // carries the expression in Expression instead. The plugin ships
@@ -190,27 +232,8 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 // CREATE INDEX for a name that already exists. Record the index
                 // as present and mark it undescribable instead, so comparison
                 // and repair both skip it.
-                $key = strtolower($name);
-                $names[$key] = $name;
                 $opaque[$key] = true;
-                if (!isset($bySeq[$key])) {
-                    $unique[$key] = isset($fields['non_unique'])
-                        && is_scalar($fields['non_unique'])
-                        && (int)$fields['non_unique'] === 0;
-                    $bySeq[$key] = array();
-                }
                 continue;
-            }
-            $key = strtolower($name);
-            if (!isset($bySeq[$key])) {
-                $names[$key] = $name;
-                // Non_unique is 0 for a unique index. A driver that omits the
-                // field leaves the index non-unique, which is what every plugin
-                // index except the spelling-cache one is.
-                $unique[$key] = isset($fields['non_unique'])
-                    && is_scalar($fields['non_unique'])
-                    && (int)$fields['non_unique'] === 0;
-                $bySeq[$key] = array();
             }
             // Seq_in_index IS the column order, and the order is what the
             // signature comparison is FOR. Inventing one from arrival order
@@ -248,61 +271,43 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 // unsafe to compare: with a row missing, the remaining column
                 // ORDER is not the index's real order, and a wrong order
                 // compares as drift and triggers a needless table rewrite.
-                'describable' => !isset($opaque[$key]),
+                //
+                // An index with no readable columns left is stated here rather
+                // than left to follow from the skips above. It follows today --
+                // every skip sets $opaque -- but "no columns" is a description
+                // of an index that cannot exist, and the invariant that such a
+                // thing is never handed out as comparable should not depend on
+                // a future skip path remembering to set the flag.
+                'describable' => !isset($opaque[$key]) && count($columns) > 0,
             );
         }
         return $definitions;
     }
 
     /**
-     * A canonical, comparable string for one index definition.
+     * The uniqueness the engine reported for one index row, or null when it did
+     * not report it in a form this version can read.
      *
-     * Two definitions are the same index exactly when their signatures match:
-     * same uniqueness, same columns, in the same order, with the same prefix
-     * lengths. Example: "n:status,disabled,logshits,id" or "n:url(190),disabled".
+     * Non_unique is 0 for a unique index and 1 otherwise. Anything else -- the
+     * field absent, an array or object where a flag was expected, a word --
+     * is metadata this version does not understand. The numeric check is not
+     * redundant with the scalar one: a non-numeric string casts to integer 0,
+     * and 0 is the value that means UNIQUE, so "no" would otherwise read as a
+     * confident "this index is unique" and invite a UNIQUE rebuild on a table
+     * that has duplicate rows.
      *
-     * @param array<int, array{column: string, prefix: int|null}> $columnList
-     * @param bool $unique
-     * @return string
+     * @param array<string, mixed> $fields Lowercased-key SHOW INDEX row.
+     * @return bool|null
      */
-    public static function signature(array $columnList, bool $unique): string {
-        $parts = array();
-        foreach ($columnList as $column) {
-            $name = isset($column['column']) ? strtolower((string)$column['column']) : '';
-            if ($name === '') {
-                continue;
-            }
-            $prefix = isset($column['prefix']) ? '(' . (int)$column['prefix'] . ')' : '';
-            $parts[] = $name . $prefix;
+    private static function readUniqueFlag(array $fields): ?bool {
+        if (!isset($fields['non_unique']) || !is_scalar($fields['non_unique'])) {
+            return null;
         }
-        return ($unique ? 'u:' : 'n:') . implode(',', $parts);
-    }
-
-    /**
-     * The signature of a DDL spec produced by
-     * {@see ABJ_404_Solution_CreateTableIndexParser::fromCreateTableSql()}.
-     *
-     * @param array{name: string, columns: string, unique: bool} $spec
-     * @return string
-     */
-    public static function signatureOfDdlSpec(array $spec): string {
-        return self::signature(
-            ABJ_404_Solution_CreateTableIndexParser::ddlColumnList(
-                isset($spec['columns']) ? (string)$spec['columns'] : ''),
-            !empty($spec['unique'])
-        );
-    }
-
-    /**
-     * The signature of a live definition produced by {@see readLive()}.
-     *
-     * @param array{name?: string, columns?: array<int, array{column: string, prefix: int|null}>, unique?: bool} $definition
-     * @return string
-     */
-    public static function signatureOfLiveDefinition(array $definition): string {
-        $columns = isset($definition['columns']) && is_array($definition['columns'])
-            ? $definition['columns'] : array();
-        return self::signature($columns, !empty($definition['unique']));
+        $value = trim((string)$fields['non_unique']);
+        if ($value === '' || !is_numeric($value)) {
+            return null;
+        }
+        return (int)$value === 0;
     }
 
     /**

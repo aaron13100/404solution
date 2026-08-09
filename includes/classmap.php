@@ -89,6 +89,7 @@ $abj404ClassesByDirectory = array(
         'DatabaseQueryBuilderInterface', 'DatabaseErrorRecoveryInterface',
         'DatabaseRuntimeStateInterface', 'DataAccessDependencies', 'DataAccess',
         'TrackingDatabaseCore', 'TableIndexDefinitions', 'CreateTableIndexParser',
+        'IndexDefinitionComparator',
     ),
     'database/upgrades' => array(
         'DatabaseUpgradeCoordinator', 'DatabaseUpgradeComponent',

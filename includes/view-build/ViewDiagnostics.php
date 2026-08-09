@@ -384,14 +384,12 @@ class ABJ_404_Solution_ViewDiagnostics {
             if (!is_array($live)) {
                 continue;
             }
-            if (!ABJ_404_Solution_TableIndexDefinitions::isDescribable($live)) {
-                // Present, but the engine described it in a form we cannot
-                // compare. Reporting it as drifted would send a support payload
-                // claiming a difference nobody established.
-                continue;
-            }
-            $goalSignature = ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec);
-            if (ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($live) === $goalSignature) {
+            if (!ABJ_404_Solution_IndexDefinitionComparator::isDriftedFromDdlSpec($live, $spec)) {
+                // Either the index matches its DDL, or one of the two sides was
+                // never fully read (the engine describes the index in a form
+                // this version cannot compare, or our own SQL template did not
+                // parse). Reporting the latter as drifted would send a support
+                // payload claiming a difference nobody established.
                 continue;
             }
             $drifted[(string)$name] = 'has (' .

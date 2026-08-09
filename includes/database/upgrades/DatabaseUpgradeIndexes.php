@@ -71,18 +71,27 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 		$driftedIndexNames = [];
 		foreach ($goalSpecsByName as $indexName => $spec) {
 			$live = $liveDefinitions[strtolower((string)$indexName)] ?? null;
-			if ($live === null) {
+			if (ABJ_404_Solution_IndexDefinitionComparator::signatureOfDdlSpec($spec) === null) {
+				// Our OWN SQL template did not parse into a column list this
+				// time -- a create*Table.sql truncated mid-write on a host that
+				// hit its disk quota, say. There is no goal to compare against
+				// and nothing safe to build: adding it would issue an ALTER
+				// carrying whatever fragment failed to parse, and rebuilding to
+				// it would drop a real index for one.
+				$this->logger->debugMessage("Skipping index {$indexName} on {$tableName}: its shipped "
+					. "definition could not be read out of the plugin's own SQL.");
+			} else if ($live === null) {
 				$missingIndexNames[] = $indexName;
 			} else if (!ABJ_404_Solution_TableIndexDefinitions::isDescribable($live)) {
 				// The index is present but the engine described it in a form we
-				// cannot compare (a functional index reports no Column_name).
-				// Neither missing nor drifted: creating it would collide with
-				// the name that already exists, and rebuilding it would rewrite
-				// the table on a difference we never actually established.
+				// cannot compare (a functional index reports no Column_name; a
+				// driver that never reported Non_unique says nothing about its
+				// uniqueness). Neither missing nor drifted: creating it would
+				// collide with the name that already exists, and rebuilding it
+				// would rewrite the table on a difference we never established.
 				$this->logger->debugMessage("Leaving index {$indexName} on {$tableName} alone: "
 					. "the engine reports it in a form this version cannot describe.");
-			} else if (ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($live)
-					!== ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec)) {
+			} else if (ABJ_404_Solution_IndexDefinitionComparator::isDriftedFromDdlSpec($live, $spec)) {
 				$driftedIndexNames[] = $indexName;
 			}
 		}
@@ -145,7 +154,14 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	                "until the database write cooldown ends.");
 	            return;
 	        }
-	        $goalSignature = ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec);
+	        $goalSignature = ABJ_404_Solution_IndexDefinitionComparator::signatureOfDdlSpec($spec);
+	        if ($goalSignature === null) {
+	            // verifyIndexes() already refuses an unreadable goal, so this is
+	            // the belt to that braces: a rebuild whose target definition
+	            // nobody could read has no target, and there is no version of
+	            // "drop the real index first" that is safe without one.
+	            return;
+	        }
 	        $guardName = self::REBUILD_GUARD_PREFIX . md5(strtolower($tableName) . '|' .
 	            strtolower((string)$spec['name']) . '|' . $goalSignature);
 	        if (function_exists('get_transient') && get_transient($guardName) !== false) {
@@ -166,7 +182,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	        $after = (new ABJ_404_Solution_TableIndexDefinitions($this->dbCore))->readLive($tableName);
 	        $rebuilt = is_array($after) ? ($after[strtolower((string)$spec['name'])] ?? null) : null;
 	        if (is_array($rebuilt)
-	                && ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($rebuilt) === $goalSignature) {
+	                && ABJ_404_Solution_IndexDefinitionComparator::signatureOfLiveDefinition($rebuilt) === $goalSignature) {
 	            if (function_exists('delete_transient')) {
 	                delete_transient($guardName);
 	            }
@@ -369,6 +385,11 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: index definition not found in createLogTable.sql");
 	            return;
 	        }
+	        if (ABJ_404_Solution_IndexDefinitionComparator::signatureOfDdlSpec($spec) === null) {
+	            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: its definition in " .
+	                "createLogTable.sql did not parse into a column list.");
+	            return;
+	        }
 
 	        // Same rule as verifyIndexes(): the NAME being present proves nothing.
 	        // A logsv2 table whose requested_url column was ever dropped carries
@@ -379,8 +400,13 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	        }
 	        $live = $liveDefinitions[strtolower($indexName)] ?? null;
 	        if (is_array($live)
-	                && ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($live)
-	                    === ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec)) {
+	                && !ABJ_404_Solution_IndexDefinitionComparator::isDriftedFromDdlSpec($live, $spec)) {
+	            // Present, and no difference from the DDL was established --
+	            // either because it agrees, or because the engine described it in
+	            // a form this version cannot compare. Both mean the same thing to
+	            // a DROP INDEX + ADD INDEX on logsv2, which unlike the
+	            // verifyIndexes() repair carries no once-per-month marker and
+	            // would therefore re-run on every upgrade tick.
 	            return;
 	        }
 	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'],
