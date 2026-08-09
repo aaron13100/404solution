@@ -379,7 +379,7 @@ class ABJ_404_Solution_ViewDiagnostics {
         }
         $ddl = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . '/../sql/' . $ddlFileName);
         $drifted = array();
-        foreach (ABJ_404_Solution_TableIndexDefinitions::fromCreateTableSql((string)$ddl) as $name => $spec) {
+        foreach (ABJ_404_Solution_CreateTableIndexParser::fromCreateTableSql((string)$ddl) as $name => $spec) {
             $live = $definitions[strtolower((string)$name)] ?? null;
             if (!is_array($live)) {
                 continue;

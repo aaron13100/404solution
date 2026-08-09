@@ -44,7 +44,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 		// Pattern matches lines starting with "KEY" / "UNIQUE KEY" - handles composite indexes with commas inside parens
 		// Indexes: treat the CREATE TABLE SQL as source of truth, and treat the database as truth
 		// for what exists (SHOW INDEX). Avoid parsing SHOW CREATE TABLE output, which is vendor/format dependent.
-		$goalSpecsByName = ABJ_404_Solution_TableIndexDefinitions::fromCreateTableSql($createTableStatementGoal);
+		$goalSpecsByName = ABJ_404_Solution_CreateTableIndexParser::fromCreateTableSql($createTableStatementGoal);
 		if (empty($goalSpecsByName)) {
 			return;
 		}
@@ -218,7 +218,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	            return true;
 	        }
 	        $indexColNames = [];
-	        foreach (ABJ_404_Solution_TableIndexDefinitions::ddlColumnList($spec['columns']) as $column) {
+	        foreach (ABJ_404_Solution_CreateTableIndexParser::ddlColumnList($spec['columns']) as $column) {
 	            $indexColNames[] = $column['column'];
 	        }
 	        $missingCols = array_diff($indexColNames, $existingColumns);
@@ -363,7 +363,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	    public function ensureLogsCompositeIndex($logsTable, $createSqlOverride = null) {
 	        $indexName = 'idx_requested_url_timestamp';
 	        $createSql = is_string($createSqlOverride) ? $createSqlOverride : ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/createLogTable.sql");
-	        $specsByName = ABJ_404_Solution_TableIndexDefinitions::fromCreateTableSql($createSql);
+	        $specsByName = ABJ_404_Solution_CreateTableIndexParser::fromCreateTableSql($createSql);
 	        $spec = $specsByName[$indexName] ?? null;
 	        if (empty($spec)) {
 	            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: index definition not found in createLogTable.sql");

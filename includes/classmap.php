@@ -88,7 +88,7 @@ $abj404ClassesByDirectory = array(
         'DatabaseQueryInterface', 'DatabaseTableMetadataInterface',
         'DatabaseQueryBuilderInterface', 'DatabaseErrorRecoveryInterface',
         'DatabaseRuntimeStateInterface', 'DataAccessDependencies', 'DataAccess',
-        'TrackingDatabaseCore', 'TableIndexDefinitions',
+        'TrackingDatabaseCore', 'TableIndexDefinitions', 'CreateTableIndexParser',
     ),
     'database/upgrades' => array(
         'DatabaseUpgradeCoordinator', 'DatabaseUpgradeComponent',
@@ -211,7 +211,7 @@ $abj404ClassesByDirectory = array(
     ),
     'ngram' => array(
         'NGramNetworkOptionStore', 'NGramCacheRebuildScheduler', 'NGramCacheRebuildBatchRunner',
-        'NGramRebuildProgressState', 'NGramRescheduleFailureReport',
+        'NGramRebuildProgressState', 'NGramRescheduleFailureReport', 'NGramRebuildDrain',
         'NGramCacheSyncRebuilder',
         'NGramCacheReconciler', 'NGramTermCacheReconciler', 'NGramLastUpdatedEpochMigration',
         'NGramFilter',

@@ -10,6 +10,13 @@ if (!defined('ABSPATH')) {
  * was read from the live engine (SHOW INDEX) or parsed out of one of the
  * plugin's create*Table.sql templates, so the two can actually be compared.
  *
+ * This module owns the live-engine reader and the comparison. Turning DDL
+ * SOURCE TEXT into a spec is a regex parser over SQL rather than a
+ * normalization of driver metadata, and lives next door in
+ * {@see ABJ_404_Solution_CreateTableIndexParser}; the comparison below consumes
+ * its output, so both representations still reduce to a signature here, which
+ * is the property the paragraph below is about.
+ *
  * Why this exists as its own module: the plugin used to hold those two halves
  * in different places and never compared them. The upgrade path asked "is there
  * an index with this NAME?" (SHOW INDEX ... WHERE Key_name = ...) and the admin
@@ -205,11 +212,28 @@ class ABJ_404_Solution_TableIndexDefinitions {
                     && (int)$fields['non_unique'] === 0;
                 $bySeq[$key] = array();
             }
-            $seq = isset($fields['seq_in_index']) && is_scalar($fields['seq_in_index'])
-                ? (int)$fields['seq_in_index'] : count($bySeq[$key]) + 1;
+            // Seq_in_index IS the column order, and the order is what the
+            // signature comparison is FOR. Inventing one from arrival order
+            // when the engine did not report it produces a definition that
+            // looks authoritative and compares as drift against a DDL whose
+            // real order differs -- a needless rewrite of a healthy index on a
+            // large table. Mark it undescribable instead.
+            if (!isset($fields['seq_in_index']) || !is_numeric($fields['seq_in_index'])) {
+                $opaque[$key] = true;
+                continue;
+            }
+            $seq = (int)$fields['seq_in_index'];
+            $subPart = $fields['sub_part'] ?? null;
+            if (!self::isReadablePrefix($subPart)) {
+                // A Sub_part we cannot read is not "no prefix". Treating it as
+                // one compares unequal to a DDL that DOES carry a prefix, which
+                // reports drift and rebuilds a healthy index.
+                $opaque[$key] = true;
+                continue;
+            }
             $bySeq[$key][$seq] = array(
                 'column' => strtolower($column),
-                'prefix' => self::normalizePrefix($fields['sub_part'] ?? null),
+                'prefix' => self::normalizePrefix($subPart),
             );
         }
 
@@ -228,112 +252,6 @@ class ABJ_404_Solution_TableIndexDefinitions {
             );
         }
         return $definitions;
-    }
-
-    /**
-     * Extract index specs from a CREATE TABLE statement (plugin SQL templates),
-     * keyed by index name exactly as the DDL spells it.
-     *
-     * Only plain KEY / UNIQUE KEY definitions are recognised. FULLTEXT and
-     * SPATIAL keys are deliberately not matched: the plugin ships none, and
-     * silently mis-parsing one into a plain key would let the repair path
-     * rebuild it as the wrong kind of index.
-     *
-     * @param string $createTableSql
-     * @return array<string, array{name: string, columns: string, unique: bool}>
-     */
-    public static function fromCreateTableSql($createTableSql): array {
-        if (!is_string($createTableSql) || $createTableSql === '') {
-            return array();
-        }
-
-        $matches = array();
-        preg_match_all('/^\\s*(?:unique\\s+)?key\\s+.+?\\s*$/im', $createTableSql, $matches);
-
-        $specsByName = array();
-        foreach ($matches[0] as $line) {
-            $spec = self::parseIndexDdlLine($line);
-            if (empty($spec) || empty($spec['name'])) {
-                continue;
-            }
-            $specsByName[$spec['name']] = $spec;
-        }
-
-        return $specsByName;
-    }
-
-    /**
-     * Parse one index DDL line from our CREATE TABLE SQL into a structured spec.
-     *
-     * Accepts forms like:
-     * - KEY `name` (`col`(190), `other`)
-     * - UNIQUE KEY `name` (`col`)
-     * - KEY `name` (`col`) USING BTREE
-     *
-     * Returns null if the line doesn't look like a KEY/UNIQUE KEY definition.
-     *
-     * @param string $indexDDL
-     * @return array{name: string, columns: string, unique: bool}|null
-     */
-    public static function parseIndexDdlLine($indexDDL) {
-        $indexDDL = trim((string)$indexDDL);
-        // Tolerate a trailing comma -- the line-extracting regex pulls each
-        // KEY definition out as-is from the surrounding CREATE TABLE list,
-        // and any KEY that isn't the LAST one will end with a comma. Same
-        // canonical form either way.
-        $indexDDL = rtrim($indexDDL, ',');
-        $matches = array();
-        if (!preg_match('/^(unique\\s+)?key\\s+`?([^`\\s]+)`?\\s*(\\(.+\\))\\s*(?:using\\s+\\w+)?\\s*$/i', $indexDDL, $matches)) {
-            return null;
-        }
-
-        return array(
-            'name' => $matches[2],
-            'columns' => $matches[3],
-            'unique' => !empty($matches[1]),
-        );
-    }
-
-    /**
-     * The ordered (column, prefix) list a DDL column fragment describes.
-     *
-     * Input is the parenthesised fragment a spec carries, e.g.
-     * "(`status`, `disabled`, `logshits`, `id`)" or "(`url`(190), `disabled`)".
-     * Backticks are required (every shipped create*Table.sql uses them, and
-     * DDLColumnParsingRobustnessTest enforces it), so a fragment written some
-     * other way yields an empty list -- which the repair path treats as
-     * "cannot describe this index", never as "this index has no columns".
-     *
-     * @param string $columnsSql
-     * @return array<int, array{column: string, prefix: int|null}>
-     */
-    public static function ddlColumnList($columnsSql): array {
-        $fragment = trim((string)$columnsSql);
-        $columns = array();
-        $matches = array();
-        preg_match_all('/`([^`]+)`\\s*(?:\\(\\s*(\\d+)\\s*\\))?/', $fragment, $matches,
-            PREG_SET_ORDER);
-        foreach ($matches as $match) {
-            $columns[] = array(
-                'column' => strtolower($match[1]),
-                'prefix' => isset($match[2]) ? (int)$match[2] : null,
-            );
-        }
-
-        // Verify the whole fragment was accounted for, not just the parts that
-        // happened to match. Scraping the backticked names out of a fragment we
-        // only partly understand yields a PARTIAL column list that looks like a
-        // complete definition, and the repair path would then rebuild a real
-        // index to that shorter shape -- turning a parse gap into deliberate
-        // data-structure damage. An unaccounted-for fragment yields no columns,
-        // which every caller already treats as "cannot describe this index".
-        $remainder = preg_replace('/`[^`]+`\\s*(?:\\(\\s*\\d+\\s*\\))?/', '', $fragment);
-        $remainder = trim((string)$remainder, " \t\n\r\0\x0B(),");
-        if ($remainder !== '') {
-            return array();
-        }
-
-        return $columns;
     }
 
     /**
@@ -361,14 +279,16 @@ class ABJ_404_Solution_TableIndexDefinitions {
     }
 
     /**
-     * The signature of a DDL spec produced by {@see fromCreateTableSql()}.
+     * The signature of a DDL spec produced by
+     * {@see ABJ_404_Solution_CreateTableIndexParser::fromCreateTableSql()}.
      *
      * @param array{name: string, columns: string, unique: bool} $spec
      * @return string
      */
     public static function signatureOfDdlSpec(array $spec): string {
         return self::signature(
-            self::ddlColumnList(isset($spec['columns']) ? (string)$spec['columns'] : ''),
+            ABJ_404_Solution_CreateTableIndexParser::ddlColumnList(
+                isset($spec['columns']) ? (string)$spec['columns'] : ''),
             !empty($spec['unique'])
         );
     }
@@ -450,6 +370,28 @@ class ABJ_404_Solution_TableIndexDefinitions {
     }
 
     /**
+     * Whether a reported Sub_part is one we can interpret at all.
+     *
+     * NULL, an empty string and 0 all legitimately mean "indexes the whole
+     * column" and are readable. A non-empty value that is not a number is
+     * metadata this version does not understand, and must not be quietly
+     * flattened into "no prefix".
+     *
+     * @param mixed $subPart
+     * @return bool
+     */
+    private static function isReadablePrefix($subPart): bool {
+        if ($subPart === null) {
+            return true;
+        }
+        if (!is_scalar($subPart)) {
+            return false;
+        }
+        $value = trim((string)$subPart);
+        return $value === '' || is_numeric($value);
+    }
+
+    /**
      * Normalize a reported Sub_part into "no prefix" (null) or a positive
      * prefix length.
      *
@@ -457,6 +399,9 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * string, or (rarely) as 0; all three mean the same thing and must compare
      * equal to a DDL fragment that carries no (n) suffix, or the repair path
      * would rebuild every full-column index on every run.
+     *
+     * Callers must have cleared the value through isReadablePrefix() first: a
+     * value this cannot read is undescribable metadata, not "no prefix".
      *
      * @param mixed $subPart
      * @return int|null
