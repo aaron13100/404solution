@@ -336,6 +336,16 @@ class ABJ_404_Solution_ViewDiagnostics {
             }
             $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
             $definitions = ABJ_404_Solution_TableIndexDefinitions::fromShowIndexRows($rows);
+            if ($definitions === null) {
+                // The engine answered with rows this version cannot read, so
+                // this is not a description of the table. Reporting the indexes
+                // we managed to parse as "present" and the rest as "missing"
+                // would put a fabricated index inventory into a support payload,
+                // which is worse than reporting that the probe failed.
+                $out['error'] = 'SHOW INDEX returned rows that could not be read';
+                $out['missing'] = $out['expected'];
+                return $out;
+            }
             $present = array();
             foreach ($definitions as $definition) {
                 $present[(string)$definition['name']] = true;
@@ -359,7 +369,7 @@ class ABJ_404_Solution_ViewDiagnostics {
     /**
      * Present-but-wrong indexes, as "index name" => "has (...), schema says (...)".
      *
-     * @param array<string, array{name: string, columns: array<int, array{column: string, prefix: int|null}>, unique: bool}> $definitions
+     * @param array<string, array{name: string, columns: array<int, array{column: string, prefix: int|null}>, unique: bool, describable?: bool}> $definitions
      * @param string $ddlFileName
      * @return array<string, string>
      */
@@ -372,6 +382,12 @@ class ABJ_404_Solution_ViewDiagnostics {
         foreach (ABJ_404_Solution_TableIndexDefinitions::fromCreateTableSql((string)$ddl) as $name => $spec) {
             $live = $definitions[strtolower((string)$name)] ?? null;
             if (!is_array($live)) {
+                continue;
+            }
+            if (!ABJ_404_Solution_TableIndexDefinitions::isDescribable($live)) {
+                // Present, but the engine described it in a form we cannot
+                // compare. Reporting it as drifted would send a support payload
+                // claiming a difference nobody established.
                 continue;
             }
             $goalSignature = ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec);

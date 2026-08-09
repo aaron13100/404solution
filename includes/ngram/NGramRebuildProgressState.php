@@ -35,6 +35,7 @@ class ABJ_404_Solution_NGramRebuildProgressState {
      * them by hand.
      */
     const OPTION_PENDING_SITES = 'abj404_ngram_pending_sites';
+    const OPTION_SITES_COMPLETED = 'abj404_ngram_sites_completed';
     const OPTION_TOTAL_SITES = 'abj404_ngram_total_sites';
     const OPTION_CURRENT_SITE_OFFSET = 'abj404_ngram_current_site_offset';
     const OPTION_REBUILD_OFFSET = 'abj404_ngram_rebuild_offset';
@@ -50,6 +51,15 @@ class ABJ_404_Solution_NGramRebuildProgressState {
 
     /** @var ABJ_404_Solution_NGramNetworkOptionStore */
     private $optionStore;
+
+    /**
+     * Which cursor cursor()/setCursor() address. A cron tick is either draining
+     * a network or a single site, never both, so the mode is chosen once per
+     * tick and the shared drain loop then needs no idea which it is in.
+     *
+     * @var bool
+     */
+    private $networkMode = false;
 
     /**
      * @param ABJ_404_Solution_NGramNetworkOptionStore $optionStore
@@ -69,6 +79,41 @@ class ABJ_404_Solution_NGramRebuildProgressState {
     private function readInt(string $key, int $default = 0): int {
         $raw = $this->optionStore->getOption($key, $default);
         return is_scalar($raw) ? (int)$raw : $default;
+    }
+
+    /**
+     * Address the per-site cursor of a network walk.
+     *
+     * @return void
+     */
+    public function useNetworkCursor(): void {
+        $this->networkMode = true;
+    }
+
+    /**
+     * Address the single-site rebuild cursor.
+     *
+     * @return void
+     */
+    public function useSingleSiteCursor(): void {
+        $this->networkMode = false;
+    }
+
+    /** @return int The active cursor. */
+    public function cursor(): int {
+        return $this->networkMode ? $this->currentSiteOffset() : $this->singleSiteOffset();
+    }
+
+    /**
+     * @param int $offset
+     * @return void
+     */
+    public function setCursor(int $offset): void {
+        if ($this->networkMode) {
+            $this->setCurrentSiteOffset($offset);
+            return;
+        }
+        $this->setSingleSiteOffset($offset);
     }
 
     /** @return int Cursor for the single-site rebuild. */
@@ -98,39 +143,79 @@ class ABJ_404_Solution_NGramRebuildProgressState {
     }
 
     /**
-     * Sites still to drain, or NULL when the list has never been seeded (which
-     * is what tells the batch runner this is the first tick of a network
-     * rebuild). Distinct from an empty array, which means "all sites drained".
+     * How many network sites have been fully drained.
      *
-     * @return array<int, int>|null
+     * This replaced a stored list of every pending site id. The list was the
+     * whole network in memory AND in one option row, which grows without bound
+     * with the network; a count cannot. The current site is looked up by this
+     * offset each tick instead (ordered by id), so the record stays two
+     * integers however large the network is.
+     *
+     * The trade is that a site DELETED mid-drain shifts the ordering and can
+     * cost one site its turn in that pass. That is recoverable -- the next full
+     * rebuild picks it up, and a missing n-gram entry only weakens suggestion
+     * ranking -- whereas an option row that grows with the network is not.
+     *
+     * @return int
      */
-    public function pendingSites() {
-        $raw = $this->optionStore->getOption(self::OPTION_PENDING_SITES, null);
-        if ($raw === null) {
-            return null;
-        }
-        if (!is_array($raw)) {
-            return array();
-        }
-        $sites = array();
-        foreach ($raw as $siteId) {
-            // Site ids come back from the options table as ints or as their
-            // string forms depending on how they were serialized; anything else
-            // is not a site id and is dropped rather than coerced to 0, which
-            // would be a real site's id.
-            if (is_scalar($siteId) && is_numeric($siteId)) {
-                $sites[] = (int)$siteId;
-            }
-        }
-        return $sites;
+    public function sitesCompleted(): int {
+        $this->migrateLegacyPendingSites();
+        return $this->readInt(self::OPTION_SITES_COMPLETED);
     }
 
     /**
-     * @param array<int, int> $sites
+     * Retire the current site and move to the next.
+     *
+     * The cursor is cleared BEFORE the completed count advances, and the order
+     * is the point. Cleared first, a death between the two writes re-drains the
+     * current site from 0 -- idempotent, and it costs one pass. Advanced first,
+     * the NEXT site inherits this site's offset and silently skips that many
+     * rows, which nothing afterwards would ever detect.
+     *
      * @return void
      */
-    public function setPendingSites(array $sites): void {
-        $this->optionStore->updateOption(self::OPTION_PENDING_SITES, $sites);
+    public function advanceToNextSite(): void {
+        $this->setCurrentSiteOffset(0);
+        $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, $this->sitesCompleted() + 1);
+    }
+
+    /**
+     * Seed the network walk.
+     *
+     * @param int $totalSites
+     * @return void
+     */
+    public function beginNetworkWalk(int $totalSites): void {
+        $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, 0);
+        $this->setTotalSites($totalSites);
+        $this->setCurrentSiteOffset(0);
+    }
+
+    /** @return bool Whether the network walk has been seeded at all. */
+    public function networkWalkStarted(): bool {
+        $this->migrateLegacyPendingSites();
+        return $this->optionStore->getOption(self::OPTION_TOTAL_SITES, null) !== null;
+    }
+
+    /**
+     * Carry a rebuild that was mid-flight under the old pending-list format
+     * over to the completed-count cursor, then drop the legacy option so this
+     * runs once. Without it, an upgrade landing mid-network-rebuild would
+     * restart that network from site one.
+     *
+     * @return void
+     */
+    private function migrateLegacyPendingSites(): void {
+        $legacy = $this->optionStore->getOption(self::OPTION_PENDING_SITES, null);
+        if ($legacy === null) {
+            return;
+        }
+        if (is_array($legacy)) {
+            $total = $this->readInt(self::OPTION_TOTAL_SITES);
+            $completed = $total > count($legacy) ? $total - count($legacy) : 0;
+            $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, $completed);
+        }
+        $this->optionStore->updateOption(self::OPTION_PENDING_SITES, null);
     }
 
     /**
@@ -183,6 +268,7 @@ class ABJ_404_Solution_NGramRebuildProgressState {
      */
     public function markNetworkComplete(): void {
         $this->optionStore->updateOption(self::OPTION_PENDING_SITES, null);
+        $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, null);
         $this->optionStore->updateOption(self::OPTION_TOTAL_SITES, null);
         $this->optionStore->updateOption(self::OPTION_CURRENT_SITE_OFFSET, null);
         $this->clearFailures();

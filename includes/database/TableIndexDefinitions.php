@@ -139,17 +139,26 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * arrives as null / '' / '0' / '190', differ across drivers and engines)
      * without a live server.
      *
+     * Returns NULL when a row cannot be read at all, which is a failed probe
+     * rather than a description of the table -- the same "unknown, not empty"
+     * contract readLive() carries, for the same reason.
+     *
      * @param array<int, mixed> $rows Raw SHOW INDEX rows, associative.
-     * @return array<string, array{name: string, columns: array<int, array{column: string, prefix: int|null}>, unique: bool}>
+     * @return array<string, array{name: string, columns: array<int, array{column: string, prefix: int|null}>, unique: bool, describable: bool}>|null
      */
-    public static function fromShowIndexRows(array $rows): array {
+    public static function fromShowIndexRows(array $rows) {
         $names = array();
         $unique = array();
         $bySeq = array();
         $opaque = array();
         foreach ($rows as $row) {
             if (!is_array($row)) {
-                continue;
+                // A row shape we cannot read at all means this SHOW INDEX
+                // answer is not a description of the table. Returning the rest
+                // as if it were complete is what lets a real index be reported
+                // absent and re-created; the caller must be told the probe
+                // failed instead.
+                return null;
             }
             $fields = self::lowercaseKeys($row);
             $name = isset($fields['key_name']) && is_scalar($fields['key_name'])
@@ -157,8 +166,10 @@ class ABJ_404_Solution_TableIndexDefinitions {
             $column = isset($fields['column_name']) && is_scalar($fields['column_name'])
                 ? (string)$fields['column_name'] : '';
             if ($name === '') {
-                // No index name at all: nothing to file this row under.
-                continue;
+                // A row with no index name cannot be filed under any index, so
+                // some part of this table's definition is unaccounted for. Same
+                // reasoning as above: fail the probe rather than under-report.
+                return null;
             }
             if ($column === '') {
                 // A MariaDB/MySQL functional index reports a NULL Column_name and
@@ -297,9 +308,10 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * @return array<int, array{column: string, prefix: int|null}>
      */
     public static function ddlColumnList($columnsSql): array {
+        $fragment = trim((string)$columnsSql);
         $columns = array();
         $matches = array();
-        preg_match_all('/`([^`]+)`\\s*(?:\\(\\s*(\\d+)\\s*\\))?/', (string)$columnsSql, $matches,
+        preg_match_all('/`([^`]+)`\\s*(?:\\(\\s*(\\d+)\\s*\\))?/', $fragment, $matches,
             PREG_SET_ORDER);
         foreach ($matches as $match) {
             $columns[] = array(
@@ -307,6 +319,20 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 'prefix' => isset($match[2]) ? (int)$match[2] : null,
             );
         }
+
+        // Verify the whole fragment was accounted for, not just the parts that
+        // happened to match. Scraping the backticked names out of a fragment we
+        // only partly understand yields a PARTIAL column list that looks like a
+        // complete definition, and the repair path would then rebuild a real
+        // index to that shorter shape -- turning a parse gap into deliberate
+        // data-structure damage. An unaccounted-for fragment yields no columns,
+        // which every caller already treats as "cannot describe this index".
+        $remainder = preg_replace('/`[^`]+`\\s*(?:\\(\\s*\\d+\\s*\\))?/', '', $fragment);
+        $remainder = trim((string)$remainder, " \t\n\r\0\x0B(),");
+        if ($remainder !== '') {
+            return array();
+        }
+
         return $columns;
     }
 

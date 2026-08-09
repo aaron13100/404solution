@@ -51,15 +51,6 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
     const BATCH_SIZE = 50;
     const MAX_BATCHES_PER_RUN = 20;
 
-    /**
-     * Sites pulled from the network per discovery call.
-     *
-     * Site discovery is paged rather than fetched all at once: a network with
-     * tens of thousands of sites would otherwise load every site ID into memory
-     * AND persist the whole list into a single option row on every tick.
-     */
-    const SITES_PER_DISCOVERY = 100;
-
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
@@ -195,50 +186,48 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
         }
 
         if ($this->optionStore->isNetworkActivated()) {
+            $this->progress->useNetworkCursor();
             $this->runMultisiteBatch();
-        } else {
-            $this->runSingleSiteBatch();
+            return;
         }
+        $this->progress->useSingleSiteCursor();
+        $this->runSingleSiteBatch();
     }
 
     /**
-     * Per-batch worker for multisite: switch to a pending site, process up to
-     * MAX_BATCHES_PER_RUN batches of BATCH_SIZE, then either advance to the
-     * next site (when the current site is drained) or reschedule for the next
-     * chunk of the same site.
+     * Per-batch worker for multisite: walk to the site this tick owns, drain up
+     * to MAX_BATCHES_PER_RUN batches of it, then either retire it or come back
+     * to it on the next tick.
      */
     private function runMultisiteBatch(): void {
-        $pendingSites = $this->progress->pendingSites();
-        $neverSeeded = ($pendingSites === null);
-        if ($pendingSites === null) {
-            $pendingSites = [];
+        if (!$this->progress->networkWalkStarted()) {
+            $this->progress->beginNetworkWalk($this->countNetworkSites());
         }
 
-        if ($neverSeeded) {
-            // First run: seed the pending-site list. Paged rather than fetched
-            // whole: 'number' => 0 asks the network for every site at once,
-            // which on a large network is both an unbounded query and an
-            // unbounded option row once the list is persisted below.
-            $pendingSites = $this->discoverNetworkSites();
-            $this->progress->setPendingSites($pendingSites);
-            $this->progress->setTotalSites(count($pendingSites));
-            $this->progress->setCurrentSiteOffset(0);
-        }
+        $totalSites = $this->progress->totalSites(0);
+        $completedSites = $this->progress->sitesCompleted();
 
-        if (empty($pendingSites)) {
-            // Every site drained. Clear the progress fields FIRST and set the
-            // completion flag LAST: readers gate on the flag, so writing it
-            // first leaves a window where a process death strands "initialized"
-            // beside a stale pending list that disagrees with it.
+        if ($totalSites <= 0 || $completedSites >= $totalSites) {
             $this->progress->markNetworkComplete();
             $this->logger->infoMessage("N-gram cache rebuild complete for all sites in network!");
             return;
         }
 
-        $currentSiteId = (int)$pendingSites[0];
-        $offset = $this->progress->currentSiteOffset();
-        $totalSites = $this->progress->totalSites(count($pendingSites));
-        $completedSites = $totalSites - count($pendingSites);
+        $currentSiteId = $this->siteAtWalkOffset($completedSites);
+        if ($currentSiteId === null) {
+            // The walk says a site should be here and the network says otherwise.
+            // Sites were deleted mid-walk, or the query failed. Either way the
+            // network has NOT been fully drained, so completion must not be
+            // recorded; re-seed and let the next tick walk the real list.
+            $this->recordBatchFailure(sprintf(
+                'N-gram rebuild could not resolve network site %d of %d; re-seeding the walk.',
+                $completedSites + 1,
+                $totalSites
+            ));
+            $this->progress->beginNetworkWalk($this->countNetworkSites());
+            $this->rescheduleChain(10, array(), 0, 0.0);
+            return;
+        }
 
         // Everything from here to the matching restore runs against another
         // site's tables. A throw anywhere in that span -- the row count, the
@@ -250,123 +239,51 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             $sitePages = $this->countPermalinkCacheRows();
 
             if ($sitePages == 0) {
-                array_shift($pendingSites);
-                $this->progress->setPendingSites($pendingSites);
-                $this->progress->setCurrentSiteOffset(0);
-
+                $this->progress->advanceToNextSite();
                 $this->logger->infoMessage(sprintf(
                     "Site %d has no pages. Moving to next site. Progress: %d/%d sites completed.",
-                    $currentSiteId,
-                    $completedSites + 1,
-                    $totalSites
+                    $currentSiteId, $completedSites + 1, $totalSites
                 ));
-
                 $this->rescheduleChain(0, array(), 0, 100.0);
                 return;
             }
 
             $this->logger->infoMessage(sprintf(
                 "Processing N-gram cache for site %d (Site %d of %d): Offset %d of %d pages",
-                $currentSiteId,
-                $completedSites + 1,
-                $totalSites,
-                $offset,
-                $sitePages
+                $currentSiteId, $completedSites + 1, $totalSites,
+                $this->progress->cursor(), $sitePages
             ));
 
-            $this->drainSite($currentSiteId, $offset, $sitePages, $pendingSites, $totalSites, $completedSites);
+            $outcome = $this->drainBatches($sitePages, "site {$currentSiteId}");
+
+            $this->logger->infoMessage(sprintf(
+                "Site %d progress: %d%% complete (%d/%d pages), %d success, %d failed",
+                $currentSiteId, $outcome['percent'], $outcome['offset'], $sitePages,
+                $outcome['success'], $outcome['rowsFailed']
+            ));
+
+            if ($this->drainIsClean($outcome, $sitePages)) {
+                $this->progress->advanceToNextSite();
+                $this->progress->clearFailures();
+                $this->logger->infoMessage(sprintf(
+                    "Site %d complete! Progress: %d/%d sites completed.",
+                    $currentSiteId, $completedSites + 1, $totalSites
+                ));
+            } else if (!$outcome['threw'] && $outcome['rowsFailed'] === 0) {
+                $this->progress->clearFailures();
+            }
+
+            $this->rescheduleChain(10, array(), $outcome['offset'], $outcome['percent']);
         } finally {
             restore_current_blog();
         }
     }
 
     /**
-     * Run this tick's batches against the site that is currently switched in.
-     *
-     * @param int $currentSiteId
-     * @param int $offset Cursor this tick starts from.
-     * @param int $sitePages Rows in this site's permalink cache.
-     * @param array<int, int> $pendingSites Sites still to drain, current site first.
-     * @param int $totalSites
-     * @param int $completedSites
-     * @return void
-     */
-    private function drainSite(int $currentSiteId, int $offset, int $sitePages,
-            array $pendingSites, int $totalSites, int $completedSites): void {
-
-        $batchesProcessed = 0;
-        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-        $failed = false;
-
-        while ($batchesProcessed < self::MAX_BATCHES_PER_RUN && $offset < $sitePages) {
-            try {
-                $stats = $this->runRebuildBatch($offset);
-            } catch (Throwable $e) {
-                // Do NOT advance the cursor. The rows in this batch were not
-                // rebuilt, and an advanced cursor is never revisited -- that is
-                // what silently skipped them and then let the run below declare
-                // the cache complete without them.
-                $this->recordBatchFailure(
-                    "Error during N-gram rebuild for site {$currentSiteId} at offset {$offset}: " . $e->getMessage()
-                );
-                $failed = true;
-                break;
-            }
-
-            $totalStats['processed'] += $stats['processed'];
-            $totalStats['success'] += $stats['success'];
-            $totalStats['failed'] += $stats['failed'];
-
-            $offset += self::BATCH_SIZE;
-            $batchesProcessed++;
-
-            $this->progress->setCurrentSiteOffset($offset);
-
-            if ($stats['processed'] < self::BATCH_SIZE) {
-                break;
-            }
-        }
-
-        $progress = $sitePages > 0 ? min(100, round(($offset / $sitePages) * 100, 1)) : 100;
-
-        $this->logger->infoMessage(sprintf(
-            "Site %d progress: %d%% complete (%d/%d pages), %d success, %d failed",
-            $currentSiteId,
-            $progress,
-            $offset,
-            $sitePages,
-            $totalStats['success'],
-            $totalStats['failed']
-        ));
-
-        // Only a clean pass may retire the site. A tick that failed leaves the
-        // site pending at its failed offset so the next tick retries it.
-        if (!$failed && $offset >= $sitePages) {
-            array_shift($pendingSites);
-            $this->progress->setPendingSites($pendingSites);
-            $this->progress->setCurrentSiteOffset(0);
-            $this->progress->clearFailures();
-
-            $this->logger->infoMessage(sprintf(
-                "Site %d complete! Progress: %d/%d sites completed.",
-                $currentSiteId,
-                $completedSites + 1,
-                $totalSites
-            ));
-        } else if (!$failed) {
-            $this->progress->clearFailures();
-        }
-
-        $this->rescheduleChain(10, array(), $offset, (float)$progress);
-    }
-
-    /**
-     * Per-batch worker for single-site: process up to MAX_BATCHES_PER_RUN
-     * batches against the current site, then either complete (mark
-     * initialized) or reschedule for the next chunk.
+     * Per-batch worker for single-site: drain up to MAX_BATCHES_PER_RUN batches,
+     * then either complete (mark initialized) or reschedule for the next chunk.
      */
     private function runSingleSiteBatch(): void {
-        $offset = $this->progress->singleSiteOffset();
         $totalPages = $this->countPermalinkCacheRows();
 
         if ($totalPages == 0) {
@@ -377,92 +294,148 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
 
         $this->logger->infoMessage(sprintf(
             "Async N-gram rebuild: Processing batch at offset %d of %d total pages",
-            $offset,
-            $totalPages
+            $this->progress->cursor(), $totalPages
         ));
 
-        $batchesProcessed = 0;
-        $totalStats = ['processed' => 0, 'success' => 0, 'failed' => 0];
-        $failed = false;
+        $outcome = $this->drainBatches($totalPages, 'this site');
 
-        while ($batchesProcessed < self::MAX_BATCHES_PER_RUN && $offset < $totalPages) {
+        $this->logger->infoMessage(sprintf(
+            "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
+            $outcome['percent'], $outcome['offset'], $totalPages,
+            $outcome['success'], $outcome['rowsFailed']
+        ));
+
+        // A run that failed is NOT complete, however far the cursor got
+        // beforehand. Marking it initialized here is what published an empty or
+        // partial cache as fully built, with nothing left to re-arm a rebuild.
+        if (!$this->drainIsClean($outcome, $totalPages)) {
+            $this->rescheduleChain(10, [$outcome['offset']], $outcome['offset'], $outcome['percent']);
+            return;
+        }
+
+        $this->progress->markComplete();
+        $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$outcome['processed']} processed, "
+            . "{$outcome['success']} success, {$outcome['rowsFailed']} failed.");
+    }
+
+    /**
+     * Drain this tick's batches against whatever is currently switched in,
+     * advancing the active cursor as each batch lands.
+     *
+     * ONE loop serves both the network and single-site paths. They were
+     * separate copies of the same algorithm, and the copies had already drifted
+     * apart in production: the single-site path checked whether its reschedule
+     * was accepted and the multisite path did not. A second copy of a loop that
+     * owns a cursor invariant is a second place for that invariant to rot.
+     *
+     * @param int $totalRows Rows in the set being rebuilt.
+     * @param string $context Human-readable subject, for failure messages.
+     * @return array{offset:int, threw:bool, processed:int, success:int, rowsFailed:int, percent:float}
+     */
+    private function drainBatches(int $totalRows, string $context): array {
+        $offset = $this->progress->cursor();
+        $batchesProcessed = 0;
+        $processed = 0;
+        $success = 0;
+        $rowsFailed = 0;
+        $threw = false;
+
+        while ($batchesProcessed < self::MAX_BATCHES_PER_RUN && $offset < $totalRows) {
             try {
                 $stats = $this->runRebuildBatch($offset);
             } catch (Throwable $e) {
-                // Cursor stays put: see drainSite() for why advancing past a
-                // failed batch is what made the skipped rows unrecoverable.
+                // Do NOT advance the cursor. The rows in this batch were not
+                // rebuilt, and an advanced cursor is never revisited -- that is
+                // what silently skipped them and then let the caller declare the
+                // cache complete without them.
                 $this->recordBatchFailure(
-                    "Error during async N-gram cache rebuild at offset {$offset}: " . $e->getMessage()
+                    "Error during N-gram rebuild for {$context} at offset {$offset}: " . $e->getMessage()
                 );
-                $failed = true;
+                $threw = true;
                 break;
             }
 
-            $totalStats['processed'] += $stats['processed'];
-            $totalStats['success'] += $stats['success'];
-            $totalStats['failed'] += $stats['failed'];
+            $processed += $stats['processed'];
+            $success += $stats['success'];
+            $rowsFailed += $stats['failed'];
 
             $offset += self::BATCH_SIZE;
             $batchesProcessed++;
-
-            $this->progress->setSingleSiteOffset($offset);
+            $this->progress->setCursor($offset);
 
             if ($stats['processed'] < self::BATCH_SIZE) {
                 break;
             }
         }
 
-        $progress = $totalPages > 0 ? min(100, round(($offset / $totalPages) * 100, 1)) : 100;
-
-        $this->logger->infoMessage(sprintf(
-            "Async N-gram rebuild progress: %d%% complete (%d/%d pages), %d success, %d failed",
-            $progress,
-            $offset,
-            $totalPages,
-            $totalStats['success'],
-            $totalStats['failed']
-        ));
-
-        // A run that failed a batch is NOT complete, however far the cursor got
-        // beforehand. Marking it initialized here is what published an empty or
-        // partial cache as fully built, with nothing left to re-arm a rebuild.
-        if ($failed || $offset < $totalPages) {
-            $this->rescheduleChain(10, [$offset], $offset, (float)$progress);
-            return;
-        }
-
-        $this->progress->markComplete();
-        $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$totalStats['processed']} processed, {$totalStats['success']} success, {$totalStats['failed']} failed.");
+        return array(
+            'offset' => $offset,
+            'threw' => $threw,
+            'processed' => $processed,
+            'success' => $success,
+            'rowsFailed' => $rowsFailed,
+            'percent' => $totalRows > 0
+                ? (float)min(100, round(($offset / $totalRows) * 100, 1)) : 100.0,
+        );
     }
 
     /**
-     * Every site in the network, read in bounded pages.
+     * Whether a drain covered its whole set with nothing left behind.
      *
-     * @return array<int, int>
+     * Reaching the end of the set is not sufficient: a batch that REPORTED
+     * failed rows advanced the cursor past them, so a run can arrive at the end
+     * having skipped rows. Retiring on offset alone is how a partial cache gets
+     * published as complete, which is the same defect as advancing past a
+     * thrown batch, one level down.
+     *
+     * @param array{offset:int, threw:bool, rowsFailed:int} $outcome
+     * @param int $totalRows
+     * @return bool
      */
-    private function discoverNetworkSites(): array {
-        $sites = array();
-        $offset = 0;
-        do {
-            $page = get_sites(array(
-                'fields' => 'ids',
-                'number' => self::SITES_PER_DISCOVERY,
-                'offset' => $offset,
-                'orderby' => 'id',
-                'order' => 'ASC',
-            ));
-            if (!is_array($page) || empty($page)) {
-                break;
-            }
-            foreach ($page as $siteId) {
-                $sites[] = (int)$siteId;
-            }
-            $offset += self::SITES_PER_DISCOVERY;
-        } while (count($page) === self::SITES_PER_DISCOVERY);
-
-        return $sites;
+    private function drainIsClean(array $outcome, int $totalRows): bool {
+        return !$outcome['threw']
+            && $outcome['rowsFailed'] === 0
+            && $outcome['offset'] >= $totalRows;
     }
 
+    /**
+     * How many sites the network has.
+     *
+     * @return int
+     */
+    private function countNetworkSites(): int {
+        $count = get_sites(array('count' => true));
+        return is_numeric($count) ? (int)$count : 0;
+    }
+
+    /**
+     * The site at a given position in the walk, or null when the network cannot
+     * answer.
+     *
+     * One site is fetched per tick rather than the whole list: a stored list of
+     * every site id is unbounded in both memory and option size, and this walk
+     * only ever needs the site it is about to drain.
+     *
+     * @param int $walkOffset
+     * @return int|null
+     */
+    private function siteAtWalkOffset(int $walkOffset) {
+        $sites = get_sites(array(
+            'fields' => 'ids',
+            'number' => 1,
+            'offset' => $walkOffset,
+            'orderby' => 'id',
+            'order' => 'ASC',
+        ));
+        // A non-array answer is a failed query, NOT the end of the network.
+        // Reading it as the end is what would let a rebuild that never
+        // discovered a single site record itself as covering all of them.
+        if (!is_array($sites) || empty($sites)) {
+            return null;
+        }
+        $siteId = reset($sites);
+        return is_numeric($siteId) ? (int)$siteId : null;
+    }
 
     /**
      * Rebuild one batch and return its stats.
@@ -490,10 +463,31 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             );
         }
 
+        // Range-check, not just presence-check. A negative count would walk the
+        // cursor BACKWARDS into an endless loop, and a count larger than the
+        // batch we asked for means the collaborator did something other than
+        // what was requested -- in both cases the number is not a description of
+        // this batch, and letting it advance the cursor publishes a cache whose
+        // coverage nobody can account for.
+        $processed = (int)$stats['processed'];
+        if ($processed < 0 || $processed > self::BATCH_SIZE) {
+            throw new RuntimeException(
+                'N-gram rebuilder reported ' . $processed . ' rows processed for a batch of '
+                . self::BATCH_SIZE . ' at offset ' . $offset . '; refusing to advance on a count '
+                . 'that cannot describe this batch.'
+            );
+        }
+
+        $success = isset($stats['success']) && is_numeric($stats['success']) ? (int)$stats['success'] : 0;
+        $failed = isset($stats['failed']) && is_numeric($stats['failed']) ? (int)$stats['failed'] : 0;
+
         return [
-            'processed' => (int)$stats['processed'],
-            'success' => isset($stats['success']) && is_numeric($stats['success']) ? (int)$stats['success'] : 0,
-            'failed' => isset($stats['failed']) && is_numeric($stats['failed']) ? (int)$stats['failed'] : 0,
+            'processed' => $processed,
+            // Clamped rather than trusted: these two only drive reporting and
+            // the completion guard, so an out-of-range value must not be able to
+            // make a run look cleaner than it was.
+            'success' => max(0, min($success, $processed)),
+            'failed' => max(0, min($failed, $processed)),
         ];
     }
 }
