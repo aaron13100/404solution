@@ -352,6 +352,21 @@ class ABJ_404_Solution_SynchronizationUtils {
      * matches a unique ID this request minted, so a lock that has since been
      * broken or taken over by another request is left alone.
      *
+     * It is also RESUMABLE, which is a stronger property than idempotent and
+     * the reason each key is dropped from the outstanding map individually,
+     * after its own owner record is gone, rather than clearing the map up
+     * front. This method can be re-entered from the top while a pass is still
+     * suspended mid-loop: PHP's LiteSpeed SAPI handles SIGTERM by calling
+     * php_request_shutdown() from inside the signal handler
+     * (lsapi_main.c:714-728), which fires the 'shutdown' action again, and
+     * this method is deliberately hooked both there and on
+     * register_shutdown_function(). Under LSAPI the handler then calls
+     * exit(1), so the suspended pass never resumes and the re-entrant pass is
+     * the last one that runs. Emptying the map before the deletes would leave
+     * that final pass with nothing to do and leak every lock the interrupted
+     * pass had not reached yet, deferring the next database or version upgrade
+     * until the stale-lock breaker fires (up to LOCK_STALE_CEILING_SECONDS).
+     *
      * @return void
      */
     function releaseLocksLeakedByThisRequest() {
@@ -359,18 +374,33 @@ class ABJ_404_Solution_SynchronizationUtils {
             return;
         }
 
-        $leakedLocks = $this->locksHeldThisRequest;
-        $this->locksHeldThisRequest = array();
+        // Snapshot the keys only, so a re-entrant pass that releases and forgets
+        // some of them cannot make this foreach skip a key or trip over a
+        // mutation mid-iteration. The map itself stays authoritative: each key
+        // is re-read from it below and left in place until its record is gone.
+        foreach (array_keys($this->locksHeldThisRequest) as $internalSynchronizedKey) {
+            if (!array_key_exists($internalSynchronizedKey, $this->locksHeldThisRequest)) {
+                // A re-entrant pass already released this one.
+                continue;
+            }
+            $uniqueID = $this->locksHeldThisRequest[$internalSynchronizedKey];
 
-        foreach ($leakedLocks as $internalSynchronizedKey => $uniqueID) {
             try {
                 if ($this->ownerStore->readOwner($internalSynchronizedKey) !== $uniqueID) {
-                    // Already broken by the stale-lock heuristic, or taken over
-                    // by another request. Not ours to delete.
+                    // Already broken by the stale-lock heuristic, taken over by
+                    // another request, or released by a re-entrant pass. Not
+                    // ours to delete, and nothing left to retry.
+                    $this->forgetHeldLock($internalSynchronizedKey, $uniqueID);
                     continue;
                 }
 
                 $this->ownerStore->deleteOwner($uniqueID, $internalSynchronizedKey);
+
+                // The record is gone, so this key's work is durably done. Drop
+                // it before anything else can throw: a key still in the map is
+                // a key a later pass will retry, and retrying a delete could
+                // remove a record another request has since acquired.
+                $this->forgetHeldLock($internalSynchronizedKey, $uniqueID);
 
                 $logger = abj_service('logging');
                 $logger->warn("Released a synchronization lock that this request " .
@@ -382,7 +412,10 @@ class ABJ_404_Solution_SynchronizationUtils {
             } catch (Throwable $e) {
                 // Shutdown context: the logging service (or whatever fataled)
                 // may no longer be usable, so fall back to the centralized raw
-                // PHP error-log sink rather than losing the failure.
+                // PHP error-log sink rather than losing the failure. The key
+                // stays in the outstanding map on this path on purpose -- a
+                // delete that threw is unfinished work, and the second shutdown
+                // hook (or a re-entrant pass) has to be able to retry it.
                 if (function_exists('abj404_logPhpFallback')) {
                     abj404_logPhpFallback('fatal-handler-fallback',
                         'Failed to release leaked synchronization lock ' .
