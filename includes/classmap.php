@@ -211,6 +211,7 @@ $abj404ClassesByDirectory = array(
     ),
     'ngram' => array(
         'NGramNetworkOptionStore', 'NGramCacheRebuildScheduler', 'NGramCacheRebuildBatchRunner',
+        'NGramRebuildProgressState', 'NGramRescheduleFailureReport',
         'NGramCacheSyncRebuilder',
         'NGramCacheReconciler', 'NGramTermCacheReconciler', 'NGramLastUpdatedEpochMigration',
         'NGramFilter',

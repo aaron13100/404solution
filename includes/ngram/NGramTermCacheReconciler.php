@@ -141,6 +141,24 @@ class ABJ_404_Solution_NGramTermCacheReconciler {
      * @return array{deleted:int, errors:int}
      */
     public function cleanupOrphanedTerms(string $ngramTable, string $type, array $publishedTerms): array {
+        // Positive evidence is required before deleting anything. The published
+        // list arrives from ContentRepository::getPublishedCategories() /
+        // getPublishedTags(), which return an EMPTY ARRAY when their query
+        // fails (PublishedContentRepository logs the error and falls through to
+        // objectRows($result['rows'] ?? array())). An empty list is therefore
+        // indistinguishable from a failed read, and treating it as "nothing is
+        // published" made a single transient database error -- a Galera
+        // failover, a dropped connection -- delete every cached n-gram row of
+        // this type. Refusing to act costs at most some stale rows, which only
+        // affect suggestion ranking and are cleaned up on the next run that has
+        // real data; acting on it costs the whole cache.
+        if (empty($publishedTerms)) {
+            $this->logger->debugMessage("Skipping orphaned {$type} ngram cleanup: no published {$type} "
+                . "terms were supplied, which is indistinguishable from a failed lookup. "
+                . "Nothing is deleted without positive evidence of what is published.");
+            return ['deleted' => 0, 'errors' => 0];
+        }
+
         $publishedIds = [];
         foreach ($publishedTerms as $term) {
             /** @var object{term_id: int, url: string} $term */
