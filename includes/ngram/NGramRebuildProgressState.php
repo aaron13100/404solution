@@ -36,6 +36,7 @@ class ABJ_404_Solution_NGramRebuildProgressState {
      */
     const OPTION_PENDING_SITES = 'abj404_ngram_pending_sites';
     const OPTION_SITES_COMPLETED = 'abj404_ngram_sites_completed';
+    const OPTION_LAST_SITE_ID = 'abj404_ngram_last_site_id';
     const OPTION_TOTAL_SITES = 'abj404_ngram_total_sites';
     const OPTION_CURRENT_SITE_OFFSET = 'abj404_ngram_current_site_offset';
     const OPTION_REBUILD_OFFSET = 'abj404_ngram_rebuild_offset';
@@ -143,79 +144,115 @@ class ABJ_404_Solution_NGramRebuildProgressState {
     }
 
     /**
-     * How many network sites have been fully drained.
+     * How many network sites have been fully drained. Progress reporting only:
+     * nothing decides where the walk goes next, or whether it is finished, from
+     * this number.
      *
-     * This replaced a stored list of every pending site id. The list was the
-     * whole network in memory AND in one option row, which grows without bound
-     * with the network; a count cannot. The current site is looked up by this
-     * offset each tick instead (ordered by id), so the record stays two
-     * integers however large the network is.
-     *
-     * The trade is that a site DELETED mid-drain shifts the ordering and can
-     * cost one site its turn in that pass. That is recoverable -- the next full
-     * rebuild picks it up, and a missing n-gram entry only weakens suggestion
-     * ranking -- whereas an option row that grows with the network is not.
+     * It used to be both, and that was the defect. A count doubling as a
+     * POSITION means the walk asks for "the site at position N" of a list whose
+     * positions are assigned at read time, so a site deleted earlier in the
+     * list slides every later site down one and the next tick steps over the
+     * one in the gap. The walk is keyed on {@see lastCompletedSiteId()} now,
+     * which names the same site however the list changes around it.
      *
      * @return int
      */
     public function sitesCompleted(): int {
-        $this->migrateLegacyPendingSites();
+        $this->migrateToKeysetWalk();
         return $this->readInt(self::OPTION_SITES_COMPLETED);
     }
 
     /**
-     * Retire the current site and move to the next.
+     * The last site id this walk finished; 0 before the first one lands.
      *
-     * The cursor is cleared BEFORE the completed count advances, and the order
-     * is the point. Cleared first, a death between the two writes re-drains the
-     * current site from 0 -- idempotent, and it costs one pass. Advanced first,
-     * the NEXT site inherits this site's offset and silently skips that many
-     * rows, which nothing afterwards would ever detect.
+     * This is the walk's cursor. Blog ids are immutable and ascending, so the
+     * next site is always "the smallest id greater than this", a question whose
+     * answer cannot be moved by a site being created or deleted elsewhere in
+     * the network.
      *
+     * @return int
+     */
+    public function lastCompletedSiteId(): int {
+        $this->migrateToKeysetWalk();
+        return max(0, $this->readInt(self::OPTION_LAST_SITE_ID));
+    }
+
+    /**
+     * Retire the site just drained and move the cursor onto it.
+     *
+     * The write order is the point, twice over. The per-site row cursor is
+     * cleared FIRST: a death between the writes then re-drains the current site
+     * from 0 -- idempotent, and it costs one pass -- whereas advancing first
+     * makes the next site inherit this site's row offset and silently skip that
+     * many rows. The walk cursor moves before the completed COUNT for the same
+     * reason in reverse: the count is only reporting, so a death between them
+     * costs a display number, never a site.
+     *
+     * @param int $completedSiteId The site that just finished draining.
      * @return void
      */
-    public function advanceToNextSite(): void {
+    public function advanceToNextSite(int $completedSiteId): void {
         $this->setCurrentSiteOffset(0);
+        $this->optionStore->updateOption(self::OPTION_LAST_SITE_ID, max(0, $completedSiteId));
         $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, $this->sitesCompleted() + 1);
     }
 
     /**
      * Seed the network walk.
      *
-     * @param int $totalSites
+     * @param int $totalSites Sites the network held when the walk began, for
+     *                        progress reporting only.
      * @return void
      */
     public function beginNetworkWalk(int $totalSites): void {
         $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, 0);
+        // Written explicitly rather than left absent: an absent cursor is what
+        // marks a pre-keyset record, and a fresh walk must not look like one.
+        $this->optionStore->updateOption(self::OPTION_LAST_SITE_ID, 0);
         $this->setTotalSites($totalSites);
         $this->setCurrentSiteOffset(0);
     }
 
     /** @return bool Whether the network walk has been seeded at all. */
     public function networkWalkStarted(): bool {
-        $this->migrateLegacyPendingSites();
+        $this->migrateToKeysetWalk();
         return $this->optionStore->getOption(self::OPTION_TOTAL_SITES, null) !== null;
     }
 
     /**
-     * Carry a rebuild that was mid-flight under the old pending-list format
-     * over to the completed-count cursor, then drop the legacy option so this
-     * runs once. Without it, an upgrade landing mid-network-rebuild would
-     * restart that network from site one.
+     * Bring a rebuild that was mid-flight under an older progress format onto
+     * the keyset cursor, and drop the formats it replaced so this runs once.
+     *
+     * Both older formats recorded a POSITION (a pending-site list, then a
+     * completed count) and neither can be translated into a site id without
+     * re-reading the list by position -- the very read that can step over a
+     * site. So an in-flight walk with no cursor RESTARTS at the first site.
+     * Re-draining sites is idempotent and costs one pass of cron work; guessing
+     * the cursor can lose a site for the whole rebuild, and losing one is the
+     * failure this cursor exists to make impossible.
      *
      * @return void
      */
-    private function migrateLegacyPendingSites(): void {
-        $legacy = $this->optionStore->getOption(self::OPTION_PENDING_SITES, null);
-        if ($legacy === null) {
+    private function migrateToKeysetWalk(): void {
+        $legacyPendingList = $this->optionStore->getOption(self::OPTION_PENDING_SITES, null);
+        $hasCursor = $this->optionStore->getOption(self::OPTION_LAST_SITE_ID, null) !== null;
+        $walkInFlight = $this->optionStore->getOption(self::OPTION_TOTAL_SITES, null) !== null;
+
+        if ($legacyPendingList === null && ($hasCursor || !$walkInFlight)) {
             return;
         }
-        if (is_array($legacy)) {
-            $total = $this->readInt(self::OPTION_TOTAL_SITES);
-            $completed = $total > count($legacy) ? $total - count($legacy) : 0;
-            $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, $completed);
+
+        if ($legacyPendingList !== null) {
+            $this->optionStore->updateOption(self::OPTION_PENDING_SITES, null);
         }
-        $this->optionStore->updateOption(self::OPTION_PENDING_SITES, null);
+        if (!$walkInFlight || $hasCursor) {
+            // Nothing in flight to carry over, or it is already on the cursor.
+            return;
+        }
+
+        $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, 0);
+        $this->setCurrentSiteOffset(0);
+        $this->optionStore->updateOption(self::OPTION_LAST_SITE_ID, 0);
     }
 
     /**
@@ -269,6 +306,7 @@ class ABJ_404_Solution_NGramRebuildProgressState {
     public function markNetworkComplete(): void {
         $this->optionStore->updateOption(self::OPTION_PENDING_SITES, null);
         $this->optionStore->updateOption(self::OPTION_SITES_COMPLETED, null);
+        $this->optionStore->updateOption(self::OPTION_LAST_SITE_ID, null);
         $this->optionStore->updateOption(self::OPTION_TOTAL_SITES, null);
         $this->optionStore->updateOption(self::OPTION_CURRENT_SITE_OFFSET, null);
         $this->clearFailures();

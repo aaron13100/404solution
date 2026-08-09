@@ -21,9 +21,13 @@ require_once __DIR__ . '/NGramRebuildDrain.php';
  * {@see ABJ_404_Solution_NGramCacheRebuildScheduler}.
  *
  * Multisite-aware: a network-activated install drains one site at a time,
- * tracking pending sites and the per-site cursor through the network option
- * store, so a large network converges across ticks without ever holding more
- * than one site's batch in memory.
+ * tracking the last site id it finished and the per-site cursor through the
+ * network option store, so a large network converges across ticks without ever
+ * holding more than one site's batch in memory. The site id is the cursor
+ * rather than a count of sites done, because a count is a POSITION in a list
+ * other requests can change: delete a site earlier in the network and every
+ * later position slides down one, so the next tick steps over a site that
+ * nothing revisits. See {@see ABJ_404_Solution_NetworkSitesRepository}.
  *
  * Lock acquisition is owned by the orchestrator (DatabaseUpgradeNGram). This
  * collaborator assumes the 'ngram_rebuild' SyncUtils lock is already held when
@@ -66,6 +70,9 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
 
     /** @var ABJ_404_Solution_NGramRescheduleFailureReport */
     private $rescheduleFailureReport;
+
+    /** @var ABJ_404_Solution_NetworkSitesRepository|null Built on first use. */
+    private $networkSites = null;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
@@ -112,6 +119,22 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
     private function countPermalinkCacheRows(): int {
         $repository = new ABJ_404_Solution_PermalinkCacheRepository($this->dbCore);
         return $repository->getPermalinkCacheCount();
+    }
+
+    /**
+     * The network's site list, read one site at a time by immutable id.
+     *
+     * Delegated for the same reason the row count above is: an orchestrator
+     * that also writes its own SQL is two layers in one method. Memoized
+     * because a single cron tick asks it twice and it holds no per-site state.
+     *
+     * @return ABJ_404_Solution_NetworkSitesRepository
+     */
+    private function networkSites(): ABJ_404_Solution_NetworkSitesRepository {
+        if ($this->networkSites === null) {
+            $this->networkSites = new ABJ_404_Solution_NetworkSitesRepository($this->dbCore);
+        }
+        return $this->networkSites;
     }
 
     /**
@@ -209,7 +232,7 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
      */
     private function runMultisiteBatch(): void {
         if (!$this->progress->networkWalkStarted()) {
-            $liveCount = $this->countNetworkSites();
+            $liveCount = $this->networkSites()->countSites();
             if ($liveCount === null) {
                 $this->recordBatchFailure(
                     'N-gram rebuild could not count the sites in this network; leaving the walk unstarted.'
@@ -220,36 +243,44 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             $this->progress->beginNetworkWalk($liveCount);
         }
 
+        // The stored total is a snapshot from when the walk began, so it is
+        // reported as an approximation and nothing decides anything from it.
         $totalSites = $this->progress->totalSites(0);
         $completedSites = $this->progress->sitesCompleted();
+        $lastSiteId = $this->progress->lastCompletedSiteId();
 
-        // Completion is confirmed by ASKING the network, never by trusting the
-        // stored total. Sites can be created or deleted mid-walk, which shifts
-        // every later position; a walk that believes it is finished because a
-        // snapshot said so can have skipped a site that still exists.
-        $currentSiteId = $this->siteAtWalkOffset($completedSites);
-        if ($currentSiteId === null) {
-            $liveCount = $this->countNetworkSites();
-            if ($liveCount !== null && $completedSites >= $liveCount) {
-                $this->progress->markNetworkComplete();
-                $this->logger->infoMessage("N-gram cache rebuild complete for all sites in network!");
-                return;
-            }
-            // No site at this position, but the network says there should be
-            // one (or could not be asked). Sites moved under the walk, or the
-            // query failed. Either way this network has NOT been drained, so
-            // completion must not be recorded; re-seed and walk it again.
+        // The walk is keyed on the last site id it FINISHED, never on how many
+        // sites it has finished. A count is a position in a list, and positions
+        // are assigned at read time: deleting a site earlier in the network
+        // slides every later site down one, so the next position steps over the
+        // site in the gap and nothing afterwards ever revisits it. An id cannot
+        // move. Completion follows from the same read -- the network has ended
+        // when no site has an id past the cursor -- rather than from comparing
+        // a count against a total read at some other moment.
+        $nextSite = $this->networkSites()->nextSiteAfter($lastSiteId);
+
+        if ($nextSite->isUnreadable()) {
+            // Could not ASK the network, which is not the same as the network
+            // having ENDED. The walk keeps its cursor and retries; recording
+            // completion here is what published a network as rebuilt after
+            // draining none of it.
             $this->recordBatchFailure(sprintf(
-                'N-gram rebuild could not resolve network site %d of %d; re-seeding the walk.',
-                $completedSites + 1,
-                $totalSites
+                'N-gram rebuild could not read the site after %d in this network (%s); '
+                . 'holding the walk where it is so the next tick retries it.',
+                $lastSiteId,
+                $nextSite->reason()
             ));
-            if ($liveCount !== null) {
-                $this->progress->beginNetworkWalk($liveCount);
-            }
             $this->rescheduleChain(10, array(), 0.0);
             return;
         }
+
+        if ($nextSite->isEndOfNetwork()) {
+            $this->progress->markNetworkComplete();
+            $this->logger->infoMessage("N-gram cache rebuild complete for all sites in network!");
+            return;
+        }
+
+        $currentSiteId = $nextSite->siteId();
 
         // Everything from here to the matching restore runs against another
         // site's tables. A throw anywhere in that span -- the row count, the
@@ -261,9 +292,9 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             $sitePages = $this->countPermalinkCacheRows();
 
             if ($sitePages == 0) {
-                $this->progress->advanceToNextSite();
+                $this->progress->advanceToNextSite($currentSiteId);
                 $this->logger->infoMessage(sprintf(
-                    "Site %d has no pages. Moving to next site. Progress: %d/%d sites completed.",
+                    "Site %d has no pages. Moving to next site. Progress: %d of ~%d sites completed.",
                     $currentSiteId, $completedSites + 1, $totalSites
                 ));
                 $this->rescheduleChain(0, array(), 100.0);
@@ -271,7 +302,7 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             }
 
             $this->logger->infoMessage(sprintf(
-                "Processing N-gram cache for site %d (Site %d of %d): Offset %d of %d pages",
+                "Processing N-gram cache for site %d (site %d of ~%d): Offset %d of %d pages",
                 $currentSiteId, $completedSites + 1, $totalSites,
                 $this->progress->cursor(), $sitePages
             ));
@@ -286,10 +317,10 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             ));
 
             if (ABJ_404_Solution_NGramRebuildDrain::isClean($outcome, $sitePages)) {
-                $this->progress->advanceToNextSite();
+                $this->progress->advanceToNextSite($currentSiteId);
                 $this->progress->clearFailures();
                 $this->logger->infoMessage(sprintf(
-                    "Site %d complete! Progress: %d/%d sites completed.",
+                    "Site %d complete! Progress: %d of ~%d sites completed.",
                     $currentSiteId, $completedSites + 1, $totalSites
                 ));
             } else if (!$outcome['threw'] && $outcome['rowsFailed'] === 0) {
@@ -340,56 +371,6 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
         $this->progress->markComplete();
         $this->logger->infoMessage("N-gram cache rebuild complete! Total: {$outcome['processed']} processed, "
             . "{$outcome['success']} success, {$outcome['rowsFailed']} failed.");
-    }
-
-    /**
-     * How many sites the network has, or null when the network cannot answer.
-     *
-     * The null is load-bearing: it is the only thing that distinguishes "this
-     * network has no sites" from "the count could not be read", and the walk
-     * treats the first as a finished rebuild.
-     *
-     * @return int|null
-     */
-    private function countNetworkSites(): ?int {
-        $count = get_sites(array('count' => true));
-        // NULL, not 0: a count query that failed is not a network with no sites
-        // in it, and reading it as one records a rebuild that processed nothing
-        // as having covered everything.
-        if (!is_numeric($count)) {
-            return null;
-        }
-        $count = (int)$count;
-        return $count >= 0 ? $count : null;
-    }
-
-    /**
-     * The site at a given position in the walk, or null when the network cannot
-     * answer.
-     *
-     * One site is fetched per tick rather than the whole list: a stored list of
-     * every site id is unbounded in both memory and option size, and this walk
-     * only ever needs the site it is about to drain.
-     *
-     * @param int $walkOffset
-     * @return int|null
-     */
-    private function siteAtWalkOffset(int $walkOffset) {
-        $sites = get_sites(array(
-            'fields' => 'ids',
-            'number' => 1,
-            'offset' => $walkOffset,
-            'orderby' => 'id',
-            'order' => 'ASC',
-        ));
-        // A non-array answer is a failed query, NOT the end of the network.
-        // Reading it as the end is what would let a rebuild that never
-        // discovered a single site record itself as covering all of them.
-        if (!is_array($sites) || empty($sites)) {
-            return null;
-        }
-        $siteId = reset($sites);
-        return is_numeric($siteId) ? (int)$siteId : null;
     }
 
 }

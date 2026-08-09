@@ -225,6 +225,15 @@ class ABJ_404_Solution_Uninstaller {
             'abj404_migration_results',
             'abj404_ngram_cache_initialized',
             'abj404_ngram_rebuild_offset',
+            // The multisite rebuild walk's progress record. Written as network
+            // options on a network-activated install, so an uninstall that
+            // dropped only the two above left a half-finished walk behind for
+            // the next install to resume into a cache that no longer exists.
+            'abj404_ngram_last_site_id',
+            'abj404_ngram_sites_completed',
+            'abj404_ngram_current_site_offset',
+            'abj404_ngram_total_sites',
+            'abj404_ngram_pending_sites',
             'abj404_uninstall_preferences' // Clean up the preferences option
         );
 
