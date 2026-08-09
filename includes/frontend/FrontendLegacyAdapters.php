@@ -104,17 +104,17 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
      */
     private function adaptNotFoundResponse($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) {
         return new class($forceRedirect, $sendTo404Page, $thereIsAUserSpecified404Page) extends ABJ_404_Solution_NotFoundResponseService {
-            /** @var callable(string, int, mixed, string, bool): bool */
-            private $forceRedirectCallback;
-            /** @var callable(string, string, bool, mixed): void */
-            private $sendTo404PageCallback;
-            /** @var callable(mixed): bool */
-            private $thereIsAUserSpecified404PageCallback;
+            /** @var \Closure(string, int, mixed, string, bool): bool */
+            private \Closure $forceRedirectCallback;
+            /** @var \Closure(string, string, bool, mixed): void */
+            private \Closure $sendTo404PageCallback;
+            /** @var \Closure(mixed): bool */
+            private \Closure $thereIsAUserSpecified404PageCallback;
 
             function __construct(callable $forceRedirect, callable $sendTo404Page, callable $thereIsAUserSpecified404Page) {
-                $this->forceRedirectCallback = $forceRedirect;
-                $this->sendTo404PageCallback = $sendTo404Page;
-                $this->thereIsAUserSpecified404PageCallback = $thereIsAUserSpecified404Page;
+                $this->forceRedirectCallback = \Closure::fromCallable($forceRedirect);
+                $this->sendTo404PageCallback = \Closure::fromCallable($sendTo404Page);
+                $this->thereIsAUserSpecified404PageCallback = \Closure::fromCallable($thereIsAUserSpecified404Page);
             }
 
             function forceRedirect(string $location, int $status = 302, $type = -1, string $requestedURL = '', bool $isCustom404 = false): bool {
@@ -138,14 +138,14 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
      */
     private function adaptRequestIgnoreNormalizer($initializeIgnoreValues, $tryNormalPostQuery) {
         return new class($initializeIgnoreValues, $tryNormalPostQuery) extends ABJ_404_Solution_RequestIgnoreNormalizer {
-            /** @var callable(string, string): void */
-            private $initializeIgnoreValuesCallback;
-            /** @var callable(array<string, mixed>): void */
-            private $tryNormalPostQueryCallback;
+            /** @var \Closure(string, string): void */
+            private \Closure $initializeIgnoreValuesCallback;
+            /** @var \Closure(array<string, mixed>): void */
+            private \Closure $tryNormalPostQueryCallback;
 
             function __construct(callable $initializeIgnoreValues, callable $tryNormalPostQuery) {
-                $this->initializeIgnoreValuesCallback = $initializeIgnoreValues;
-                $this->tryNormalPostQueryCallback = $tryNormalPostQuery;
+                $this->initializeIgnoreValuesCallback = \Closure::fromCallable($initializeIgnoreValues);
+                $this->tryNormalPostQueryCallback = \Closure::fromCallable($tryNormalPostQuery);
             }
 
             function initializeIgnoreValues(string $urlRequest, string $urlSlugOnly): void {
@@ -165,14 +165,14 @@ class ABJ_404_Solution_FrontendLegacyAdapters {
      */
     private function adaptPreviousRequestCookieTracker($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) {
         return new class($readCookieWithPreviousRqeuestShort, $setCookieWithPreviousRequest) extends ABJ_404_Solution_PreviousRequestCookieTracker {
-            /** @var callable(): string */
-            private $readCookieWithPreviousRqeuestShortCallback;
-            /** @var callable(): void */
-            private $setCookieWithPreviousRequestCallback;
+            /** @var \Closure(): string */
+            private \Closure $readCookieWithPreviousRqeuestShortCallback;
+            /** @var \Closure(): void */
+            private \Closure $setCookieWithPreviousRequestCallback;
 
             function __construct(callable $readCookieWithPreviousRqeuestShort, callable $setCookieWithPreviousRequest) {
-                $this->readCookieWithPreviousRqeuestShortCallback = $readCookieWithPreviousRqeuestShort;
-                $this->setCookieWithPreviousRequestCallback = $setCookieWithPreviousRequest;
+                $this->readCookieWithPreviousRqeuestShortCallback = \Closure::fromCallable($readCookieWithPreviousRqeuestShort);
+                $this->setCookieWithPreviousRequestCallback = \Closure::fromCallable($setCookieWithPreviousRequest);
             }
 
             function readCookieWithPreviousRqeuestShort(): string {
