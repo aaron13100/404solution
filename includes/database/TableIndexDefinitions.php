@@ -64,10 +64,15 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * @return array<string, array{name: string, columns: array<int, array{column: string, prefix: int|null}>, unique: bool}>|null
      */
     public function readLive(string $tableName) {
-        if ($tableName === '') {
+        $quotedTableName = self::quoteIdentifier($tableName);
+        if ($quotedTableName === null) {
+            // Not a name we can safely put in a statement. Report it the same
+            // way an unanswerable probe is reported -- "unknown", not "no
+            // indexes" -- so no caller reads it as a table needing every index
+            // rebuilt.
             return null;
         }
-        $result = $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $tableName,
+        $result = $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $quotedTableName,
             array('log_errors' => false));
         $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
             ? (string)$result['last_error'] : '';
@@ -75,6 +80,55 @@ class ABJ_404_Solution_TableIndexDefinitions {
             return null;
         }
         return self::fromShowIndexRows(array_values($result['rows']));
+    }
+
+    /**
+     * A table name rendered as a quoted SQL identifier, or null when it is not
+     * one.
+     *
+     * `SHOW INDEX` takes an identifier, which cannot be a bound parameter, so
+     * the name is validated against the identifier grammar and then quoted
+     * per segment. Quoting the whole of "db.table" as one unit would name a
+     * table with a dot in it, which is why the split is not cosmetic.
+     * Unquoted MySQL identifiers are ASCII letters, digits, underscore and
+     * dollar, plus U+0080 and above; anything else (a backtick, a space, a
+     * semicolon) means this is not a plugin table name and the probe is
+     * refused rather than escaped into something plausible.
+     *
+     * @param string $tableName
+     * @return string|null
+     */
+    private static function quoteIdentifier(string $tableName): ?string {
+        if ($tableName === '') {
+            return null;
+        }
+
+        $segments = explode('.', $tableName);
+        $quoted = array();
+        foreach ($segments as $segment) {
+            if ($segment === '' || !preg_match('/^[A-Za-z0-9_$\x{0080}-\x{FFFF}]+$/u', $segment)) {
+                return null;
+            }
+            $quoted[] = '`' . $segment . '`';
+        }
+
+        return implode('.', $quoted);
+    }
+
+    /**
+     * Whether a live definition was fully describable from the rows the engine
+     * reported.
+     *
+     * A false answer means "this index exists, but we cannot say what it
+     * contains" -- so it must be compared against nothing and repaired by
+     * nothing. Callers that treat an absent index as missing must consult this
+     * before concluding anything about an index that IS present.
+     *
+     * @param array{describable?: bool} $definition
+     * @return bool
+     */
+    public static function isDescribable(array $definition): bool {
+        return !isset($definition['describable']) || $definition['describable'] === true;
     }
 
     /**
@@ -92,6 +146,7 @@ class ABJ_404_Solution_TableIndexDefinitions {
         $names = array();
         $unique = array();
         $bySeq = array();
+        $opaque = array();
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 continue;
@@ -101,11 +156,31 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 ? (string)$fields['key_name'] : '';
             $column = isset($fields['column_name']) && is_scalar($fields['column_name'])
                 ? (string)$fields['column_name'] : '';
-            if ($name === '' || $column === '') {
+            if ($name === '') {
+                // No index name at all: nothing to file this row under.
+                continue;
+            }
+            if ($column === '') {
                 // A MariaDB/MySQL functional index reports a NULL Column_name and
                 // carries the expression in Expression instead. The plugin ships
                 // none, and a definition we cannot describe must never be judged
-                // as drifted, so skip the row.
+                // as drifted.
+                //
+                // Dropping the row is NOT how to achieve that: an index whose
+                // rows all vanish is absent from the returned map, and an absent
+                // index reads as MISSING to the repair path, which then issues
+                // CREATE INDEX for a name that already exists. Record the index
+                // as present and mark it undescribable instead, so comparison
+                // and repair both skip it.
+                $key = strtolower($name);
+                $names[$key] = $name;
+                $opaque[$key] = true;
+                if (!isset($bySeq[$key])) {
+                    $unique[$key] = isset($fields['non_unique'])
+                        && is_scalar($fields['non_unique'])
+                        && (int)$fields['non_unique'] === 0;
+                    $bySeq[$key] = array();
+                }
                 continue;
             }
             $key = strtolower($name);
@@ -134,6 +209,11 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 'name' => $names[$key],
                 'columns' => array_values($columns),
                 'unique' => $unique[$key],
+                // One undescribable row is enough to make the whole index
+                // unsafe to compare: with a row missing, the remaining column
+                // ORDER is not the index's real order, and a wrong order
+                // compares as drift and triggers a needless table rewrite.
+                'describable' => !isset($opaque[$key]),
             );
         }
         return $definitions;

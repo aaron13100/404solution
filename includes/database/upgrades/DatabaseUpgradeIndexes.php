@@ -73,6 +73,14 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 			$live = $liveDefinitions[strtolower((string)$indexName)] ?? null;
 			if ($live === null) {
 				$missingIndexNames[] = $indexName;
+			} else if (!ABJ_404_Solution_TableIndexDefinitions::isDescribable($live)) {
+				// The index is present but the engine described it in a form we
+				// cannot compare (a functional index reports no Column_name).
+				// Neither missing nor drifted: creating it would collide with
+				// the name that already exists, and rebuilding it would rewrite
+				// the table on a difference we never actually established.
+				$this->logger->debugMessage("Leaving index {$indexName} on {$tableName} alone: "
+					. "the engine reports it in a form this version cannot describe.");
 			} else if (ABJ_404_Solution_TableIndexDefinitions::signatureOfLiveDefinition($live)
 					!== ABJ_404_Solution_TableIndexDefinitions::signatureOfDdlSpec($spec)) {
 				$driftedIndexNames[] = $indexName;
