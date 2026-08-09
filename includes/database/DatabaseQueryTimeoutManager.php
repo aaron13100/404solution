@@ -377,16 +377,22 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
 
         global $wpdb;
         /** @var wpdb $wpdb */
+        $retryError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error']
+            : '';
         if ($tracer === null) {
-            $wpdb->flush();
+            if (!$this->core->connectionManager()->resetForRetry($retryError)) {
+                return;
+            }
         } else {
-            $tracer->traceOperation(
+            $reset = $tracer->traceOperation(
                 'timeout_wrapper',
-                'wpdb_flush',
-                static function () use ($wpdb): void {
-                    $wpdb->flush();
-                }
+                'connection_retry_reset',
+                fn(): bool => $this->core->connectionManager()->resetForRetry($retryError)
             );
+            if (!$reset) {
+                return;
+            }
         }
         // Mutate $query so downstream retry paths execute the unwrapped form.
         $query = $unwrapped;

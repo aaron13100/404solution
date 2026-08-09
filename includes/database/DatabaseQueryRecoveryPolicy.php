@@ -47,6 +47,30 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
     }
 
     /**
+     * Classify retry policy without changing the shared infrastructure-error
+     * taxonomy that owns severity decisions.
+     *
+     * Error 2014 needs a distinct immediate-recovery branch because its retry
+     * requires draining mysqli result sets, not reconnecting. Keeping that
+     * decision here lets observed-error reporting and recovery dispatch share
+     * one policy without coupling the severity taxonomy to recovery mechanics.
+     *
+     * @param string $lastError
+     * @return array{strategy: string, branch: string, reason: string}
+     */
+    public function classifyRetry(string $lastError): array {
+        $taxonomy = $this->core->errorClassifier()->taxonomy();
+        if ($taxonomy->connectivity()->isCommandsOutOfSyncError($lastError)) {
+            return array(
+                'strategy' => ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy::QUERY_RETRY_IMMEDIATE,
+                'branch' => 'commands_out_of_sync',
+                'reason' => 'pending_results_drained',
+            );
+        }
+        return $taxonomy->classifyQueryRetry($lastError);
+    }
+
+    /**
      * Run all post-execution recovery branches in their legacy order.
      *
      * @param string $query
@@ -155,7 +179,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
     ): void {
         $lastError = $this->lastErrorFromResult($result);
-        $retryDecision = $this->core->errorClassifier()->taxonomy()->classifyQueryRetry($lastError);
+        $retryDecision = $this->classifyRetry($lastError);
         if ($lastError === ''
             || $retryDecision['strategy'] !== ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy::QUERY_RETRY_IMMEDIATE) {
             return;
@@ -171,21 +195,22 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
             $producesRows,
             $tracer,
             $retryBranch,
-            $retryReason
+            $retryReason,
+            $lastError
         ): void {
-            global $wpdb;
             $tracer->traceOperation(
                 $retryBranch,
                 'connection_recovery',
                 fn(): bool => $this->core->connectionManager()->ensureConnection()
             );
-            $tracer->traceOperation(
+            $reset = $tracer->traceOperation(
                 $retryBranch,
-                'wpdb_flush',
-                static function () use ($wpdb): void {
-                    $wpdb->flush();
-                }
+                'connection_retry_reset',
+                fn(): bool => $this->core->connectionManager()->resetForRetry($lastError)
             );
+            if (!$reset) {
+                return;
+            }
             $retried = $tracer->traceAttempt(
                 $retryBranch,
                 $retryReason,
@@ -265,7 +290,7 @@ class ABJ_404_Solution_DatabaseQueryRecoveryPolicy {
         ABJ_404_Solution_DatabaseQueryRecoveryTracer $tracer
     ): void {
         $lastError = $this->lastErrorFromResult($result);
-        $retryDecision = $this->core->errorClassifier()->taxonomy()->classifyQueryRetry($lastError);
+        $retryDecision = $this->classifyRetry($lastError);
         if ($lastError === ''
             || $retryDecision['strategy'] !== ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy::QUERY_RETRY_BACKOFF) {
             return;

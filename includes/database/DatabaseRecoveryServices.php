@@ -94,6 +94,9 @@ class ABJ_404_Solution_DatabaseRecoveryServices {
             function (string $type, string $message, string $guidance, string $errorString) use ($noticeState): void {
                 $noticeState->setPluginDbNotice($type, $message, $guidance, $errorString);
             },
+            function (string $errorText) use ($core): bool {
+                return $core->connectionManager()->resetForRetry($errorText);
+            },
             $functions,
             $logger
         );

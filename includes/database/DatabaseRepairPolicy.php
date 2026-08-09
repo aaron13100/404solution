@@ -270,15 +270,18 @@ class ABJ_404_Solution_DatabaseRepairPolicy {
 
         global $wpdb;
         if ($tracer === null) {
-            $wpdb->flush();
+            if (!$this->core->connectionManager()->resetForRetry($originalSqlError)) {
+                return;
+            }
         } else {
-            $tracer->traceOperation(
+            $reset = $tracer->traceOperation(
                 'missing_table',
-                'wpdb_flush',
-                static function () use ($wpdb): void {
-                    $wpdb->flush();
-                }
+                'connection_retry_reset',
+                fn(): bool => $this->core->connectionManager()->resetForRetry($originalSqlError)
             );
+            if (!$reset) {
+                return;
+            }
         }
 
         // Suppress WP's own error output for the retry. If it also fails, we

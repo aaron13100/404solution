@@ -214,16 +214,6 @@ class ABJ_404_Solution_LogsRepository implements ABJ_404_Solution_LogsRepository
      * Backwards-compatible accessor (not on the interface). Forwarded to the
      * writer.
      *
-     * @return wpdb|null
-     */
-    public function getIsolatedWpdb(): ?wpdb {
-        return $this->writer->getIsolatedWpdb();
-    }
-
-    /**
-     * Backwards-compatible accessor (not on the interface). Forwarded to the
-     * writer.
-     *
      * @param array<string, mixed> $entry
      * @return array<string, mixed>|null
      */

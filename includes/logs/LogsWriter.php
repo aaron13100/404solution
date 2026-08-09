@@ -91,8 +91,7 @@ class ABJ_404_Solution_LogsWriter {
         $this->requestedUrlColumnMetadata = new ABJ_404_Solution_LogsRequestedUrlColumnMetadata($logger);
         $this->recoveryPolicy = new ABJ_404_Solution_LogsWriteRecoveryPolicy(
             $logger,
-            $noticeState,
-            $errorClassifier->taxonomy()->connectivity()
+            $noticeState
         );
         $this->queueFlusher = new ABJ_404_Solution_LogsQueueFlusher($dbCore, $logger, $this->entrySanitizer, $this->recoveryPolicy);
     }
@@ -240,8 +239,8 @@ class ABJ_404_Solution_LogsWriter {
 
     /**
      * Flush the pending log queue to logsv2 as one INSERT IGNORE batch, with
-     * per-failure recovery (table-full auto-trim, isolated wpdb retry,
-     * per-row fallback).
+     * per-failure recovery (table-full auto-trim, shared-connection reset,
+     * and per-row fallback).
      */
     public function flushLogQueue(): void {
         $this->queueFlusher->flushLogQueue(self::$logQueue, self::$shutdownHookRegistered, self::$isFlushingLogQueue);
@@ -258,17 +257,6 @@ class ABJ_404_Solution_LogsWriter {
      */
     public function autoTrimLogsv2IfNeeded(string $tableName, string $errorMessage): bool {
         return $this->recoveryPolicy->autoTrimLogsv2IfNeeded($tableName, $errorMessage);
-    }
-
-    /**
-     * Construct an isolated wpdb connection used as a fallback when the
-     * primary connection enters a "commands out of sync" state and the
-     * prepared statement cannot be re-issued on it.
-     *
-     * @return wpdb|null
-     */
-    public function getIsolatedWpdb(): ?wpdb {
-        return $this->recoveryPolicy->getIsolatedWpdb();
     }
 
     /**

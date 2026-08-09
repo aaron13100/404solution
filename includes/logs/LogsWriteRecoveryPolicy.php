@@ -15,26 +15,16 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
     /** @var ABJ_404_Solution_DatabaseNoticeStateHolder */
     private $noticeState;
 
-    /** @var ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy */
-    private $connectivityTaxonomy;
-
     /**
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
-     * @param ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy $connectivityTaxonomy
      */
     public function __construct(
         $logger,
-        ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState,
-        ABJ_404_Solution_DatabaseConnectivityErrorTaxonomy $connectivityTaxonomy
+        ABJ_404_Solution_DatabaseNoticeStateHolder $noticeState
     ) {
         $this->logger = $logger;
         $this->noticeState = $noticeState;
-        $this->connectivityTaxonomy = $connectivityTaxonomy;
-    }
-
-    public function isCommandsOutOfSyncError(string $error): bool {
-        return $this->connectivityTaxonomy->isCommandsOutOfSyncError($error);
     }
 
     public function isTableFullError(string $error): bool {
@@ -80,32 +70,6 @@ class ABJ_404_Solution_LogsWriteRecoveryPolicy {
             function_exists('__') ? __('The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.', '404-solution') : 'The 404 Solution log table is full. The plugin automatically trimmed the oldest 1,000 log entries to free space, but logging may still be limited. Please contact your hosting provider about disk space.',
             $errorMessage
         );
-    }
-
-    /**
-     * @return wpdb|null
-     */
-    public function getIsolatedWpdb(): ?wpdb {
-        static $isolated = null;
-        if ($isolated !== null) {
-            return $isolated;
-        }
-        if (!class_exists('wpdb')) {
-            return null;
-        }
-        if (!defined('DB_USER') || !defined('DB_PASSWORD') || !defined('DB_NAME') || !defined('DB_HOST')) {
-            static $warnedNoDbConsts = false;
-            if (!$warnedNoDbConsts) {
-                $warnedNoDbConsts = true;
-                $this->logger->warn(__METHOD__ . ': DB_USER/DB_PASSWORD/DB_NAME/DB_HOST undefined; isolated wpdb unavailable');
-            }
-            return null;
-        }
-        // phpcs:ignore WordPress.DB.RestrictedClasses.mysql__wpdb
-        $isolated = new wpdb(DB_USER, DB_PASSWORD, DB_NAME, DB_HOST);
-        $isolated->show_errors(false);
-        $isolated->suppress_errors(true);
-        return $isolated;
     }
 
     public function getWpdbRecentQueryContextForLogs(): string {

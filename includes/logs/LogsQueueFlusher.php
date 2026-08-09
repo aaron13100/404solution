@@ -109,13 +109,13 @@ class ABJ_404_Solution_LogsQueueFlusher {
             $sql = "INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES " . implode(', ', $formats);
             // DAO-bypass-approved: queue flusher batches dynamic INSERT placeholders and must inspect wpdb last_error on the same connection.
             $prepared = $wpdb->prepare($sql, $flattenedValues);
-            $wpdb->flush();
+            $this->dbCore->connectionManager()->resetForRetry();
             // DAO-bypass-approved: batch log insert must preserve same-handle last_error for recovery classification.
             $result = $wpdb->query($prepared);
 
             if ($result === false && !empty($wpdb->last_error)) {
                 $batchDatabaseError = (string)$wpdb->last_error;
-                $this->recoverFailedBatch($tableName, $columnList, $prepared, $sql, $flattenedValues, $sanitizedEntries, $validatedColumns, $batchDatabaseError);
+                $this->recoverFailedBatch($tableName, $columnList, $prepared, $sanitizedEntries, $validatedColumns, $batchDatabaseError);
             }
         } catch (\Throwable $e) {
             // This runs on the 'shutdown' action, which fires on every
@@ -169,7 +169,6 @@ class ABJ_404_Solution_LogsQueueFlusher {
     }
 
     /**
-     * @param array<int, mixed> $flattenedValues
      * @param array<int, array<string, mixed>> $sanitizedEntries
      * @param array<int, string> $validatedColumns
      */
@@ -177,8 +176,6 @@ class ABJ_404_Solution_LogsQueueFlusher {
         string $tableName,
         string $columnList,
         string $prepared,
-        string $sql,
-        array $flattenedValues,
         array $sanitizedEntries,
         array $validatedColumns,
         string $batchError
@@ -188,32 +185,32 @@ class ABJ_404_Solution_LogsQueueFlusher {
         if ($this->recovery->isTableFullError($batchError)) {
             $trimmed = $this->recovery->autoTrimLogsv2IfNeeded($tableName, $batchError);
             if ($trimmed) {
-                $wpdb->flush();
-                // DAO-bypass-approved: table-full recovery retries the already-prepared batch on the same wpdb connection.
-                $retryResult = $wpdb->query($prepared);
-                if ($retryResult !== false) {
-                    return;
+                if ($this->dbCore->connectionManager()->resetForRetry($batchError)) {
+                    // DAO-bypass-approved: table-full recovery retries the already-prepared batch on the same wpdb connection.
+                    $retryResult = $wpdb->query($prepared);
+                    if ($retryResult !== false) {
+                        return;
+                    }
+                    $batchError = (string)$wpdb->last_error;
                 }
-                $batchError = (string)$wpdb->last_error;
             }
             $this->recovery->setLogsv2FullNotice($batchError);
         }
 
-        if ($this->recovery->isCommandsOutOfSyncError($batchError)) {
-            $isolated = $this->recovery->getIsolatedWpdb();
-            if ($isolated !== null) {
-                $isolated->flush();
-                $isolatedResult = $isolated->query($prepared);
-                if ($isolatedResult !== false) {
-                    $context = $this->recovery->getWpdbRecentQueryContextForLogs();
-                    $suffix = ($context !== '') ? " | savequeries_context={$context}" : '';
-                    $this->logger->warn("flushLogQueue batch INSERT succeeded using isolated DB connection (commands out of sync on shared connection).{$suffix}");
-                    return;
-                }
-                $batchError .= " | isolated_error=" . $isolated->last_error;
-            } else {
-                $batchError .= " | isolated_error=no_isolated_connection";
+        $commandsOutOfSync = $this->dbCore->errorClassifier()
+            ->taxonomy()
+            ->connectivity()
+            ->isCommandsOutOfSyncError($batchError);
+        if ($commandsOutOfSync && $this->dbCore->connectionManager()->resetForRetry($batchError)) {
+            // DAO-bypass-approved: centralized connection recovery drained error 2014 before this retry.
+            $retryResult = $wpdb->query($prepared);
+            if ($retryResult !== false) {
+                $context = $this->recovery->getWpdbRecentQueryContextForLogs();
+                $suffix = ($context !== '') ? " | savequeries_context={$context}" : '';
+                $this->logger->warn("flushLogQueue batch INSERT recovered on the shared DB connection.{$suffix}");
+                return;
             }
+            $batchError = (string)$wpdb->last_error;
         }
 
         $this->recoverEntriesIndividually($tableName, $columnList, $sanitizedEntries, $validatedColumns, $batchError);
@@ -252,27 +249,14 @@ class ABJ_404_Solution_LogsQueueFlusher {
             $singleSqlTemplate = "INSERT IGNORE INTO `{$tableName}` ({$columnList}) VALUES {$rowPlaceholder}";
             // DAO-bypass-approved: row-level fallback reuses wpdb prepare/query so recovery can classify last_error per row.
             $singleSql = $wpdb->prepare($singleSqlTemplate, $rowValues);
-            $wpdb->flush();
+            $connectionReady = $this->dbCore->connectionManager()->resetForRetry($batchError);
             // DAO-bypass-approved: row-level retry must preserve same-handle last_error for per-row recovery.
-            $singleResult = $wpdb->query((string)$singleSql);
+            $singleResult = $connectionReady ? $wpdb->query((string)$singleSql) : false;
 
-            if ($singleResult === false && !empty($wpdb->last_error)) {
-                $lastError = (string)$wpdb->last_error;
-                if ($this->recovery->isCommandsOutOfSyncError($wpdb->last_error)) {
-                    $isolated = $this->recovery->getIsolatedWpdb();
-                    if ($isolated !== null) {
-                        $isolated->flush();
-                        $isolatedSingleSql = $isolated->prepare($singleSqlTemplate, $rowValues);
-                        $isolatedSingleResult = $isolated->query((string)$isolatedSingleSql);
-                        if ($isolatedSingleResult !== false) {
-                            $successCount++;
-                            continue;
-                        }
-                        $lastError = $lastError . " | isolated_error=" . $isolated->last_error;
-                    } else {
-                        $lastError = $lastError . " | isolated_error=no_isolated_connection";
-                    }
-                }
+            if ($singleResult === false) {
+                $lastError = !empty($wpdb->last_error)
+                    ? (string)$wpdb->last_error
+                    : 'Connection reset failed before the row-level retry could execute.';
                 $failCount++;
                 $payload = function_exists('wp_json_encode') ? wp_json_encode($entry) : json_encode($entry);
                 if (is_string($payload) && strlen($payload) > 1024) {

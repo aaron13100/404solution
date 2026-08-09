@@ -294,6 +294,7 @@ final class ABJ_404_Solution_DatabaseQueryRecoveryTracer {
         $allowed = array(
             'timeout_wrapper',
             'transient_connection',
+            'commands_out_of_sync',
             'missing_table',
             'invalid_data',
             'deadlock',
@@ -309,7 +310,7 @@ final class ABJ_404_Solution_DatabaseQueryRecoveryTracer {
     private static function operation(string $operation): string {
         $allowed = array(
             'connection_recovery',
-            'wpdb_flush',
+            'connection_retry_reset',
             'repair_create',
             'retry_prepare',
             'retry_suppression',
@@ -325,6 +326,7 @@ final class ABJ_404_Solution_DatabaseQueryRecoveryTracer {
         $allowed = array(
             'timeout_wrapper_rejected',
             'connection_lost',
+            'pending_results_drained',
             'missing_table',
             'invalid_data',
             'deadlock_or_lock_timeout',

@@ -34,6 +34,8 @@ if (!defined('ABSPATH')) {
  *     (signature: function(): string);
  *   - a notice setter bound over DatabaseNoticeStateHolder::setPluginDbNotice
  *     (signature: function(string, string, string, string): void);
+ *   - a connection-reset callable bound over
+ *     DatabaseConnectionManager::resetForRetry (signature: function(string): bool);
  *   - ABJ_404_Solution_Functions for regex/string helpers and the plugin logger.
  *
  * The recursion guards are static properties on this class (they must survive
@@ -61,6 +63,9 @@ class ABJ_404_Solution_DatabaseTableRepairer {
     /** @var callable(string, string, string, string): void */
     private $noticeSetter;
 
+    /** @var callable(string): bool */
+    private $connectionResetter;
+
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -78,6 +83,8 @@ class ABJ_404_Solution_DatabaseTableRepairer {
      *   Returns the current wpdb result type (ARRAY_A or OBJECT) for retries.
      * @param callable(string, string, string, string): void $noticeSetter
      *   Persists a plugin-db admin notice (type, message, guidance, errorString).
+     * @param callable(string): bool $connectionResetter
+     *   Resets the active wpdb connection before a recovery retry.
      * @param ABJ_404_Solution_Functions $functions
      * @param ABJ_404_Solution_Logging $logger
      */
@@ -86,6 +93,7 @@ class ABJ_404_Solution_DatabaseTableRepairer {
         callable $resultHarvester,
         callable $resultTypeGetter,
         callable $noticeSetter,
+        callable $connectionResetter,
         $functions,
         $logger
     ) {
@@ -93,6 +101,7 @@ class ABJ_404_Solution_DatabaseTableRepairer {
         $this->resultHarvester = $resultHarvester;
         $this->resultTypeGetter = $resultTypeGetter;
         $this->noticeSetter = $noticeSetter;
+        $this->connectionResetter = $connectionResetter;
         $this->f = $functions;
         $this->logger = $logger;
     }
@@ -265,15 +274,18 @@ class ABJ_404_Solution_DatabaseTableRepairer {
         if (stripos($errorMessage, 'abj404') !== false) {
             global $wpdb;
             if ($tracer === null) {
-                $wpdb->flush();
+                if (!(($this->connectionResetter)($errorMessage))) {
+                    return;
+                }
             } else {
-                $tracer->traceOperation(
+                $reset = $tracer->traceOperation(
                     'corrupted_table',
-                    'wpdb_flush',
-                    static function () use ($wpdb): void {
-                        $wpdb->flush();
-                    }
+                    'connection_retry_reset',
+                    fn(): bool => ($this->connectionResetter)($errorMessage)
                 );
+                if (!$reset) {
+                    return;
+                }
             }
             $resultType = ($this->resultTypeGetter)();
             // DAO-bypass-approved: retry-after-repair is part of the DAO's
@@ -342,16 +354,22 @@ class ABJ_404_Solution_DatabaseTableRepairer {
                 return;
             }
             global $wpdb;
+            $retryError = isset($result['last_error']) && is_scalar($result['last_error'])
+                ? (string)$result['last_error']
+                : '';
             if ($tracer === null) {
-                $wpdb->flush();
+                if (!(($this->connectionResetter)($retryError))) {
+                    return;
+                }
             } else {
-                $tracer->traceOperation(
+                $reset = $tracer->traceOperation(
                     'invalid_data',
-                    'wpdb_flush',
-                    static function () use ($wpdb): void {
-                        $wpdb->flush();
-                    }
+                    'connection_retry_reset',
+                    fn(): bool => ($this->connectionResetter)($retryError)
                 );
+                if (!$reset) {
+                    return;
+                }
             }
             $resultType = ($this->resultTypeGetter)();
             // DAO-bypass-approved: retry-after-strip is part of the DAO's
