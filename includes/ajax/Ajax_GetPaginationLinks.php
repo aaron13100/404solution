@@ -113,6 +113,17 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             }
             $isPluginAdmin = true;
 
+            // The first attempt stays on the zero-write fast path. A browser
+            // retry means the user already observed a transient failure, so
+            // arm the durable flight recorder now that nonce and admin access
+            // have been proved. Never trust raw retryCount before this point.
+            if ($retryCount > 0) {
+                $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::
+                    armAuthorizedRetryDiagnostics($context);
+                $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::
+                    instrumentedRequestId($context);
+            }
+
             // Rate limiting to prevent abuse. High ceilings: this endpoint is hit by first-paint
             // table loads, filter typing, pagination, and background detect-only checks.
             $maxRequestsPerMinute = $detectOnly ? 3000 : 1500;

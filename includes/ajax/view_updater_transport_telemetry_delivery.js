@@ -247,6 +247,8 @@
         form.append('sessionId', String(record.sid || ''));
         form.append('nonce', String(nonce || ''));
         form.append('subpage', String(record.subpage || ''));
+        form.append('retryCount', String(Math.max(0, Math.min(2,
+            parseInt(record.attempt, 10) || 0))));
         return form;
     }
 

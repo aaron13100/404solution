@@ -49,6 +49,10 @@ class ABJ_404_Solution_AdminTableResponseParts {
             '_abj404_query_timeout' => $detectOnly
                 ? self::DETECT_ONLY_QUERY_TIMEOUT_SECONDS
                 : self::QUERY_TIMEOUT_SECONDS,
+            // This endpoint owns a structured, admin-only failure envelope.
+            // Let view-query failures reach it instead of converting them to
+            // an HTTP 200 empty/pending table that discards index diagnostics.
+            '_abj404_throw_on_view_query_error' => 1,
         );
     }
 

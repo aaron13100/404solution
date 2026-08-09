@@ -53,7 +53,8 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
      */
     public static function instrumentedRequestId(array $context): string {
         $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
-        if ($action !== ABJ_404_Solution_AjaxRequestLedger::INSTRUMENTED_ACTION || !self::isEnabled()) {
+        if ($action !== ABJ_404_Solution_AjaxRequestLedger::INSTRUMENTED_ACTION
+                || (!self::isEnabled() && !self::isAuthorizedRetry($context))) {
             return '';
         }
         return ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? null);
@@ -67,7 +68,8 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
      */
     public static function diagnosticRequestId(array $context): string {
         $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
-        if (!isset(self::DIAGNOSTIC_TRACE_ACTIONS[$action]) || !self::isEnabled()) {
+        if (!isset(self::DIAGNOSTIC_TRACE_ACTIONS[$action])
+                || (!self::isEnabled() && !self::isAuthorizedRetry($context))) {
             return '';
         }
         return ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? null);
@@ -91,5 +93,27 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
         }
         $rawId = $_REQUEST['requestId'] ?? '';
         return ABJ_404_Solution_AjaxRequestLedger::normalizeId(is_scalar($rawId) ? $rawId : '');
+    }
+
+    /**
+     * Whether the table handler has proved this is an authenticated retry.
+     *
+     * The authorization marker is deliberately internal: retryCount comes
+     * from an untrusted request and must never arm pre-authorization writes.
+     * The handler adds the marker only after nonce and plugin-admin checks.
+     * Requiring both fields makes accidental reuse on another endpoint inert.
+     *
+     * @param array<array-key, mixed> $context
+     */
+    private static function isAuthorizedRetry(array $context): bool {
+        if (($context['diagnostic_retry_authorized'] ?? null) !== true) {
+            return false;
+        }
+        $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
+        $retryCount = $context['retry_count'] ?? null;
+        return $action === ABJ_404_Solution_AjaxRequestLedger::INSTRUMENTED_ACTION
+            && is_numeric($retryCount)
+            && (int)$retryCount >= 1
+            && (int)$retryCount <= 2;
     }
 }

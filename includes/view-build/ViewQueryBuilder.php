@@ -110,10 +110,19 @@ class ABJ_404_Solution_ViewQueryBuilder {
      *   redirects table (schema-drift tolerance: false selects base columns only
      *   and the live resolver fills the derived values).
      * @return array<int, array<string, mixed>>
+     * @throws ABJ_404_Solution_ViewQueryFailureException When the database adapter reports a failed read.
      */
     public function readRedirectsSingleTable(string $sub, array $tableOptions, bool $derivedPresent = true): array {
         $query = $this->buildRedirectsSingleTableReadQuery($sub, $tableOptions, $derivedPresent);
         $result = $this->dbCore->queryAndGetResults($query, $this->resolveReadTimeoutOptions($tableOptions));
+        $lastErrorRaw = $result['last_error'] ?? '';
+        $lastError = is_scalar($lastErrorRaw) ? trim((string)$lastErrorRaw) : '';
+        if (!empty($result['timed_out']) || $lastError !== '') {
+            $message = !empty($result['timed_out'])
+                ? 'Redirect row query timed out.'
+                : 'Redirect row query failed: ' . $lastError;
+            throw new ABJ_404_Solution_ViewQueryFailureException($message);
+        }
         $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
         /** @var array<int, array<string, mixed>> $rows */
         return $rows;

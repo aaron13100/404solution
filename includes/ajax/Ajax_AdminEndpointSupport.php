@@ -298,6 +298,30 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         // records it is compared against. Both predicates still require the
         // debug opt-in, so a default GA request stays inert either way.
         $diagnosticsEnabled = ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestId($context) !== '';
+        self::configureDiagnosticOperationTracers($diagnosticsEnabled);
+        return $context;
+    }
+
+    /**
+     * Arm retry-only diagnostics after the endpoint has authorized the user.
+     *
+     * Raw retryCount input is insufficient: callers must reach this method
+     * after nonce and plugin-admin checks. The policy validates the action,
+     * bounded retry count, and this internal marker before returning an ID.
+     *
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    public static function armAuthorizedRetryDiagnostics(array $context): array {
+        $context['diagnostic_retry_authorized'] = true;
+        $GLOBALS['abj404_ajax_context'] = $context;
+        $diagnosticsEnabled = ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestId($context) !== '';
+        self::configureDiagnosticOperationTracers($diagnosticsEnabled);
+        return $context;
+    }
+
+    /** Enable or clear the shared operation tracer callbacks for this request. */
+    private static function configureDiagnosticOperationTracers(bool $diagnosticsEnabled): void {
         $fileTracer = $diagnosticsEnabled
             ? static fn(string $operation, string $path, array $fields, callable $work) =>
                 ABJ_404_Solution_TemplateFileReadTracer::trace($operation, $path, $fields, $work)
@@ -326,7 +350,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
         ABJ_404_Solution_StatusCountsRepository::setOperationTracer($statusCountTracer);
         ABJ_404_Solution_StatusCountsRefreshCoordinator::setOperationTracer($statusCountTracer);
         ABJ_404_Solution_CronScheduler::setStatusCountOperationTracer($statusCountTracer);
-        return $context;
     }
 
     /** @return void */
