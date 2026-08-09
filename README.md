@@ -204,7 +204,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
-## Version 4.3.3 (August 5, 2026) ##
+## Version 4.3.3 (August 9, 2026) ##
 
 **New Features**
 
@@ -225,11 +225,14 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed the "Hits" counts on the admin tabs falling behind. The roll-up that keeps them current was no longer running from a page view, and the counts could also sit empty on sites whose WordPress cron is backed up. Both paths are restored.
 * Fixed 404 URLs containing `@` (retina images such as `logo@2x.png`) and PHP static-call frames in stack traces being mangled by the redaction that runs before a debug log or automatic report is written.
 * Fixed page suggestions staying poor for months after an interrupted rebuild. A partially built suggestion cache recovered at about 50 entries a day rather than rebuilding; it is now completed at full rebuild speed.
+* Fixed transient database failover and connection-state errors, including Galera nodes that are temporarily unavailable and "Commands out of sync," being treated as permanent failures. Affected queries now recover and retry through the shared database path.
+* Fixed an admin table database failure being mistaken for a successful empty result, which could make the table appear empty instead of showing the real error.
 
 **Improvements**
 
 * The hit-count roll-up no longer runs at the very end of an admin request, where it added as much as 21 seconds to the page on a 900,000-row test site.
 * On LiteSpeed servers the admin table response is handed back as soon as it is ready, instead of waiting for the rest of the request to finish.
+* Automatic error reports and support previews now include log evidence for the error they describe, even when the error falls outside the most recent log tail. Admin table retries also preserve a diagnostic trail under the plugin's shipped default settings.
 
 ## Version 4.3.2 (July 11, 2026) ##
 * FIX: Fixed the email digest sending every day even when the notification frequency was set to Weekly (thanks to gardendarts for reporting this). The weekly/daily cadence is now enforced against the time the last digest was actually sent, and changing the frequency in Settings now takes effect on the very next save instead of the next unrelated one.
