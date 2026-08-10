@@ -217,12 +217,14 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed the plugin running a schema-wide collation repair in the middle of an admin page load, which could make that page slow or time out. The repair now happens outside the page request.
 * Fixed slow sorting on the Captured 404s tab. The timestamp sort had no supporting database index, so a large site re-sorted the whole table on every page load.
 * Fixed the plugin trusting one of its own sort indexes by name alone. A database server silently narrows an index when a column it referenced is dropped, and an index narrowed that way was treated as correct forever, so the sorts it was built for scanned the entire table instead of reading a single page of rows. Indexes are now compared against the definition the plugin ships and rebuilt when they differ.
+* Fixed the plugin rebuilding a database index on the strength of index information it could not read. When a database server left out or garbled the field that says whether an index is unique, the plugin decided the index differed from the one it ships and repaired it, which on the page-suggestion cache meant emptying that table and rewriting the index. Index information that cannot be read is now treated as unknown, and an index the plugin cannot describe is left alone.
 * Fixed the Page Redirects and Captured 404s tabs waiting on their own row counts on large sites. Pagination and the per-status counts now load in separate stages, and a count that is still being computed is shown as incomplete instead of holding up the table.
 * Fixed a regex redirect whose source pattern starts with an anchor (for example `^/products/(.*)`) being rewritten on save into a pattern that could never match.
 * Fixed the Add Redirect dialog rejecting valid regex destinations, and checking them against a stale copy of the validation rules after an update.
 * Fixed the "Hits" counts on the admin tabs falling behind. The roll-up that keeps them current was no longer running from a page view, and the counts could also sit empty on sites whose WordPress cron is backed up. Both paths are restored.
 * Fixed 404 URLs containing `@` (retina images such as `logo@2x.png`) and PHP static-call frames in stack traces being mangled by the redaction that runs before a debug log or automatic report is written.
 * Fixed page suggestions staying poor for months after an interrupted rebuild. A partially built suggestion cache recovered at about 50 entries a day rather than rebuilding; it is now completed at full rebuild speed.
+* Fixed a multisite network where deleting a site part way through the page-suggestion rebuild could leave a later site with an empty suggestion cache that was marked fully built and never rebuilt. The rebuild now tracks the last site it finished instead of counting positions in a list that shifts whenever a site is removed.
 * Fixed transient database failover and connection-state errors, including Galera nodes that are temporarily unavailable and "Commands out of sync," being treated as permanent failures. Affected queries now recover and retry through the shared database path.
 * Fixed an admin table database failure being mistaken for a successful empty result, which could make the table appear empty instead of showing the real error.
 
@@ -422,26 +424,3 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * The admin AJAX timeout for explicit user actions (sorting, filtering, pagination) was raised from 15 seconds to 45 seconds. Background detect-only refreshes still use the tight 15-second budget, so the longer timeout only applies when the admin is actively waiting.
 * Several catch blocks across the plugin that previously swallowed exceptions silently now emit a warning breadcrumb to the support log, so unexpected failure paths are visible in support bundles instead of vanishing.
 
-= Version 4.1.9 (Apr 29, 2026) =
-
-**Bug Fixes**
-
-* Fixed potential over-deletion of log history during the daily cron cleanup. The destructive DELETE was sized using an approximate row count from MySQL metadata, which can drift by orders of magnitude on InnoDB. The cron now gates the delete on an exact byte-size check before deciding what to remove.
-* Fixed captured-URL counts undercounting when the same URL was logged with and without leading or trailing slashes (e.g. `/foo`, `foo`, `/foo/`). URL variants now collapse to a single canonical row in the hits rollup, restoring slash-tolerant matching that regressed in 4.1.7.
-* Fixed Email Digest dropping captured URLs that had zero recent hits. The "Top Captured 404s" section now lists captured rows with no hits as well as those with hits, matching the on-screen behavior.
-* Fixed Email Digest rendering a misleading "No captured 404s in this period" notice while the hits rollup was being rebuilt. The digest now ships with an explicit "Top URLs unavailable: log rollup is being rebuilt" message instead.
-* Fixed the high-impact captured-count cache holding a value of zero for 24 hours when the rollup was unavailable or the query errored. The result is now cached only on a successful query, so the count recovers on the next page load.
-* Fixed the Stats trend chart cache being polluted with empty results when the trend query errored or timed out.
-* Fixed admin search inputs on Page Redirects and Captured 404s rendering a stray "O"-shaped SVG glyph above the search box.
-* Fixed the health bar "unavailable" indicator rendering as a transparent dot during rollup rebuild — it now displays as a muted gray dot to communicate the transient state.
-* Fixed every frontend 404 falling through to the theme 404 page on installs where the database upgrade could not complete (corrupted DDL files, opcache divergence, restrictive shared hosting). The redirect lookup now falls back to a schema-tolerant query against the existing redirects table, so manual redirects keep firing while the upgrade is stuck. Trade-off: scheduled redirects briefly stop honoring their start/end windows during the degraded window.
-* Fixed asynchronous page suggestions failing to surface for long or low-overlap 404 URLs. The async worker now prioritizes recall over worst-case latency, since it already runs out-of-band and is rate-limited.
-* Fixed admin tables remaining stuck on "Loading…" indefinitely when the AJAX request to fetch table data hangs (for example, while the plugin is recreating a missing database table on the slow path). The AJAX call now has a 15-second client-side timeout, the retry/fallback path replaces the loading rows with a clear error message instead of just stripping the placeholder attribute, and AJAX errors render a non-blocking admin notice instead of a native browser `alert()` dialog.
-
-**Improvements**
-
-* The Captured 404s and Page Redirects admin tables now render quickly even on sites with millions of log rows. The high-impact captured count, the per-row hit population query, the Email Digest top-captured query, and the Stats trend chart now all read from the pre-aggregated `logs_hits` rollup table, eliminating multi-second full-log scans that could time out behind Cloudflare and other reverse proxies.
-* Health bar AJAX is now decoupled from pagination — the redirects table renders immediately while the health bar hydrates in a separate request, so a slow rollup query no longer blocks first paint.
-* The daily cron now reads log row counts from MySQL `information_schema` metadata instead of running a full index scan on every nightly tick.
-* Permalink keyword cron updates are now issued as a single bulk SQL query instead of up to 500 single-row UPDATEs per cycle, sharply reducing database load on busy sites.
-* The anonymous suggestion-compute endpoint now enforces a per-IP rate limit and rejects unauthorized requests before any plugin classes are loaded.
