@@ -239,6 +239,19 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
      * the owner declared by its `Plugin Name` header. No file body, path, or
      * other header is returned.
      *
+     * The directory searched is WP_CONTENT_DIR (or ABSPATH/wp-content when
+     * that constant is absent), passed through the
+     * `abj404_cache_dropin_directory` filter so a site can point the probe
+     * somewhere else: installs that load their drop-ins from a relocated
+     * content directory, and anything that needs the probe scoped away from
+     * the live one, would otherwise be reported as having no cache drop-in at
+     * all. Same shape as `abj404_host_pressure_probe_paths` and
+     * `abj404_ajax_trace_directory`. A non-string or empty return leaves the
+     * computed default in force, so a misbehaving filter degrades to today's
+     * behaviour rather than probing '/'. Throwing is safe too: every probe
+     * runs inside FeedbackEnvironmentExtras::recordProbe(), which records the
+     * failure and substitutes the default.
+     *
      * @param string $dropinKey One of `advanced_cache` or `object_cache`.
      * @return array{present: bool, owner: string}
      */
@@ -254,6 +267,12 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
         $contentDirectory = defined('WP_CONTENT_DIR')
             ? rtrim((string)WP_CONTENT_DIR, '/\\')
             : rtrim((string)ABSPATH, '/\\') . '/wp-content';
+        if (function_exists('apply_filters')) {
+            $filtered = apply_filters('abj404_cache_dropin_directory', $contentDirectory, $dropinKey);
+            if (is_string($filtered) && trim($filtered) !== '') {
+                $contentDirectory = rtrim($filtered, '/\\');
+            }
+        }
         $dropinPath = $contentDirectory . '/' . $dropinFiles[$dropinKey];
         if (!is_file($dropinPath)) {
             return array('present' => false, 'owner' => '');
