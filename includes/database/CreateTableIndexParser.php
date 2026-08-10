@@ -109,9 +109,18 @@ class ABJ_404_Solution_CreateTableIndexParser {
         preg_match_all('/`([^`]+)`\\s*(?:\\(\\s*(\\d+)\\s*\\))?/', $fragment, $matches,
             PREG_SET_ORDER);
         foreach ($matches as $match) {
+            // A (0) prefix and no prefix at all are the same physical index, and
+            // the live reader already reports a Sub_part of 0 as "no prefix".
+            // Spelling it `url(0)` here while the live side spells it `url`
+            // makes two descriptions of one index compare as drift, and the
+            // repair path answers drift by rewriting the table. MySQL rejects a
+            // zero-length key part, so no create*Table.sql the plugin ships can
+            // reach this -- but the two sides of a comparison agreeing about
+            // what a value MEANS should not rest on the value never occurring.
+            $prefix = isset($match[2]) ? (int)$match[2] : null;
             $columns[] = array(
                 'column' => strtolower($match[1]),
-                'prefix' => isset($match[2]) ? (int)$match[2] : null,
+                'prefix' => ($prefix === null || $prefix <= 0) ? null : $prefix,
             );
         }
 

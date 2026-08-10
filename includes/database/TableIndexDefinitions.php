@@ -146,11 +146,16 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * nothing. Callers that treat an absent index as missing must consult this
      * before concluding anything about an index that IS present.
      *
+     * An absent answer is an unknown, not a yes. Every producer sets the flag
+     * today, so the default never decides anything -- but a default of TRUE
+     * means the first producer that ever forgets it gets a table rewrite rather
+     * than a skip, which is the one direction this flag exists to prevent.
+     *
      * @param array{describable?: bool} $definition
      * @return bool
      */
     public static function isDescribable(array $definition): bool {
-        return !isset($definition['describable']) || $definition['describable'] === true;
+        return isset($definition['describable']) && $definition['describable'] === true;
     }
 
     /**
@@ -235,29 +240,24 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 $opaque[$key] = true;
                 continue;
             }
-            // Seq_in_index IS the column order, and the order is what the
-            // signature comparison is FOR. Inventing one from arrival order
-            // when the engine did not report it produces a definition that
-            // looks authoritative and compares as drift against a DDL whose
-            // real order differs -- a needless rewrite of a healthy index on a
-            // large table. Mark it undescribable instead.
-            if (!isset($fields['seq_in_index']) || !is_numeric($fields['seq_in_index'])) {
+            $placement = self::readColumnPlacement($fields, $column);
+            if ($placement === null) {
                 $opaque[$key] = true;
                 continue;
             }
-            $seq = (int)$fields['seq_in_index'];
-            $subPart = $fields['sub_part'] ?? null;
-            if (!self::isReadablePrefix($subPart)) {
-                // A Sub_part we cannot read is not "no prefix". Treating it as
-                // one compares unequal to a DDL that DOES carry a prefix, which
-                // reports drift and rebuilds a healthy index.
+            $seq = $placement['position'];
+            $entry = $placement['entry'];
+            if (isset($bySeq[$key][$seq]) && $bySeq[$key][$seq] !== $entry) {
+                // Two rows disagreeing about which column sits at one position
+                // describe two different indexes, exactly as two rows
+                // disagreeing about uniqueness do. Letting the later row win
+                // silently drops a column, and an index reported with two
+                // columns and recorded with one compares as drift against its
+                // own DDL. An identical repeat contradicts nothing and is kept.
                 $opaque[$key] = true;
                 continue;
             }
-            $bySeq[$key][$seq] = array(
-                'column' => strtolower($column),
-                'prefix' => self::normalizePrefix($subPart),
-            );
+            $bySeq[$key][$seq] = $entry;
         }
 
         $definitions = array();
@@ -289,25 +289,68 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * not report it in a form this version can read.
      *
      * Non_unique is 0 for a unique index and 1 otherwise. Anything else -- the
-     * field absent, an array or object where a flag was expected, a word --
-     * is metadata this version does not understand. The numeric check is not
-     * redundant with the scalar one: a non-numeric string casts to integer 0,
-     * and 0 is the value that means UNIQUE, so "no" would otherwise read as a
-     * confident "this index is unique" and invite a UNIQUE rebuild on a table
-     * that has duplicate rows.
+     * field absent, an array or object where a flag was expected, a word, or a
+     * number outside that two-value domain -- is metadata this version does not
+     * understand. Reading it as a number is not enough on its own: a non-numeric
+     * string casts to integer 0, and so does 0.5, and 0 is the value that means
+     * UNIQUE, so "no" or "0.5" would otherwise read as a confident "this index
+     * is unique" and invite a UNIQUE rebuild on a table that has duplicate rows.
      *
      * @param array<string, mixed> $fields Lowercased-key SHOW INDEX row.
      * @return bool|null
      */
     private static function readUniqueFlag(array $fields): ?bool {
-        if (!isset($fields['non_unique']) || !is_scalar($fields['non_unique'])) {
+        if (!isset($fields['non_unique'])) {
             return null;
         }
-        $value = trim((string)$fields['non_unique']);
-        if ($value === '' || !is_numeric($value)) {
+        $flag = self::readExactInteger($fields['non_unique'], 0);
+        if ($flag === null || $flag > 1) {
             return null;
         }
-        return (int)$value === 0;
+        return $flag === 0;
+    }
+
+    /**
+     * Where one SHOW INDEX row places its column, or NULL when this version
+     * cannot read the placement.
+     *
+     * The row-level counterpart to {@see readUniqueFlag()}: that one answers
+     * what a row says about its index's uniqueness, this one answers what it
+     * says about its columns. Both return NULL for "the engine did not tell us
+     * in a form we understand", and both leave the caller to record the index
+     * as present but undescribable.
+     *
+     * Seq_in_index IS the column order, and the order is what the signature
+     * comparison is FOR. Inventing one from arrival order when the engine did
+     * not report it produces a definition that looks authoritative and compares
+     * as drift against a DDL whose real order differs -- a needless rewrite of a
+     * healthy index on a large table.
+     *
+     * A Sub_part we cannot read is likewise not "no prefix". Treating it as one
+     * compares unequal to a DDL that DOES carry a prefix, which reports drift
+     * and rebuilds a healthy index.
+     *
+     * @param array<string, mixed> $fields Lowercased-key SHOW INDEX row.
+     * @param string $column Non-empty column name already read from the row.
+     * @return array{position: int, entry: array{column: string, prefix: int|null}}|null
+     */
+    private static function readColumnPlacement(array $fields, string $column): ?array {
+        $position = isset($fields['seq_in_index'])
+            ? self::readExactInteger($fields['seq_in_index'], 1) : null;
+        if ($position === null) {
+            return null;
+        }
+        $prefix = self::readPrefix($fields['sub_part'] ?? null);
+        if (!$prefix['readable']) {
+            return null;
+        }
+        return array(
+            'position' => $position,
+            'entry' => array(
+                'column' => strtolower($column),
+                'prefix' => $prefix['prefix'],
+            ),
+        );
     }
 
     /**
@@ -375,50 +418,82 @@ class ABJ_404_Solution_TableIndexDefinitions {
     }
 
     /**
-     * Whether a reported Sub_part is one we can interpret at all.
+     * Read a reported Sub_part as either "indexes the whole column" or a prefix
+     * length, and say whether it could be read at all.
+     *
+     * Deciding readability and producing the value used to be two methods, and
+     * they disagreed: the gate accepted every numeric value, then the normalizer
+     * turned a negative one into "no prefix" and truncated a fractional one. A
+     * value the gate calls readable and the normalizer silently changes is the
+     * whole defect, so there is now one reader and the two answers come out of
+     * it together.
      *
      * NULL, an empty string and 0 all legitimately mean "indexes the whole
-     * column" and are readable. A non-empty value that is not a number is
-     * metadata this version does not understand, and must not be quietly
-     * flattened into "no prefix".
+     * column". A prefix length is a whole number of characters, so a fractional
+     * or negative one is metadata this version does not understand, and must
+     * not be flattened into "no prefix" or truncated toward one.
      *
      * @param mixed $subPart
-     * @return bool
+     * @return array{readable: bool, prefix: int|null}
      */
-    private static function isReadablePrefix($subPart): bool {
+    private static function readPrefix($subPart): array {
         if ($subPart === null) {
-            return true;
+            return array('readable' => true, 'prefix' => null);
         }
-        if (!is_scalar($subPart)) {
-            return false;
+        if (!is_scalar($subPart) || is_bool($subPart)) {
+            return array('readable' => false, 'prefix' => null);
         }
-        $value = trim((string)$subPart);
-        return $value === '' || is_numeric($value);
+        if (trim((string)$subPart) === '') {
+            return array('readable' => true, 'prefix' => null);
+        }
+        $length = self::readExactInteger($subPart, 0);
+        if ($length === null) {
+            return array('readable' => false, 'prefix' => null);
+        }
+        return array('readable' => true, 'prefix' => $length === 0 ? null : $length);
     }
 
     /**
-     * Normalize a reported Sub_part into "no prefix" (null) or a positive
-     * prefix length.
+     * The whole number a metadata field reports, or NULL when the value is not
+     * an exact integer at or above the smallest one its domain allows.
      *
-     * Engines and drivers report a full-column index part as NULL, as an empty
-     * string, or (rarely) as 0; all three mean the same thing and must compare
-     * equal to a DDL fragment that carries no (n) suffix, or the repair path
-     * would rebuild every full-column index on every run.
+     * Every SHOW INDEX field this class reads is a whole number over a known
+     * range -- a column position from 1, a prefix length from 0, a uniqueness
+     * flag of 0 or 1 -- and every one of them was previously admitted by
+     * is_numeric() and then cast with (int). That pair accepts values it cannot
+     * represent and answers with a confident wrong one: '1.5' becomes 1, '-1'
+     * becomes a position ahead of the first column, '0.5' becomes the 0 that
+     * means UNIQUE. The comparison those values feed answers a difference with
+     * destructive DDL, so a value that does not survive the round trip is not a
+     * value this version can read.
      *
-     * Callers must have cleared the value through isReadablePrefix() first: a
-     * value this cannot read is undescribable metadata, not "no prefix".
+     * Booleans are refused rather than cast: no engine reports one, and (string)
+     * renders true as '1' while rendering false as '', so accepting them would
+     * read one of the two as a confident flag and the other as absent.
      *
-     * @param mixed $subPart
+     * @param mixed $value
+     * @param int $minimum Smallest value the field's documented domain allows.
      * @return int|null
      */
-    private static function normalizePrefix($subPart) {
-        if ($subPart === null || !is_scalar($subPart)) {
+    private static function readExactInteger($value, int $minimum): ?int {
+        if (!is_scalar($value) || is_bool($value)) {
             return null;
         }
-        $value = trim((string)$subPart);
-        if ($value === '' || !is_numeric($value) || (int)$value <= 0) {
+        $text = trim((string)$value);
+        if ($text === '' || !is_numeric($text)) {
             return null;
         }
-        return (int)$value;
+        $number = $text + 0;
+        if (is_float($number)) {
+            // Fractional, infinite, or past the range an int can hold: all
+            // three are values (int) would silently replace with a different
+            // one.
+            if (!is_finite($number) || floor($number) !== $number
+                    || $number < (float)PHP_INT_MIN || $number > (float)PHP_INT_MAX) {
+                return null;
+            }
+        }
+        $integer = (int)$number;
+        return $integer < $minimum ? null : $integer;
     }
 }
