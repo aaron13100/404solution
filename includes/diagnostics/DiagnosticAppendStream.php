@@ -34,14 +34,21 @@ if (!defined('ABSPATH')) {
  * WHAT A HELD DESCRIPTOR HAS TO DEFEND AGAINST. A per-record fopen() resolves
  * the PATH every time, so it silently did the right thing when a sibling
  * request rotated the file out from under it. A held descriptor follows the
- * INODE instead, and would keep appending to a file that has been renamed away.
- * Two guards, both cheap:
+ * INODE instead, and would keep appending to a file that has been renamed away
+ * or deleted outright. Those two are NOT the same failure and do not get the
+ * same guard, because a rename retains the records and a delete destroys them:
  *
- *   1. Every REVALIDATE_AFTER_APPENDS appends, one fstat/stat pair checks that
+ *   1. Every append, one fstat asks whether the file still has a directory
+ *      entry at all (isUnlinkedSink). It does not after a delete, and writes
+ *      through the descriptor then succeed into an inode no reader can reach,
+ *      which breaks the per-record durability contract above. So this one
+ *      cannot be amortized: a bounded window here would lose whole windows of
+ *      evidence silently. nlink survives a rename, so it never fires on (2).
+ *   2. Every REVALIDATE_AFTER_APPENDS appends, one fstat/stat pair checks that
  *      the descriptor still names the path. That bounds mis-targeted records to
  *      one revalidation window, and they land in the rotated file rather than
  *      being lost, since rotation renames rather than deletes.
- *   2. A caller that rotates the file itself calls invalidate() and gets a
+ *   3. A caller that rotates the file itself calls invalidate() and gets a
  *      fresh descriptor on the next append.
  *
  * The size the caller enforces its cap against is tracked here rather than
@@ -241,32 +248,42 @@ final class ABJ_404_Solution_DiagnosticAppendStream {
     private static function stream(string $path) {
         if (isset(self::$streams[$path])) {
             $stream = self::$streams[$path];
-            $appends = $stream['appends'] + 1;
-            if ($appends < self::REVALIDATE_AFTER_APPENDS) {
-                self::$streams[$path] = array(
-                    'handle' => $stream['handle'],
-                    'bytes' => $stream['bytes'],
-                    'appends' => $appends,
-                    'locked' => $stream['locked'],
-                );
-                return self::$streams[$path];
+            if (self::isUnlinkedSink($stream['handle'])) {
+                // Nothing links to this inode any more, so every byte written
+                // through this descriptor is reachable by nobody. Re-resolve
+                // the path: if the directory survived, the record lands in a
+                // readable file, and if it did not, the open below fails and
+                // the caller reports it. Either beats a silent write into a
+                // file that no reader can ever find.
+                self::invalidate($path);
+            } else {
+                $appends = $stream['appends'] + 1;
+                if ($appends < self::REVALIDATE_AFTER_APPENDS) {
+                    self::$streams[$path] = array(
+                        'handle' => $stream['handle'],
+                        'bytes' => $stream['bytes'],
+                        'appends' => $appends,
+                        'locked' => $stream['locked'],
+                    );
+                    return self::$streams[$path];
+                }
+                $identity = self::identityOf($stream['handle'], $path);
+                if ($identity['still_names_path']) {
+                    // The window is spent either way: reset it, and take the size
+                    // the descriptor itself reports so a sibling's appends do not
+                    // drift our rotation cap.
+                    self::$streams[$path] = array(
+                        'handle' => $stream['handle'],
+                        'bytes' => $identity['bytes'] ?? $stream['bytes'],
+                        'appends' => 1,
+                        'locked' => $stream['locked'],
+                    );
+                    return self::$streams[$path];
+                }
+                // Another process rotated this file away. Anything already written
+                // is in the rotated file, which is retained; start a fresh one.
+                self::invalidate($path);
             }
-            $identity = self::identityOf($stream['handle'], $path);
-            if ($identity['still_names_path']) {
-                // The window is spent either way: reset it, and take the size
-                // the descriptor itself reports so a sibling's appends do not
-                // drift our rotation cap.
-                self::$streams[$path] = array(
-                    'handle' => $stream['handle'],
-                    'bytes' => $identity['bytes'] ?? $stream['bytes'],
-                    'appends' => 1,
-                    'locked' => $stream['locked'],
-                );
-                return self::$streams[$path];
-            }
-            // Another process rotated this file away. Anything already written
-            // is in the rotated file, which is retained; start a fresh one.
-            self::invalidate($path);
         }
         if ($path === '') {
             return null;
@@ -296,6 +313,38 @@ final class ABJ_404_Solution_DiagnosticAppendStream {
         );
         self::$opens[$path] = (self::$opens[$path] ?? 0) + 1;
         return self::$streams[$path];
+    }
+
+    /**
+     * Has this descriptor's file been unlinked out from under it?
+     *
+     * This is the per-record half of the identity problem, and it is separate
+     * from identityOf() below because the two failures have different costs.
+     * A rotation RENAME retains every record already written, so noticing it one
+     * revalidation window late loses nothing and the bounded check is enough. An
+     * UNLINK retains nothing: the descriptor keeps accepting writes, fwrite and
+     * fflush both report success, and the bytes are unreachable to every reader.
+     * Measured on APFS 2026-08-10: after the directory was removed, fwrite
+     * returned the full length and fflush returned true, with nlink at 0. That
+     * silently breaks this class's durability contract, which is per-record, so
+     * this check has to be per-record too. It costs one fstat, 1.11 us against
+     * the 24.8 us this class spends per record.
+     *
+     * nlink is the right signal precisely because it stays 1 through a rename,
+     * so this cannot fire on the rotation case the bounded window exists for.
+     *
+     * @param resource $handle
+     */
+    private static function isUnlinkedSink($handle): bool {
+        $open = @fstat($handle);
+        if (!is_array($open) || !isset($open['nlink'])) {
+            // A filesystem that will not report a link count gets the bounded
+            // path-identity check and nothing stricter. Failing closed here
+            // would re-open on every append and hand back the entire cost this
+            // class exists to remove, on every host with an unusual stat().
+            return false;
+        }
+        return (int)$open['nlink'] === 0;
     }
 
     /**
