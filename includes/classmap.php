@@ -111,7 +111,7 @@ $abj404ClassesByDirectory = array(
         'AjaxCheckpointLogger', 'AjaxCheckpointBoundaryWriter', 'AjaxFrequentCheckpointWriter',
         'CheckpointRecordFactory', 'CheckpointIntentStore', 'CheckpointIntentCorrelation',
         'DurableOperationRecorder',
-        'ActiveOperationBreadcrumbs',
+        'ActiveOperationBreadcrumbs', 'ActiveOperationBoundaryManifest',
         'CheckpointJournalWriter',
         'CheckpointJournalReader', 'RequiredCheckpointEvidence', 'RequiredCheckpointIdentityEvidence',
         'MalformedCheckpointEvidence',

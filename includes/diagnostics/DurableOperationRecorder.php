@@ -148,13 +148,17 @@ final class ABJ_404_Solution_DurableOperationRecorder {
         string $state,
         array $fields
     ): void {
+        // Both collaborators are guarded: on a partially corrupt install this
+        // path must degrade to recording nothing, never fatal on the redaction
+        // catalog after clearing the persistence class.
         if ($requestId === '' || self::$recordingActiveOperation
-                || !class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')) {
+                || !class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')
+                || !class_exists('ABJ_404_Solution_ActiveOperationBoundaryManifest')) {
             return;
         }
         self::$recordingActiveOperation = true;
         try {
-            $safeFields = ABJ_404_Solution_ActiveOperationBreadcrumbs::selectFields(
+            $safeFields = ABJ_404_Solution_ActiveOperationBoundaryManifest::selectFields(
                 $boundary,
                 $fields
             );

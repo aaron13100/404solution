@@ -15,8 +15,10 @@ if (!defined('ABSPATH')) {
  * new complete file. It never leaves a deliberately truncated target.
  *
  * The caller supplies a frequent checkpoint record. This class owns the
- * bounded persistence and the privacy allowlist for its boundary payloads;
- * event semantics stay with AjaxCheckpointLogger.
+ * bounded persistence and nothing else: which fields of a boundary may be
+ * persisted at all is ABJ_404_Solution_ActiveOperationBoundaryManifest's,
+ * because two consumers need that contract without ever touching this file,
+ * and event semantics stay with AjaxCheckpointLogger.
  */
 final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
 
@@ -30,117 +32,14 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
      * The record table this process last wrote, by path, with the file identity
      * that makes it trustworthy. See readExistingOrRemembered().
      *
+     * Each entry of `records` is an encoded record: the decoded record and the
+     * exact line that persists it, bound together by encodeRecord(). See that
+     * method for why the two travel as one value.
+     *
      * @var array<string, array{ino: mixed, dev: mixed, size: mixed, mtime: mixed,
-     *   records: array<int, array<string, mixed>>}>
+     *   records: array<int, array{record: array<string, mixed>, line: string}>}>
      */
     private static $rememberedTable = array();
-    /**
-     * One boundary catalog shared by persistence and support reservation.
-     *
-     * `fields` is the default-deny privacy allowlist written to disk.
-     * `required_evidence_fields` is the minimum discriminator identity an
-     * active record must carry before support collection reserves it.
-     *
-     * @var array<string, array{
-     *   fields: array<int, string>,
-     *   required_evidence_fields: array<int, string>
-     * }>
-     */
-    private const BOUNDARY_MANIFEST = array(
-        'query' => array(
-            'fields' => array(
-                'q', 'stage', 'src', 'sql_id', 'sql_len', 'timeout_s', 'preflight_id',
-            ),
-            'required_evidence_fields' => array('q', 'src', 'sql_id'),
-        ),
-        'row_operation' => array(
-            'fields' => array(
-                'operation_id', 'kind', 'operation', 'key', 'group', 'hook', 'callback', 'source',
-            ),
-            'required_evidence_fields' => array('operation_id', 'kind'),
-        ),
-        'table_prelude_hook_callback' => array(
-            'fields' => array('operation_id', 'hook', 'callback', 'source', 'locale'),
-            'required_evidence_fields' => array(
-                'operation_id', 'hook', 'callback', 'source', 'locale',
-            ),
-        ),
-        'render_translation_callback' => array(
-            'fields' => array(
-                'operation_id', 'phase', 'hook', 'callback', 'source', 'locale',
-                'message_set_hash',
-            ),
-            'required_evidence_fields' => array(
-                'operation_id', 'phase', 'hook', 'callback', 'source', 'locale',
-                'message_set_hash',
-            ),
-        ),
-        'query_filter_callback' => array(
-            'fields' => array(
-                'operation_id', 'q', 'sql_id', 'registered_hook', 'hook',
-                'callback', 'source', 'priority', 'callback_ordinal',
-            ),
-            'required_evidence_fields' => array(
-                'operation_id', 'q', 'sql_id', 'hook', 'callback', 'source',
-            ),
-        ),
-        'status_count_operation' => array(
-            'fields' => array(
-                'operation_id', 'operation', 'parent_operation_id', 'scope',
-                'family', 'kind', 'hook', 'callback', 'source', 'priority',
-                'cache_key', 'cache_group',
-            ),
-            'required_evidence_fields' => array('operation_id', 'operation'),
-        ),
-        'render_option_io' => array(
-            'fields' => array(
-                'operation_id', 'phase', 'operation', 'cache_key', 'cache_group',
-                'key_family', 'group_family', 'backend', 'backend_class', 'query_id',
-            ),
-            'required_evidence_fields' => array(
-                'operation_id', 'phase', 'operation',
-            ),
-        ),
-        'request_phase' => array(
-            'fields' => array('operation_id', 'operation', 'phase', 'threshold_ms'),
-            'required_evidence_fields' => array('operation_id', 'operation', 'phase'),
-        ),
-        'shutdown_callback' => array(
-            'fields' => array(
-                'operation_id', 'hook', 'callback', 'source', 'priority',
-                'callback_ordinal', 'has_reference',
-            ),
-            'required_evidence_fields' => array(
-                'operation_id', 'hook', 'callback', 'source', 'priority',
-                'callback_ordinal',
-            ),
-        ),
-        // Template I/O past its per-request journal budget. It is the one
-        // family whose volume scales with the rendered row count, so on a big
-        // table most reads arrive here rather than in the journal; a blocked
-        // read is then an operation that went active and never completed.
-        // template_id is already a basename hash, never a path.
-        'template_file_operation' => array(
-            'fields' => array(
-                'operation_id', 'operation', 'template_id', 'status', 'elapsed_ms', 'bytes',
-            ),
-            'required_evidence_fields' => array(
-                'operation_id', 'operation', 'template_id',
-            ),
-        ),
-    );
-
-    /**
-     * The canonical allowed/reserved active-operation boundary contract.
-     *
-     * @return array<string, array{
-     *   fields: array<int, string>,
-     *   required_evidence_fields: array<int, string>
-     * }>
-     */
-    public static function boundaryManifest(): array {
-        return self::BOUNDARY_MANIFEST;
-    }
 
     /**
      * Replace the latest record for one request/boundary pair.
@@ -179,6 +78,10 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                     return self::failure('existing_file_unparseable');
                 }
                 $records = self::replaceMatchingRecord($records, $record);
+                if ($records === null) {
+                    self::reportFailure('active-operation file contains an over-budget record.');
+                    return self::failure('record_too_large');
+                }
                 return self::atomicWrite($directory, $records);
             } finally {
                 if (ABJ_404_Solution_DiagnosticAppendStream::release($lockPath)['status'] === 'failed') {
@@ -223,25 +126,9 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     }
 
     /**
-     * Keep only scalar, non-sensitive identity fields for one boundary.
+     * The record as it is allowed to be persisted: the core identity every
+     * boundary carries, plus whatever that boundary's privacy allowlist admits.
      *
-     * @param array<string, mixed> $fields
-     * @return array<string, mixed>
-     */
-    public static function selectFields(string $boundary, array $fields): array {
-        $boundaryContract = self::BOUNDARY_MANIFEST[$boundary] ?? array();
-        $allowed = $boundaryContract['fields'] ?? array();
-        $safe = array();
-        foreach ($allowed as $field) {
-            if (array_key_exists($field, $fields)
-                    && (is_scalar($fields[$field]) || $fields[$field] === null)) {
-                $safe[$field] = $fields[$field];
-            }
-        }
-        return $safe;
-    }
-
-    /**
      * @param array<string, mixed> $record
      * @return array<string, mixed>
      */
@@ -253,7 +140,10 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 $core[$field] = $record[$field];
             }
         }
-        return array_merge($core, self::selectFields($boundary, $record));
+        return array_merge(
+            $core,
+            ABJ_404_Solution_ActiveOperationBoundaryManifest::selectFields($boundary, $record)
+        );
     }
 
     /**
@@ -268,7 +158,8 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             self::reportFailure('active-operation record has an invalid request id.');
             return self::failure('invalid_request_id');
         }
-        if (!is_string($boundary) || !array_key_exists($boundary, self::BOUNDARY_MANIFEST)) {
+        if (!is_string($boundary)
+                || !ABJ_404_Solution_ActiveOperationBoundaryManifest::hasBoundary($boundary)) {
             self::reportFailure('active-operation record has an invalid boundary.');
             return self::failure('invalid_boundary');
         }
@@ -284,9 +175,6 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
         return array('status' => 'complete', 'reason' => '');
     }
 
-    /**
-     * @return array<int, array<string, mixed>>|null
-     */
     /**
      * The current record table, re-read only when this process is not already
      * holding the answer.
@@ -311,8 +199,9 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
      * lives in the same table, so writing from a stale copy would erase the
      * operation IT is inside, which is the one thing this file exists to name.
      *
-     * @return array<int, array<string, mixed>>|null Null when the file on disk
-     *   is unparseable, exactly as readExisting() reports it.
+     * @return array<int, array{record: array<string, mixed>, line: string}>|null
+     *   Null when the file on disk is unparseable, exactly as readExisting()
+     *   reports it.
      */
     private static function readExistingOrRemembered(string $path): ?array {
         clearstatcache(true, $path);
@@ -325,7 +214,53 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 && $remembered['mtime'] === ($current['mtime'] ?? null)) {
             return $remembered['records'];
         }
-        return self::readExisting($path);
+        $records = self::readExisting($path);
+        if ($records === null) {
+            return null;
+        }
+        $encoded = array();
+        foreach ($records as $record) {
+            $encodedRecord = self::encodeRecord($record);
+            if ($encodedRecord === null) {
+                // Unreachable through readExisting(), which validates every
+                // decoded record against the same byte budget. Fail closed
+                // rather than assume that stays true: a table we cannot encode
+                // is a table we cannot rewrite without losing a sibling.
+                self::reportFailure('active-operation file contains an over-budget record: ' . $path);
+                return null;
+            }
+            $encoded[] = $encodedRecord;
+        }
+        return $encoded;
+    }
+
+    /**
+     * Bind a record to the exact line that persists it.
+     *
+     * WHY THE PAIR. atomicWrite() rewrites the whole fixed-size table on every
+     * replacement, but exactly one of its 32 records has changed; re-encoding
+     * the other 31 was the largest remaining cost in a path a plugin-heavy
+     * request takes 2,120 times (566 ms of one request, measured on the owner's
+     * localhost on 2026-08-10, deliverables/t_260809_224020_311). Carrying the
+     * line beside its record lets the untouched ones be imploded as they are.
+     *
+     * The pair is what makes that safe. A cached encoding is only wrong when it
+     * outlives the record it describes, so the two are created together, here,
+     * and nothing afterwards edits one half: replaceMatchingRecord() drops and
+     * appends whole pairs, and PHP array value semantics mean no caller can
+     * reach into a pair it was handed. Drift is not guarded against, it is
+     * unrepresentable.
+     *
+     * @param array<string, mixed> $record
+     * @return array{record: array<string, mixed>, line: string}|null Null when
+     *   the record does not fit its fixed per-record byte budget.
+     */
+    private static function encodeRecord(array $record): ?array {
+        $line = json_encode($record, JSON_UNESCAPED_SLASHES);
+        if (!is_string($line) || strlen($line) > self::MAX_RECORD_BYTES) {
+            return null;
+        }
+        return array('record' => $record, 'line' => $line);
     }
 
     /**
@@ -333,7 +268,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
      * skip the re-read. Forgotten rather than guessed at when the file cannot
      * be stat()ed, because a wrong memory here erases a sibling's evidence.
      *
-     * @param array<int, array<string, mixed>> $records
+     * @param array<int, array{record: array<string, mixed>, line: string}> $records
      */
     private static function rememberWrittenTable(string $path, array $records): void {
         clearstatcache(true, $path);
@@ -393,14 +328,20 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * Swap one boundary's slot for its replacement, keeping every other pair
+     * exactly as it was read or last written, line included.
+     *
+     * @param array<int, array{record: array<string, mixed>, line: string}> $records
      * @param array<string, mixed> $replacement
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array{record: array<string, mixed>, line: string}>|null
+     *   Null when the replacement, once its sequence number is assigned, no
+     *   longer fits its fixed per-record byte budget.
      */
-    private static function replaceMatchingRecord(array $records, array $replacement): array {
+    private static function replaceMatchingRecord(array $records, array $replacement): ?array {
         $nextSequence = 1;
         $kept = array();
-        foreach ($records as $record) {
+        foreach ($records as $encodedRecord) {
+            $record = $encodedRecord['record'];
             $recordSequence = is_int($record['breadcrumb_seq'] ?? null)
                 ? $record['breadcrumb_seq'] : 0;
             $nextSequence = max($nextSequence, $recordSequence + 1);
@@ -408,10 +349,14 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                     && ($record['boundary'] ?? null) === $replacement['boundary']) {
                 continue;
             }
-            $kept[] = $record;
+            $kept[] = $encodedRecord;
         }
         $replacement['breadcrumb_seq'] = $nextSequence;
-        $kept[] = $replacement;
+        $encodedReplacement = self::encodeRecord($replacement);
+        if ($encodedReplacement === null) {
+            return null;
+        }
+        $kept[] = $encodedReplacement;
         if (count($kept) > self::MAX_RECORDS) {
             $kept = array_slice($kept, -self::MAX_RECORDS);
         }
@@ -419,19 +364,11 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * @param array<int, array{record: array<string, mixed>, line: string}> $records
      * @return array{status: string, reason: string}
      */
     private static function atomicWrite(string $directory, array $records): array {
-        $lines = array();
-        foreach ($records as $record) {
-            $encoded = json_encode($record, JSON_UNESCAPED_SLASHES);
-            if (!is_string($encoded) || strlen($encoded) > self::MAX_RECORD_BYTES) {
-                self::reportFailure('active-operation file contains an over-budget record.');
-                return self::failure('record_too_large');
-            }
-            $lines[] = $encoded;
-        }
+        $lines = array_column($records, 'line');
         $payload = implode("\n", $lines) . ($lines === array() ? '' : "\n");
         $temporary = $directory . self::FILE . '.tmp';
         $handle = @fopen($temporary, 'wb');

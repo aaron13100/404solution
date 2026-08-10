@@ -335,8 +335,8 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
      * }>
      */
     private static function activeBoundaryManifest(): array {
-        return class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')
-            ? ABJ_404_Solution_ActiveOperationBreadcrumbs::boundaryManifest()
+        return class_exists('ABJ_404_Solution_ActiveOperationBoundaryManifest')
+            ? ABJ_404_Solution_ActiveOperationBoundaryManifest::boundaries()
             : array();
     }
 
