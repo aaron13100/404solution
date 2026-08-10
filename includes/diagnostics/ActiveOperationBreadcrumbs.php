@@ -25,6 +25,15 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     const MAX_RECORDS = 32;
     const MAX_RECORD_BYTES = 2048;
     const LOCK_WAIT_TIMEOUT_US = 50000;
+
+    /**
+     * The record table this process last wrote, by path, with the file identity
+     * that makes it trustworthy. See readExistingOrRemembered().
+     *
+     * @var array<string, array{ino: mixed, dev: mixed, size: mixed, mtime: mixed,
+     *   records: array<int, array<string, mixed>>}>
+     */
+    private static $rememberedTable = array();
     /**
      * One boundary catalog shared by persistence and support reservation.
      *
@@ -106,6 +115,19 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 'callback_ordinal',
             ),
         ),
+        // Template I/O past its per-request journal budget. It is the one
+        // family whose volume scales with the rendered row count, so on a big
+        // table most reads arrive here rather than in the journal; a blocked
+        // read is then an operation that went active and never completed.
+        // template_id is already a basename hash, never a path.
+        'template_file_operation' => array(
+            'fields' => array(
+                'operation_id', 'operation', 'template_id', 'status', 'elapsed_ms', 'bytes',
+            ),
+            'required_evidence_fields' => array(
+                'operation_id', 'operation', 'template_id',
+            ),
+        ),
     );
 
     /**
@@ -138,30 +160,30 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 return self::failure('directory_unavailable');
             }
 
-            $lock = @fopen($directory . self::LOCK_FILE, 'cb');
-            if ($lock === false) {
-                self::reportFailure('active-operation lock could not be opened: ' . $directory . self::LOCK_FILE);
+            $lockPath = $directory . self::LOCK_FILE;
+            $acquired = ABJ_404_Solution_DiagnosticAppendStream::acquireExclusive(
+                $lockPath,
+                self::LOCK_WAIT_TIMEOUT_US
+            );
+            if ($acquired['status'] === 'failed') {
+                self::reportFailure('active-operation lock could not be opened: ' . $lockPath);
                 return self::failure('lock_open_failed');
             }
-            $locked = false;
             try {
-                if (!self::acquireLockWithinTimeout($lock)) {
-                    self::reportFailure('active-operation lock wait exceeded: ' . $directory . self::LOCK_FILE);
+                if ($acquired['status'] === 'lock_timeout') {
+                    self::reportFailure('active-operation lock wait exceeded: ' . $lockPath);
                     return self::failure('lock_wait_exceeded');
                 }
-                $locked = true;
-                $records = self::readExisting($directory . self::FILE);
+                $records = self::readExistingOrRemembered($directory . self::FILE);
                 if ($records === null) {
                     return self::failure('existing_file_unparseable');
                 }
                 $records = self::replaceMatchingRecord($records, $record);
                 return self::atomicWrite($directory, $records);
             } finally {
-                if ($locked && !@flock($lock, LOCK_UN)) {
-                    self::reportFailure('active-operation lock could not be released: '
-                        . $directory . self::LOCK_FILE);
+                if (ABJ_404_Solution_DiagnosticAppendStream::release($lockPath)['status'] === 'failed') {
+                    self::reportFailure('active-operation lock could not be released: ' . $lockPath);
                 }
-                @fclose($lock);
             }
         } catch (Throwable $e) {
             self::reportFailure('active-operation replacement failed: ' . $e->getMessage());
@@ -265,6 +287,81 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     /**
      * @return array<int, array<string, mixed>>|null
      */
+    /**
+     * The current record table, re-read only when this process is not already
+     * holding the answer.
+     *
+     * WHY. Every post-cap operation replaces one slot in this file, and a
+     * plugin-heavy request makes 2,104 of them: measured on the owner's
+     * localhost on 2026-08-10 through the real table AJAX endpoint, where
+     * replace() cost 1.055 s of a 2.4 s request, roughly half of everything
+     * debug_mode added (deliverables/t_260809_224020_311/request-cost.jsonl,
+     * label recorder-attribution). Almost all of it was re-reading and
+     * re-decoding a table this process had just written itself: up to 32
+     * json_decode calls plus 32 validations, 2,104 times over.
+     *
+     * The remembered table is only trusted while the file on disk is still the
+     * exact file this process last wrote. atomicWrite() renames a fresh
+     * temporary over the target, so EVERY write, ours or a sibling request's,
+     * produces a new inode; an inode, size and mtime that all still match what
+     * we recorded after our own write means nothing has replaced it since. One
+     * stat answers that, against a read plus a full decode.
+     *
+     * Correctness is what the check protects: a sibling request's breadcrumb
+     * lives in the same table, so writing from a stale copy would erase the
+     * operation IT is inside, which is the one thing this file exists to name.
+     *
+     * @return array<int, array<string, mixed>>|null Null when the file on disk
+     *   is unparseable, exactly as readExisting() reports it.
+     */
+    private static function readExistingOrRemembered(string $path): ?array {
+        clearstatcache(true, $path);
+        $current = @stat($path);
+        $remembered = self::$rememberedTable[$path] ?? null;
+        if (is_array($remembered) && is_array($current)
+                && $remembered['ino'] === ($current['ino'] ?? null)
+                && $remembered['dev'] === ($current['dev'] ?? null)
+                && $remembered['size'] === ($current['size'] ?? null)
+                && $remembered['mtime'] === ($current['mtime'] ?? null)) {
+            return $remembered['records'];
+        }
+        return self::readExisting($path);
+    }
+
+    /**
+     * Remember what we just wrote, so the next replacement in this request can
+     * skip the re-read. Forgotten rather than guessed at when the file cannot
+     * be stat()ed, because a wrong memory here erases a sibling's evidence.
+     *
+     * @param array<int, array<string, mixed>> $records
+     */
+    private static function rememberWrittenTable(string $path, array $records): void {
+        clearstatcache(true, $path);
+        $stat = @stat($path);
+        if (!is_array($stat)) {
+            unset(self::$rememberedTable[$path]);
+            return;
+        }
+        self::$rememberedTable[$path] = array(
+            'ino' => $stat['ino'] ?? null,
+            'dev' => $stat['dev'] ?? null,
+            'size' => $stat['size'] ?? null,
+            'mtime' => $stat['mtime'] ?? null,
+            'records' => $records,
+        );
+    }
+
+    /**
+     * Discard the remembered table. The request-scoped reset seam, called by
+     * name from ABJ404_RequestScopedStateReset: a PHPUnit worker replays many
+     * requests in one process and deletes each one's directory, so a table
+     * remembered for a path a later test recreates must not be reused.
+     */
+    public static function resetForTests(): void {
+        self::$rememberedTable = array();
+    }
+
+    /** @return array<int, array<string, mixed>>|null */
     private static function readExisting(string $path): ?array {
         if (!is_file($path)) {
             return array();
@@ -359,21 +456,8 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             @unlink($temporary);
             return self::failure('atomic_replace_failed');
         }
+        self::rememberWrittenTable($directory . self::FILE, $records);
         return array('status' => 'complete', 'reason' => '');
-    }
-
-    /** @param resource $lock */
-    private static function acquireLockWithinTimeout($lock): bool {
-        $started = self::monotonicNanoseconds();
-        do {
-            if (@flock($lock, LOCK_EX | LOCK_NB)) {
-                return true;
-            }
-            if (self::elapsedMicroseconds($started) >= self::LOCK_WAIT_TIMEOUT_US) {
-                return false;
-            }
-            usleep(1000);
-        } while (true);
     }
 
     /** @return array{status: string, reason: string} */
@@ -381,29 +465,12 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
         return array('status' => 'failed', 'reason' => $reason);
     }
 
-    private static function monotonicNanoseconds(): ?int {
-        if (function_exists('hrtime')) {
-            return (int)hrtime(true);
-        }
-        if (function_exists('abj_clock')) {
-            return (int)round(abj_clock()->nowFloat() * 1000000000);
-        }
-        if (class_exists('ABJ_404_Solution_SystemClock')) {
-            return (int)round((new ABJ_404_Solution_SystemClock())->nowFloat() * 1000000000);
-        }
-        return null;
-    }
-
-    private static function elapsedMicroseconds(?int $started): int {
-        $finished = self::monotonicNanoseconds();
-        if ($started === null || $finished === null) {
-            // No reachable clock must fail the bounded non-blocking lock wait
-            // closed; treating it as zero would turn the loop into an
-            // unbounded wait inside the recorder being used to diagnose stalls.
-            return self::LOCK_WAIT_TIMEOUT_US;
-        }
-        return max(0, (int)round(($finished - $started) / 1000));
-    }
+    // The bounded lock wait these two clock helpers served now lives in
+    // ABJ_404_Solution_DiagnosticAppendStream::acquireExclusive(), together
+    // with the descriptor it locks, so the clock-unavailable rule they encoded
+    // (fail the wait CLOSED rather than treat it as zero elapsed, which would
+    // make the recorder used to diagnose stalls wait unboundedly) has one home
+    // instead of a copy per writer.
 
     private static function reportFailure(string $message): void {
         abj404_logPhpFallback('active-operation-breadcrumb', $message);

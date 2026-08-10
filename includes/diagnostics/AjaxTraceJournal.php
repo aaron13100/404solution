@@ -277,14 +277,7 @@ final class ABJ_404_Solution_AjaxTraceJournal {
      * reader with it.
      */
     private static function resolveSupportDirectory(): string {
-        $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
-        if (function_exists('apply_filters')) {
-            $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
-        }
-        if ($directory === '') {
-            return '';
-        }
-        return rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
+        return ABJ_404_Solution_DiagnosticDirectoryResolver::resolve();
     }
 
     /** @param array<string, mixed> $record */
@@ -294,31 +287,39 @@ final class ABJ_404_Solution_AjaxTraceJournal {
             $this->reportFailure('AJAX trace JSON encoding failed.');
             return false;
         }
-        $handle = @fopen($path, 'ab');
-        if ($handle === false) {
+        // The descriptor is held for the request rather than re-opened per
+        // record, and the lock is taken on that same held descriptor. See
+        // ABJ_404_Solution_DiagnosticAppendStream: this sink is lower volume
+        // than the checkpoint journal, but it is the same shape and it shares
+        // the fix rather than keeping a second copy of the write path.
+        $acquired = ABJ_404_Solution_DiagnosticAppendStream::acquireExclusive(
+            $path,
+            self::PROMOTION_LOCK_WAIT_TIMEOUT_US
+        );
+        if ($acquired['status'] === 'failed') {
             $this->reportFailure('AJAX trace file could not be opened: ' . $path);
             return false;
         }
-        $ok = false;
+        if ($acquired['status'] === 'lock_timeout') {
+            $this->reportFailure('AJAX trace file lock failed: ' . $path);
+            return false;
+        }
         try {
-            if (!@flock($handle, LOCK_EX)) {
-                $this->reportFailure('AJAX trace file lock failed: ' . $path);
-                return false;
-            }
-            $written = @fwrite($handle, $json . "\n");
-            $flushed = @fflush($handle);
-            $ok = $written !== false && $flushed;
+            $written = ABJ_404_Solution_DiagnosticAppendStream::append($path, $json . "\n");
+            $ok = $written['status'] === 'complete';
             if (!$ok) {
                 $this->reportFailure('AJAX trace append/flush failed: ' . $path);
             }
-            @flock($handle, LOCK_UN);
         } finally {
-            @fclose($handle);
+            ABJ_404_Solution_DiagnosticAppendStream::release($path);
         }
         return $ok;
     }
 
     private function removePending(): void {
+        // Drop the held descriptor BEFORE unlinking: a descriptor to a deleted
+        // inode accepts writes that no reader can ever find.
+        ABJ_404_Solution_DiagnosticAppendStream::invalidate($this->pendingPath);
         if (@is_file($this->pendingPath) && !@unlink($this->pendingPath)) {
             $this->reportFailure('AJAX pending trace could not be removed: ' . $this->pendingPath);
         }

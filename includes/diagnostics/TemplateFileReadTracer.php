@@ -13,11 +13,51 @@ if (!defined('ABSPATH')) {
  * layout. Each platform boundary writes its start before entering the call so
  * a blocked stat, read, retry wait, warning logger, or cURL fallback remains
  * visible in bounded support evidence.
+ *
+ * THE VOLUME IS CAPPED, and measurement is why. Template I/O is the one
+ * diagnostic family whose record count scales with the RENDERED ROW COUNT: on
+ * the owner's localhost on 2026-08-10, one part=all table AJAX request wrote
+ * 872 of its 3,135 checkpoint records here at rowsPerPage=25, and 3,212 of
+ * 5,476 at rowsPerPage=100, while every other family stayed flat. That is what
+ * turned debug_mode from a fixed surcharge into one that grows with the table,
+ * and a diagnostic a user cannot afford to switch on does not diagnose
+ * anything.
+ *
+ * Past the cap an operation is still announced on the active-operations
+ * channel, so the decisive evidence survives: a stalled read is exactly an
+ * operation that went 'active' and never went 'complete', which is how a
+ * blocked stat is recognised whether or not its journal record was written.
+ * What is lost past the cap is the per-operation elapsed_ms and byte counts of
+ * later reads, which is bounded-detail loss, not blindness.
  */
 final class ABJ_404_Solution_TemplateFileReadTracer {
 
+    /**
+     * Journal records this request may spend here. Matched to the sibling
+     * tracers' budgets (DatabaseQueryFilterTracer, TableRenderTranslationTracer)
+     * so one family cannot crowd the others out of a bounded support excerpt.
+     */
+    const MAX_RECORDS = 64;
+
     /** @var int */
     private static $operationSequence = 0;
+
+    /** @var int Journal records written this request. */
+    private static $recordCount = 0;
+
+    /** @var bool Whether the cap notice has been written for this request. */
+    private static $capRecorded = false;
+
+    /**
+     * Test seam: a PHPUnit worker never gets the end-of-request that would
+     * otherwise reset this budget, so one test's template reads would spend
+     * the next test's. Registered in ABJ404_RequestScopedStateReset.
+     */
+    public static function resetForTests(): void {
+        self::$operationSequence = 0;
+        self::$recordCount = 0;
+        self::$capRecorded = false;
+    }
 
     /**
      * @template T
@@ -42,41 +82,89 @@ final class ABJ_404_Solution_TemplateFileReadTracer {
             'operation' => self::safeOperation($operation),
             'template_id' => self::templateId($path),
         ), $fields);
-        ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
-            $requestId,
-            'template_file_operation_start',
-            $identity
-        );
+        // Both records of a pair are budgeted together: a start whose end
+        // cannot be afforded is what a stall looks like, so spending the last
+        // slot on one would manufacture a phantom stall in the evidence.
+        $journalled = self::$recordCount + 2 <= self::MAX_RECORDS;
+        if ($journalled) {
+            self::$recordCount++;
+            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+                $requestId,
+                'template_file_operation_start',
+                $identity
+            );
+        } else {
+            self::recordCapOnce($requestId);
+            ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+                $requestId,
+                'template_file_operation',
+                'active',
+                $identity
+            );
+        }
         $startedAt = self::nowFloat();
         try {
             $result = $work();
         } catch (Throwable $error) {
-            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
-                $requestId,
-                'template_file_operation_end',
-                array_merge($identity, array(
-                    'status' => 'error',
-                    'elapsed_ms' => self::elapsedMilliseconds($startedAt),
-                    'result' => array('error' => true),
-                    'bytes' => 0,
-                    'error' => self::errorSummary($error),
-                ))
-            );
+            self::writeEnd($requestId, $journalled, array_merge($identity, array(
+                'status' => 'error',
+                'elapsed_ms' => self::elapsedMilliseconds($startedAt),
+                'result' => array('error' => true),
+                'bytes' => 0,
+                'error' => self::errorSummary($error),
+            )));
             throw $error;
         }
 
         $summary = self::resultSummary($operation, $result, $fields);
+        self::writeEnd($requestId, $journalled, array_merge($identity, array(
+            'status' => 'complete',
+            'elapsed_ms' => self::elapsedMilliseconds($startedAt),
+            'result' => $summary,
+            'bytes' => $summary['bytes'] ?? 0,
+        )));
+        return $result;
+    }
+
+    /**
+     * Close an operation on the channel its start was written to. Mixing them
+     * would leave an active operation that never completes, which is the exact
+     * signature of a stalled read.
+     *
+     * @param array<string, mixed> $fields
+     */
+    private static function writeEnd(string $requestId, bool $journalled, array $fields): void {
+        if ($journalled) {
+            self::$recordCount++;
+            ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
+                $requestId,
+                'template_file_operation_end',
+                $fields
+            );
+            return;
+        }
+        ABJ_404_Solution_AjaxCheckpointLogger::recordActiveOperation(
+            $requestId,
+            'template_file_operation',
+            'complete',
+            $fields
+        );
+    }
+
+    /** Name the cap in the journal once, so a truncated family is never silent. */
+    private static function recordCapOnce(string $requestId): void {
+        if (self::$capRecorded) {
+            return;
+        }
+        self::$capRecorded = true;
         ABJ_404_Solution_AjaxCheckpointLogger::recordFrequent(
             $requestId,
-            'template_file_operation_end',
-            array_merge($identity, array(
-                'status' => 'complete',
-                'elapsed_ms' => self::elapsedMilliseconds($startedAt),
-                'result' => $summary,
-                'bytes' => $summary['bytes'] ?? 0,
-            ))
+            'template_file_operation_capped',
+            array(
+                'recorded' => self::$recordCount,
+                'max_records' => self::MAX_RECORDS,
+            )
         );
-        return $result;
     }
 
     private static function requestId(): string {

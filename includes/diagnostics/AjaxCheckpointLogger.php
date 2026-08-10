@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = '748039a4f1d582833fb7835b4a0ca37014beced6';
+    const DIAGNOSTIC_BUILD_ID = 'd3a35f92115698876dad66131561ed3ecf81d84d';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -91,9 +91,11 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
     /**
      * Resolve the same directory ABJ_404_Solution_AjaxRequestTrace uses, via
      * the same filter, so checkpoints and the trace journal live side by
-     * side and share one support-payload excerpt. Resolved independently
-     * (not delegated to the trace class) so a bug there cannot take this
-     * down too.
+     * side and share one support-payload excerpt. The resolution itself lives
+     * in ABJ_404_Solution_DiagnosticDirectoryResolver -- a leaf with no
+     * dependencies of its own, so a bug in the trace class still cannot take
+     * this channel down, and one request cannot pay for the same two filter
+     * dispatches thousands of times.
      *
      * @return string Empty string when unavailable.
      */
@@ -126,12 +128,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * ABJ_404_Solution_CheckpointJournalReader::supportCollectionSource().
      */
     public static function resolveDirectoryPath(): string {
-        $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
-        if (function_exists('apply_filters')) {
-            $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, array());
-        }
-        $directory = (string)$directory;
-        return $directory === '' ? '' : rtrim($directory, '/\\') . DIRECTORY_SEPARATOR;
+        return ABJ_404_Solution_DiagnosticDirectoryResolver::resolve();
     }
 
     /**

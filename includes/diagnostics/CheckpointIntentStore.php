@@ -85,8 +85,12 @@ final class ABJ_404_Solution_CheckpointIntentStore {
      * @return array{status: string, reason: string}
      */
     private static function appendLine(array $paths, string $line): array {
-        $size = @filesize($paths['current']);
-        if (is_int($size) && ($size + strlen($line)) > self::MAX_BYTES) {
+        // Tracked by the request-scoped descriptor rather than stat()ed per
+        // record. See ABJ_404_Solution_DiagnosticAppendStream for why: this
+        // sink takes one write per checkpoint, and a checkpoint-heavy request
+        // writes thousands.
+        $size = ABJ_404_Solution_DiagnosticAppendStream::sizeOf($paths['current']);
+        if (($size + strlen($line)) > self::MAX_BYTES) {
             self::rotate($paths, strlen($line));
         }
         return self::writeLine($paths['current'], $line);
@@ -120,6 +124,9 @@ final class ABJ_404_Solution_CheckpointIntentStore {
                     . $paths['current'] . self::lastErrorSuffix());
             }
         } finally {
+            // Whatever happened above, the held descriptor may now name the
+            // rotated file. Drop it so the next intent re-resolves the path.
+            ABJ_404_Solution_DiagnosticAppendStream::invalidate($paths['current']);
             @flock($lock, LOCK_UN);
             @fclose($lock);
         }
@@ -128,25 +135,18 @@ final class ABJ_404_Solution_CheckpointIntentStore {
     /** @return array{status: string, reason: string} */
     private static function writeLine(string $path, string $line): array {
         self::clearLastError();
-        $handle = @fopen($path, 'ab');
-        if ($handle === false) {
+        $result = ABJ_404_Solution_DiagnosticAppendStream::append($path, $line);
+        if ($result['status'] === 'complete') {
+            return array('status' => 'complete', 'reason' => '');
+        }
+        if ($result['reason'] === 'open_failed') {
             self::reportFailure('AJAX checkpoint intent file could not be opened: '
                 . $path . self::lastErrorSuffix());
             return array('status' => 'failed', 'reason' => 'intent_open_failed');
         }
-        try {
-            self::clearLastError();
-            $written = @fwrite($handle, $line);
-            $flushed = @fflush($handle);
-            if ($written !== strlen($line) || !$flushed) {
-                self::reportFailure('AJAX checkpoint intent append/flush failed: '
-                    . $path . self::lastErrorSuffix());
-                return array('status' => 'failed', 'reason' => 'intent_append_failed');
-            }
-        } finally {
-            @fclose($handle);
-        }
-        return array('status' => 'complete', 'reason' => '');
+        self::reportFailure('AJAX checkpoint intent append/flush failed: '
+            . $path . self::lastErrorSuffix());
+        return array('status' => 'failed', 'reason' => 'intent_append_failed');
     }
 
     /** @return array{current: string, rotated: string, lock: string}|null */

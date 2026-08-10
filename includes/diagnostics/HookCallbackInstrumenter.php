@@ -20,9 +20,14 @@ if (!defined('ABSPATH')) {
  * allow-no-test-found: exercised through real AJAX hook dispatch in tests/OptionPersistenceTracerTest.php, tests/AjaxQueryAttributionTest.php, and tests/TableRendererPreludeTracerTest.php
  *
  * @phpstan-type CallbackIdentity array{callback: string, source: string, has_reference: bool}
- * @phpstan-type WrapperRegistration array{mode: 'wrapper', hook: string, priority: int, ordinal: int, id: string, original: callable, wrapper: callable}
- * @phpstan-type MarkerRegistration array{mode: 'marker', hook: string, priority: int, ordinal: int, id: string, original: callable, before_id: string, before: callable}
+ * The registration shapes are defined by the class that stores them, so a
+ * change to what a registration carries cannot leave the two files disagreeing.
+ *
+ * @phpstan-import-type WrapperRegistration from ABJ_404_Solution_HookInstrumentationRegistry
+ * @phpstan-import-type MarkerRegistration from ABJ_404_Solution_HookInstrumentationRegistry
+ * @phpstan-import-type Registration from ABJ_404_Solution_HookInstrumentationRegistry
  * @phpstan-type LifecycleToken array{operation_id: string, phase: string, component: string, hook: string, priority: int|null, callback_ordinal: int}
+ * @phpstan-type InstrumentationCounts array{callbacks_wrapped: int, callbacks_marked: int, callbacks_unavailable: int, registry_status: string, registry_reason: string}
  * @template TToken
  */
 final class ABJ_404_Solution_HookCallbackInstrumenter {
@@ -36,8 +41,11 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
     /** @var array<int, TToken> */
     private $pendingTokens = array();
 
-    /** @var array<string, WrapperRegistration|MarkerRegistration> */
-    private $registrations = array();
+    /** @var ABJ_404_Solution_HookInstrumentationRegistry */
+    private $registry;
+
+    /** @var ABJ_404_Solution_HookRegistryInspectionLedger */
+    private $inspections;
 
     /** @var ABJ_404_Solution_HookInstrumentationLifecycleTracer */
     private $lifecycleTracer;
@@ -54,24 +62,25 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         $this->start = $start;
         $this->end = $end;
         $this->lifecycleTracer = $lifecycleTracer;
+        $this->registry = new ABJ_404_Solution_HookInstrumentationRegistry();
+        $this->inspections = new ABJ_404_Solution_HookRegistryInspectionLedger();
     }
 
     /**
-     * Instrument every callable entry currently registered on one hook.
+     * Ensure every callable entry currently registered on one hook is
+     * instrumented, and report what this call added.
      *
-     * Registry lookup is owned here so the lifecycle start is durable before
-     * the first global or hook-object access.
+     * Idempotent for a given registry shape: an `all` observer calls this once
+     * per hook FIRING, and a scope's hooks fire tens of thousands of times, so a
+     * hook whose registry has not changed since its last inspection is answered
+     * from ABJ_404_Solution_HookRegistryInspectionLedger without a walk. The
+     * counts are of what this call newly instrumented, which is why the
+     * unchanged answer is zeros rather than the earlier call's totals.
      *
-     * @return array{
-     *   callbacks_wrapped: int,
-     *   callbacks_marked: int,
-     *   callbacks_unavailable: int,
-     *   registry_status: string,
-     *   registry_reason: string
-     * }
+     * @return InstrumentationCounts registry_status is 'unchanged' when the
+     *   registry was already instrumented and has not changed since.
      */
     public function instrument(string $hookName): array {
-        $lifecycleToken = $this->lifecycleTracer->begin('install', $hookName);
         $counts = array(
             'callbacks_wrapped' => 0,
             'callbacks_marked' => 0,
@@ -79,6 +88,25 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             'registry_status' => 'ready',
             'registry_reason' => '',
         );
+        if (!$this->inspections->needsInspection($hookName)) {
+            $counts['registry_status'] = 'unchanged';
+            return $counts;
+        }
+        $this->inspectRegistry($hookName, $counts);
+        $this->inspections->recordInspected($hookName);
+        return $counts;
+    }
+
+    /**
+     * Walk one hook's live registry and instrument what is not instrumented yet.
+     *
+     * Registry lookup is owned here so the lifecycle start is durable before
+     * the first global or hook-object access.
+     *
+     * @param InstrumentationCounts $counts
+     */
+    private function inspectRegistry(string $hookName, array &$counts): void {
+        $lifecycleToken = $this->lifecycleTracer->begin('install', $hookName);
         $filters = $GLOBALS['wp_filter'] ?? null;
         if (!is_array($filters)) {
             $counts['registry_status'] = 'unavailable';
@@ -88,12 +116,12 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
                 'unavailable',
                 'hook_registry_unavailable'
             );
-            return $counts;
+            return;
         }
         if (!array_key_exists($hookName, $filters)) {
             $counts['registry_status'] = 'absent';
             $this->lifecycleTracer->complete($lifecycleToken, 'absent', 'hook_not_registered');
-            return $counts;
+            return;
         }
         $hookObject = $filters[$hookName];
         if (!$hookObject instanceof ArrayAccess || !$hookObject instanceof Traversable) {
@@ -105,7 +133,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
                 'malformed',
                 'hook_object_unavailable'
             );
-            return $counts;
+            return;
         }
 
         $this->discardStaleRegistrations($hookName, $hookObject, $lifecycleToken);
@@ -134,7 +162,6 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             $hookObject[$priority] = $instrumented;
         }
         $this->lifecycleTracer->complete($lifecycleToken);
-        return $counts;
     }
 
     /**
@@ -146,10 +173,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         object $hookObject,
         array &$lifecycleToken
     ): void {
-        foreach ($this->registrations as $key => $registration) {
-            if ($registration['hook'] !== $hookName) {
-                continue;
-            }
+        foreach ($this->registry->forHook($hookName) as $key => $registration) {
             $lifecycleToken = $this->lifecycleTracer->advance(
                 $lifecycleToken,
                 $registration['priority'],
@@ -159,7 +183,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
                 ? $hookObject[$registration['priority']]
                 : null;
             if (!is_array($entries)) {
-                unset($this->registrations[$key]);
+                $this->registry->forget($key);
                 continue;
             }
             $entry = $entries[$registration['id']] ?? null;
@@ -179,7 +203,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
                 $this->removeMarker($entries, $registration);
                 $hookObject[$registration['priority']] = $entries;
             }
-            unset($this->registrations[$key]);
+            $this->registry->forget($key);
         }
     }
 
@@ -187,7 +211,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
      * Restore wrappers and remove markers without overwriting foreign changes.
      */
     public function restore(bool $scopeCompleted = true): void {
-        foreach ($this->registrations as $registration) {
+        foreach ($this->registry->all() as $registration) {
             $lifecycleToken = $this->lifecycleTracer->begin('restore', $registration['hook']);
             $lifecycleToken = $this->lifecycleTracer->advance(
                 $lifecycleToken,
@@ -230,7 +254,8 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             $hookObject[$registration['priority']] = $entries;
             $this->lifecycleTracer->complete($lifecycleToken);
         }
-        $this->registrations = array();
+        $this->registry->clear();
+        $this->inspections->clear();
         $tokens = $this->pendingTokens;
         $this->pendingTokens = array();
         if ($scopeCompleted) {
@@ -242,13 +267,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
 
     /**
      * @param array<array-key, mixed> $entries
-     * @param array{
-     *   callbacks_wrapped: int,
-     *   callbacks_marked: int,
-     *   callbacks_unavailable: int,
-     *   registry_status: string,
-     *   registry_reason: string
-     * } $counts
+     * @param InstrumentationCounts $counts
      * @param LifecycleToken $lifecycleToken
      * @return array<array-key, mixed>
      */
@@ -268,7 +287,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
                 $priority,
                 $callbackOrdinal
             );
-            if ($this->isOwnedInstrumentationEntry($entry)) {
+            if ($this->registry->ownsCallback(is_array($entry) ? ($entry['function'] ?? null) : null)) {
                 $result[$id] = $entry;
                 continue;
             }
@@ -333,8 +352,8 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         array $entries
     ): bool {
         $key = ABJ_404_Solution_HookInstrumentationRegistration::key($hook, $priority, $id);
-        $registration = $this->registrations[$key] ?? null;
-        if (!is_array($registration) || !is_array($entry)) {
+        $registration = $this->registry->get($key);
+        if ($registration === null || !is_array($entry)) {
             return false;
         }
         $callback = $entry['function'] ?? null;
@@ -345,19 +364,6 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         return $callback === $registration['original']
             && is_array($beforeEntry)
             && ($beforeEntry['function'] ?? null) === $registration['before'];
-    }
-
-    /** @param mixed $entry */
-    private function isOwnedInstrumentationEntry($entry): bool {
-        $callback = is_array($entry) ? ($entry['function'] ?? null) : null;
-        foreach ($this->registrations as $registration) {
-            foreach (array('wrapper', 'before') as $field) {
-                if (isset($registration[$field]) && $callback === $registration[$field]) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /** @param callable $callback */
@@ -391,7 +397,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         };
         $entry['function'] = $wrapper;
         $key = ABJ_404_Solution_HookInstrumentationRegistration::key($hook, $priority, $id);
-        $this->registrations[$key] = array(
+        $this->registry->add($key, array(
             'mode' => 'wrapper',
             'hook' => $hook,
             'priority' => $priority,
@@ -399,7 +405,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             'id' => $id,
             'original' => $callback,
             'wrapper' => $wrapper,
-        );
+        ));
         return $entry;
     }
 
@@ -444,7 +450,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
         $result[$beforeId] = array('function' => $before, 'accepted_args' => 1);
         $result[$id] = $entry;
         $key = ABJ_404_Solution_HookInstrumentationRegistration::key($hook, $priority, $id);
-        $this->registrations[$key] = array(
+        $this->registry->add($key, array(
             'mode' => 'marker',
             'hook' => $hook,
             'priority' => $priority,
@@ -453,7 +459,7 @@ final class ABJ_404_Solution_HookCallbackInstrumenter {
             'original' => $callback,
             'before_id' => $beforeId,
             'before' => $before,
-        );
+        ));
     }
 
     /**

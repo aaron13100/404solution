@@ -58,6 +58,19 @@ final class ABJ_404_Solution_DecisiveRecordRenderFamilies {
                 ),
                 'sentinel' => null,
             ),
+            // Template I/O is the one family whose volume follows the rendered
+            // row count, so it spends a per-request journal budget and
+            // announces the rest on the active-operations channel. This record
+            // is what tells a support reader that the journalled reads are the
+            // first N and not all of them. Conditional: a small table never
+            // reaches the budget and never emits it.
+            'template_file_operation_capped' => array(
+                'emitter' => 'ABJ_404_Solution_TemplateFileReadTracer',
+                'events' => array('template_file_operation_capped'),
+                'presence' => $conditional,
+                'reserve' => null,
+                'sentinel' => 'template_file_operation_capped.max_records',
+            ),
             'routine_log_operation' => array(
                 'emitter' => 'ABJ_404_Solution_RoutineLogTracer',
                 'events' => array(

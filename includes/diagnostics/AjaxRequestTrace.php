@@ -65,10 +65,7 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
      */
     public static function start(array $context): ?self {
         try {
-            $directory = function_exists('abj404_getUploadsDir') ? abj404_getUploadsDir() : '';
-            if (function_exists('apply_filters')) {
-                $directory = (string)apply_filters('abj404_ajax_trace_directory', $directory, $context);
-            }
+            $directory = ABJ_404_Solution_DiagnosticDirectoryResolver::resolve($context);
             if ($directory === '') {
                 self::reportStaticFailure('AJAX trace uploads directory is unavailable.');
                 return null;
@@ -77,7 +74,7 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
                 self::reportStaticFailure('AJAX trace directory could not be created: ' . $directory);
                 return null;
             }
-            $trace = new self($context, rtrim($directory, '/\\') . DIRECTORY_SEPARATOR, abj_clock());
+            $trace = new self($context, $directory, abj_clock());
             $trace->journal->recoverAbandoned();
             // Handler-entry and response-time sentinels preserve evidence if one
             // shutdown mechanism is skipped. The tracer brackets WordPress's
