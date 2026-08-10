@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/NGramRebuildProgressState.php';
 require_once __DIR__ . '/NGramRescheduleFailureReport.php';
 require_once __DIR__ . '/NGramRebuildDrain.php';
+require_once __DIR__ . '/NGramRebuildRetryPolicy.php';
 
 /**
  * Runs the N-gram cache rebuild: one bounded chunk of batches per WP-Cron
@@ -71,6 +72,15 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
     /** @var ABJ_404_Solution_NGramRescheduleFailureReport */
     private $rescheduleFailureReport;
 
+    /**
+     * Owns the whole answer to "when, and whether, does the chain come back
+     * after a failed tick". This runner decides WHAT happened; it does not
+     * decide what a failure is worth waiting for.
+     *
+     * @var ABJ_404_Solution_NGramRebuildRetryPolicy
+     */
+    private $retryPolicy;
+
     /** @var ABJ_404_Solution_NetworkSitesRepository|null Built on first use. */
     private $networkSites = null;
 
@@ -80,9 +90,11 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_NGramNetworkOptionStore $optionStore
      * @param ABJ_404_Solution_CronScheduler|null $cronScheduler
+     * @param ABJ_404_Solution_NGramRebuildRetryPolicy|null $retryPolicy Defaults to
+     *        the shipped policy; supplied by tests that pin the jitter window.
      * @throws InvalidArgumentException When $rebuilder cannot rebuild.
      */
-    public function __construct($dbCore, $rebuilder, $logger, $optionStore, ?ABJ_404_Solution_CronScheduler $cronScheduler = null) {
+    public function __construct($dbCore, $rebuilder, $logger, $optionStore, ?ABJ_404_Solution_CronScheduler $cronScheduler = null, ?ABJ_404_Solution_NGramRebuildRetryPolicy $retryPolicy = null) {
         // Reject a rebuilder that cannot rebuild HERE, where the wiring mistake
         // actually is. Accepting anything and only checking three dispatch
         // layers down turned a container misconfiguration into a batch failure
@@ -104,6 +116,9 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             : abj_cron_scheduler();
         $this->rescheduleFailureReport = new ABJ_404_Solution_NGramRescheduleFailureReport(
             $this->dbCore, $this->cronScheduler, $this->progress, $this->logger);
+        $this->retryPolicy = $retryPolicy instanceof ABJ_404_Solution_NGramRebuildRetryPolicy
+            ? $retryPolicy
+            : new ABJ_404_Solution_NGramRebuildRetryPolicy();
     }
 
     /**
@@ -160,6 +175,51 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
             $this->rescheduleFailureReport->report(
                 self::REBUILD_CRON_HOOK, $this->progress->cursor(), $progress);
         }
+    }
+
+    /**
+     * Arm the chain's next link at the cadence this tick earned, or report why
+     * it is not being armed at all.
+     *
+     * Every reschedule that follows a drain or a probe goes through here, which
+     * is the point: the delay used to be the literal 10 written out at four
+     * separate call sites, so there was no single place that could be taught to
+     * back off, and nothing anywhere asked whether the failure was one that
+     * retrying could fix.
+     *
+     * Two inputs, deliberately separate. The CADENCE comes from the consecutive
+     * failure count, so a tick that succeeded runs at the base interval however
+     * bad the last hour was. Whether to re-arm AT ALL comes from the failure
+     * text, so a statement the server has already rejected on its own terms is
+     * surfaced once instead of re-run until the failure budget runs out.
+     *
+     * A chain that is not re-armed is not a dead rebuild: the cache stays
+     * honestly uninitialized, and the next 404, daily reconcile or admin
+     * rebuild re-arms it through
+     * {@see ABJ_404_Solution_NGramCacheRebuildScheduler}.
+     *
+     * @param string|null $failureContext What stopped this tick, or null when nothing did.
+     * @param array<int, mixed> $args Cron arguments for the next link.
+     * @param float $progress Percent complete, for the refusal report.
+     * @return void
+     */
+    private function rescheduleNextLink($failureContext, array $args, float $progress): void {
+        $failureText = is_string($failureContext) ? $failureContext : '';
+
+        if ($failureText !== '' && !$this->retryPolicy->isWorthRetrying($failureText)) {
+            $this->logger->errorMessage(
+                'N-gram cache rebuild stopped, because retrying cannot fix this: ' . $failureText
+                . ' The cache is left uninitialized so a later rebuild can resume it once the '
+                . 'underlying problem is corrected.'
+            );
+            return;
+        }
+
+        $this->rescheduleChain(
+            $this->retryPolicy->secondsUntilNextAttempt($this->progress->consecutiveFailures()),
+            $args,
+            $progress
+        );
     }
 
     /**
@@ -234,10 +294,15 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
         if (!$this->progress->networkWalkStarted()) {
             $liveCount = $this->networkSites()->countSites();
             if ($liveCount === null) {
-                $this->recordBatchFailure(
-                    'N-gram rebuild could not count the sites in this network; leaving the walk unstarted.'
-                );
-                $this->rescheduleChain(10, array(), 0.0);
+                // The count reports only that it could not be read, not WHY, so
+                // there is no driver text to classify here and this failure is
+                // always treated as retryable. That is the safe direction: the
+                // consecutive-failure budget still stops the chain, it just
+                // costs a few backed-off probes to get there instead of one.
+                $failure = 'N-gram rebuild could not count the sites in this network; leaving the '
+                    . 'walk unstarted.';
+                $this->recordBatchFailure($failure);
+                $this->rescheduleNextLink($failure, array(), 0.0);
                 return;
             }
             $this->progress->beginNetworkWalk($liveCount);
@@ -261,16 +326,21 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
 
         if ($nextSite->isUnreadable()) {
             // Could not ASK the network, which is not the same as the network
-            // having ENDED. The walk keeps its cursor and retries; recording
-            // completion here is what published a network as rebuilt after
-            // draining none of it.
-            $this->recordBatchFailure(sprintf(
+            // having ENDED. The walk keeps its cursor either way (whether the
+            // retry policy comes back for it or not); recording completion
+            // here is what published a network as rebuilt after draining none
+            // of it.
+            $failure = sprintf(
                 'N-gram rebuild could not read the site after %d in this network (%s); '
-                . 'holding the walk where it is so the next tick retries it.',
+                . 'holding the walk where it is rather than recording the network as finished.',
                 $lastSiteId,
                 $nextSite->reason()
-            ));
-            $this->rescheduleChain(10, array(), 0.0);
+            );
+            $this->recordBatchFailure($failure);
+            // The reason carries the driver's own text, so a site table that
+            // does not exist is distinguishable here from one that is briefly
+            // unreachable, and only the second earns another probe.
+            $this->rescheduleNextLink($failure, array(), 0.0);
             return;
         }
 
@@ -297,6 +367,10 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
                     "Site %d has no pages. Moving to next site. Progress: %d of ~%d sites completed.",
                     $currentSiteId, $completedSites + 1, $totalSites
                 ));
+                // Deliberately immediate, and deliberately NOT through the
+                // retry policy: nothing failed here, this tick simply had no
+                // work, and a network of empty sites should be walked off in
+                // one burst rather than one cadence interval per empty site.
                 $this->rescheduleChain(0, array(), 100.0);
                 return;
             }
@@ -323,11 +397,14 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
                     "Site %d complete! Progress: %d of ~%d sites completed.",
                     $currentSiteId, $completedSites + 1, $totalSites
                 ));
-            } else if (!$outcome['threw'] && $outcome['rowsFailed'] === 0) {
+            } else if ($outcome['failureContext'] === null) {
+                // Rebuilt every row it touched, just not the last of them: a
+                // success that has not finished yet, and success is what puts
+                // the retry curve back to the base cadence.
                 $this->progress->clearFailures();
             }
 
-            $this->rescheduleChain(10, array(), $outcome['percent']);
+            $this->rescheduleNextLink($outcome['failureContext'], array(), $outcome['percent']);
         } finally {
             restore_current_blog();
         }
@@ -364,7 +441,14 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
         // beforehand. Marking it initialized here is what published an empty or
         // partial cache as fully built, with nothing left to re-arm a rebuild.
         if (!ABJ_404_Solution_NGramRebuildDrain::isClean($outcome, $totalPages)) {
-            $this->rescheduleChain(10, [$outcome['offset']], $outcome['percent']);
+            if ($outcome['failureContext'] === null) {
+                // Same rule as the multisite path: a tick that rebuilt every
+                // row it touched is a success, and success resets the backoff.
+                // Without this the single-site chain kept an old outage's
+                // pacing for the whole remainder of a healthy rebuild.
+                $this->progress->clearFailures();
+            }
+            $this->rescheduleNextLink($outcome['failureContext'], [$outcome['offset']], $outcome['percent']);
             return;
         }
 

@@ -124,7 +124,8 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
      * Two probes are needed because WP-Cron identifies an event by hook AND
      * arguments: the first tick of a chain (and every multisite reschedule) is
      * enqueued with no arguments, while a single-site chain in flight
-     * reschedules itself as scheduleSingle($hook, 10, [$offset]). A no-args
+     * reschedules itself as scheduleSingle($hook, <retry delay>, [$offset]) --
+     * the delay varies with the chain's backoff, the arguments do not. A no-args
      * probe alone cannot see an in-flight chain, so it would report every
      * healthy mid-walk rebuild as unarmed and spawn a second chain beside it.
      *

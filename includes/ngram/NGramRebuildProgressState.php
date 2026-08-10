@@ -324,6 +324,20 @@ class ABJ_404_Solution_NGramRebuildProgressState {
         return $failures;
     }
 
+    /**
+     * Failing ticks in a row, 0 on a healthy chain.
+     *
+     * Exposed as a reader because the retry cadence is a function of it:
+     * {@see ABJ_404_Solution_NGramRebuildRetryPolicy} answers "how long until
+     * the next attempt" from this number, so the count and the delay cannot
+     * disagree about how far into an outage the chain is.
+     *
+     * @return int
+     */
+    public function consecutiveFailures(): int {
+        return max(0, $this->readInt(self::OPTION_CONSECUTIVE_FAILURES));
+    }
+
     /** @return void */
     public function clearFailures(): void {
         $this->optionStore->updateOption(self::OPTION_CONSECUTIVE_FAILURES, 0);
