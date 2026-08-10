@@ -169,6 +169,44 @@ class ABJ_404_Solution_NGramRebuildDrain {
     }
 
     /**
+     * What stopped this drain, as text, or '' when nothing did.
+     *
+     * Kept here, beside the method that writes the field, because the
+     * orchestrator had grown three different readings of it: `=== null` to
+     * decide whether the tick counted as a success, `is_string()` to decide
+     * whether to ask the retry policy about it, and `is_string() && !== ''` to
+     * decide whether to record it against the consecutive-failure budget. Three
+     * readings of one field is three chances to disagree, and the two that test
+     * the TYPE disagree with the one that tests for null: they answer "nothing
+     * failed" for a value that is not null.
+     *
+     * NULL, and only null, is the absence of a failure. Anything else is a
+     * failure, and one whose description cannot be read says exactly that
+     * rather than disappearing -- dropping it would leave the tick unrecorded
+     * against the budget that stops the chain AND unmentioned in the log, so
+     * the rebuild would re-arm at the base cadence indefinitely with nothing
+     * anywhere saying why.
+     *
+     * @param array{failureContext?: mixed} $outcome
+     * @return string Empty only when the drain reported no failure at all.
+     */
+    public static function failureTextOf(array $outcome): string {
+        $failureContext = $outcome['failureContext'] ?? null;
+        if ($failureContext === null) {
+            return '';
+        }
+        if (is_string($failureContext) && $failureContext !== '') {
+            return $failureContext;
+        }
+        // Unclassifiable by the retry policy, which reads driver text, so this
+        // is treated as retryable -- the safe direction: the consecutive-failure
+        // budget still ends the chain, it just costs a few backed-off ticks to
+        // get there instead of one.
+        return 'N-gram rebuild stopped for a reason it could not describe (got '
+            . gettype($failureContext) . ').';
+    }
+
+    /**
      * Rebuild one batch and return its stats.
      *
      * A rebuilder that does not report a processed count is a broken

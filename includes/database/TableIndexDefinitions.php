@@ -10,9 +10,13 @@ if (!defined('ABSPATH')) {
  * was read from the live engine (SHOW INDEX) or parsed out of one of the
  * plugin's create*Table.sql templates, so the two can actually be compared.
  *
- * This module owns the live-engine reader: the SHOW INDEX probe, and the
- * normalization of whatever the driver reported into a definition. Its two
- * neighbours own the other halves of the picture. Turning DDL SOURCE TEXT into
+ * This module owns the live-engine side: the SHOW INDEX probe, and the folding
+ * of the rows it returns into per-index definitions under the describability
+ * invariant below. What one ROW said, field by field, is a different job --
+ * coping with the case its keys arrive in and the several spellings each engine
+ * uses for the same number -- and lives in
+ * {@see ABJ_404_Solution_ShowIndexRowReader}. Its two neighbours own the other
+ * halves of the picture. Turning DDL SOURCE TEXT into
  * a spec is a regex parser over SQL rather than a normalization of driver
  * metadata, and lives in {@see ABJ_404_Solution_CreateTableIndexParser};
  * reducing either representation to a comparable signature, and deciding
@@ -94,14 +98,14 @@ class ABJ_404_Solution_TableIndexDefinitions {
             // rebuilt.
             return null;
         }
-        $result = $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $quotedTableName,
+        $showIndexResult = $this->dbCore->queryAndGetResults("SHOW INDEX FROM " . $quotedTableName,
             array('log_errors' => false));
-        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
-            ? (string)$result['last_error'] : '';
-        if ($lastError !== '' || !is_array($result['rows'] ?? null)) {
+        $lastError = isset($showIndexResult['last_error']) && is_scalar($showIndexResult['last_error'])
+            ? (string)$showIndexResult['last_error'] : '';
+        if ($lastError !== '' || !is_array($showIndexResult['rows'] ?? null)) {
             return null;
         }
-        return self::fromShowIndexRows(array_values($result['rows']));
+        return self::fromShowIndexRows(array_values($showIndexResult['rows']));
     }
 
     /**
@@ -161,10 +165,12 @@ class ABJ_404_Solution_TableIndexDefinitions {
     /**
      * Assemble SHOW INDEX rows into per-index definitions.
      *
-     * Split from readLive() so the row-shape normalization is exercisable
-     * against captured driver output (the row key case, and whether Sub_part
-     * arrives as null / '' / '0' / '190', differ across drivers and engines)
-     * without a live server.
+     * Split from readLive() so the assembly is exercisable against captured
+     * driver output without a live server, which is what lets the whole
+     * engine-variance matrix be tested at all: the row key case, and whether
+     * Sub_part arrives as null / '' / '0' / '190', differ across drivers and
+     * engines, and each row is read through
+     * {@see ABJ_404_Solution_ShowIndexRowReader} before it gets here.
      *
      * Returns NULL when a row cannot be read at all, which is a failed probe
      * rather than a description of the table -- the same "unknown, not empty"
@@ -188,7 +194,7 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 // failed instead.
                 return null;
             }
-            $fields = self::lowercaseKeys($row);
+            $fields = ABJ_404_Solution_ShowIndexRowReader::normalizedFields($row);
             $name = isset($fields['key_name']) && is_scalar($fields['key_name'])
                 ? (string)$fields['key_name'] : '';
             $column = isset($fields['column_name']) && is_scalar($fields['column_name'])
@@ -217,7 +223,7 @@ class ABJ_404_Solution_TableIndexDefinitions {
             // rewriting the index -- destruction over metadata nobody read.
             // Rows that contradict each other describe two different indexes,
             // so taking the first one's word for it picks one at random.
-            $reportedUnique = self::readUniqueFlag($fields);
+            $reportedUnique = ABJ_404_Solution_ShowIndexRowReader::readUniqueFlag($fields);
             if ($reportedUnique === null
                     || (isset($uniqueReported[$key]) && $uniqueReported[$key] !== $reportedUnique)) {
                 $opaque[$key] = true;
@@ -240,7 +246,7 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 $opaque[$key] = true;
                 continue;
             }
-            $placement = self::readColumnPlacement($fields, $column);
+            $placement = ABJ_404_Solution_ShowIndexRowReader::readColumnPlacement($fields, $column);
             if ($placement === null) {
                 $opaque[$key] = true;
                 continue;
@@ -263,6 +269,17 @@ class ABJ_404_Solution_TableIndexDefinitions {
         $definitions = array();
         foreach ($bySeq as $key => $columns) {
             ksort($columns);
+            // SHOW INDEX numbers an index's columns 1..n, so a missing number
+            // is a row that never ARRIVED -- a truncated result, a row lost
+            // between server and client -- rather than one this version could
+            // not read. Nothing above catches that: every skip path marks the
+            // index opaque, but a row that was never delivered was never
+            // skipped, so the flag stays clean. What is left is a SUBSET of the
+            // index's columns in an order the index does not have, and a wrong
+            // order compares as drift exactly as a wrong column does.
+            // array_values() below discards the numbers, so this is the last
+            // point at which the gap can be seen at all.
+            $positionsComplete = array_keys($columns) === range(1, count($columns));
             $definitions[$key] = array(
                 'name' => $names[$key],
                 'columns' => array_values($columns),
@@ -278,79 +295,11 @@ class ABJ_404_Solution_TableIndexDefinitions {
                 // of an index that cannot exist, and the invariant that such a
                 // thing is never handed out as comparable should not depend on
                 // a future skip path remembering to set the flag.
-                'describable' => !isset($opaque[$key]) && count($columns) > 0,
+                'describable' => !isset($opaque[$key]) && count($columns) > 0
+                    && $positionsComplete,
             );
         }
         return $definitions;
-    }
-
-    /**
-     * The uniqueness the engine reported for one index row, or null when it did
-     * not report it in a form this version can read.
-     *
-     * Non_unique is 0 for a unique index and 1 otherwise. Anything else -- the
-     * field absent, an array or object where a flag was expected, a word, or a
-     * number outside that two-value domain -- is metadata this version does not
-     * understand. Reading it as a number is not enough on its own: a non-numeric
-     * string casts to integer 0, and so does 0.5, and 0 is the value that means
-     * UNIQUE, so "no" or "0.5" would otherwise read as a confident "this index
-     * is unique" and invite a UNIQUE rebuild on a table that has duplicate rows.
-     *
-     * @param array<string, mixed> $fields Lowercased-key SHOW INDEX row.
-     * @return bool|null
-     */
-    private static function readUniqueFlag(array $fields): ?bool {
-        if (!isset($fields['non_unique'])) {
-            return null;
-        }
-        $flag = self::readExactInteger($fields['non_unique'], 0);
-        if ($flag === null || $flag > 1) {
-            return null;
-        }
-        return $flag === 0;
-    }
-
-    /**
-     * Where one SHOW INDEX row places its column, or NULL when this version
-     * cannot read the placement.
-     *
-     * The row-level counterpart to {@see readUniqueFlag()}: that one answers
-     * what a row says about its index's uniqueness, this one answers what it
-     * says about its columns. Both return NULL for "the engine did not tell us
-     * in a form we understand", and both leave the caller to record the index
-     * as present but undescribable.
-     *
-     * Seq_in_index IS the column order, and the order is what the signature
-     * comparison is FOR. Inventing one from arrival order when the engine did
-     * not report it produces a definition that looks authoritative and compares
-     * as drift against a DDL whose real order differs -- a needless rewrite of a
-     * healthy index on a large table.
-     *
-     * A Sub_part we cannot read is likewise not "no prefix". Treating it as one
-     * compares unequal to a DDL that DOES carry a prefix, which reports drift
-     * and rebuilds a healthy index.
-     *
-     * @param array<string, mixed> $fields Lowercased-key SHOW INDEX row.
-     * @param string $column Non-empty column name already read from the row.
-     * @return array{position: int, entry: array{column: string, prefix: int|null}}|null
-     */
-    private static function readColumnPlacement(array $fields, string $column): ?array {
-        $position = isset($fields['seq_in_index'])
-            ? self::readExactInteger($fields['seq_in_index'], 1) : null;
-        if ($position === null) {
-            return null;
-        }
-        $prefix = self::readPrefix($fields['sub_part'] ?? null);
-        if (!$prefix['readable']) {
-            return null;
-        }
-        return array(
-            'position' => $position,
-            'entry' => array(
-                'column' => strtolower($column),
-                'prefix' => $prefix['prefix'],
-            ),
-        );
     }
 
     /**
@@ -361,13 +310,24 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * not contain the column the sort needs, in which case ORDER BY on it
      * filesorts the whole partition.
      *
-     * @param array{columns?: array<int, array{column: string, prefix: int|null}>} $definition
+     * @param array{columns?: array<int, array{column: string, prefix: int|null}>, describable?: bool} $definition
      * @param string $column
      * @return bool
      */
     public static function containsColumn(array $definition, string $column): bool {
         $needle = strtolower($column);
         if ($needle === '') {
+            return false;
+        }
+        if (!self::isDescribable($definition)) {
+            // The column list of an undescribable index is a SUBSET of its
+            // columns -- a row this version could not read, or one that never
+            // arrived, is simply absent from it. The sort-readiness gate reads
+            // a yes here as proof the index can serve an ORDER BY, and a wrong
+            // yes tells the read path a sort is index-ordered while it
+            // filesorts the whole captured partition. No is the same fallback
+            // that gate already takes when the probe itself is unreadable, and
+            // deciding it here means no future caller has to remember to.
             return false;
         }
         $columns = isset($definition['columns']) && is_array($definition['columns'])
@@ -401,99 +361,4 @@ class ABJ_404_Solution_TableIndexDefinitions {
         return implode(', ', $parts);
     }
 
-    /**
-     * Lowercase a metadata row's keys so field lookup is case-insensitive
-     * (defensive philosophy #5: drivers return SHOW INDEX / information_schema
-     * column names in varying cases).
-     *
-     * @param array<string|int, mixed> $row
-     * @return array<string, mixed>
-     */
-    private static function lowercaseKeys(array $row): array {
-        $lowered = array();
-        foreach ($row as $key => $value) {
-            $lowered[strtolower((string)$key)] = $value;
-        }
-        return $lowered;
-    }
-
-    /**
-     * Read a reported Sub_part as either "indexes the whole column" or a prefix
-     * length, and say whether it could be read at all.
-     *
-     * Deciding readability and producing the value used to be two methods, and
-     * they disagreed: the gate accepted every numeric value, then the normalizer
-     * turned a negative one into "no prefix" and truncated a fractional one. A
-     * value the gate calls readable and the normalizer silently changes is the
-     * whole defect, so there is now one reader and the two answers come out of
-     * it together.
-     *
-     * NULL, an empty string and 0 all legitimately mean "indexes the whole
-     * column". A prefix length is a whole number of characters, so a fractional
-     * or negative one is metadata this version does not understand, and must
-     * not be flattened into "no prefix" or truncated toward one.
-     *
-     * @param mixed $subPart
-     * @return array{readable: bool, prefix: int|null}
-     */
-    private static function readPrefix($subPart): array {
-        if ($subPart === null) {
-            return array('readable' => true, 'prefix' => null);
-        }
-        if (!is_scalar($subPart) || is_bool($subPart)) {
-            return array('readable' => false, 'prefix' => null);
-        }
-        if (trim((string)$subPart) === '') {
-            return array('readable' => true, 'prefix' => null);
-        }
-        $length = self::readExactInteger($subPart, 0);
-        if ($length === null) {
-            return array('readable' => false, 'prefix' => null);
-        }
-        return array('readable' => true, 'prefix' => $length === 0 ? null : $length);
-    }
-
-    /**
-     * The whole number a metadata field reports, or NULL when the value is not
-     * an exact integer at or above the smallest one its domain allows.
-     *
-     * Every SHOW INDEX field this class reads is a whole number over a known
-     * range -- a column position from 1, a prefix length from 0, a uniqueness
-     * flag of 0 or 1 -- and every one of them was previously admitted by
-     * is_numeric() and then cast with (int). That pair accepts values it cannot
-     * represent and answers with a confident wrong one: '1.5' becomes 1, '-1'
-     * becomes a position ahead of the first column, '0.5' becomes the 0 that
-     * means UNIQUE. The comparison those values feed answers a difference with
-     * destructive DDL, so a value that does not survive the round trip is not a
-     * value this version can read.
-     *
-     * Booleans are refused rather than cast: no engine reports one, and (string)
-     * renders true as '1' while rendering false as '', so accepting them would
-     * read one of the two as a confident flag and the other as absent.
-     *
-     * @param mixed $value
-     * @param int $minimum Smallest value the field's documented domain allows.
-     * @return int|null
-     */
-    private static function readExactInteger($value, int $minimum): ?int {
-        if (!is_scalar($value) || is_bool($value)) {
-            return null;
-        }
-        $text = trim((string)$value);
-        if ($text === '' || !is_numeric($text)) {
-            return null;
-        }
-        $number = $text + 0;
-        if (is_float($number)) {
-            // Fractional, infinite, or past the range an int can hold: all
-            // three are values (int) would silently replace with a different
-            // one.
-            if (!is_finite($number) || floor($number) !== $number
-                    || $number < (float)PHP_INT_MIN || $number > (float)PHP_INT_MAX) {
-                return null;
-            }
-        }
-        $integer = (int)$number;
-        return $integer < $minimum ? null : $integer;
-    }
 }
