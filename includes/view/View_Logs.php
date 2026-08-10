@@ -70,12 +70,18 @@ class ABJ_404_Solution_View_Logs extends ABJ_404_Solution_ViewComponent {
     }
 
     /**
+     * The pagination strip for one subpage.
+     *
+     * There is deliberately no top/bottom or show-filter argument: the strip
+     * renders the same markup wherever it is placed, and an argument that
+     * cannot change the output invites callers to render it once per
+     * placement and pay the row-count read each time.
+     *
      * @param string $sub
-     * @param bool $showSearchFilter Preserved for backward compatibility; pagination strips no longer render filters.
      * @param array<string, mixed> $tableOptionOverrides Internal per-request read options.
      * @return string
      */
-    function getPaginationLinks($sub, $showSearchFilter = true, array $tableOptionOverrides = array()): string {
+    function getPaginationLinks($sub, array $tableOptionOverrides = array()): string {
         return $this->paginationLinks()->render((string)$sub, $tableOptionOverrides);
     }
 

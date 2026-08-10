@@ -95,7 +95,7 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed getHeaderSortState($tableOptions, $orderby, $preferDescOnFirstClick = false)
  * @method mixed getMigrateFromPluginMarkup()
  * @method mixed getOptionsWithDefaults()
- * @method string getPaginationLinks($sub, $showSearchFilter = true, array<string, mixed> $tableOptionOverrides = array())
+ * @method string getPaginationLinks($sub, array<string, mixed> $tableOptionOverrides = array())
  * @method mixed getSignatureFieldsForSubpage($sub, $row)
  * @method mixed getSubSubSub($sub)
  * @method mixed getSuggestedDestination(string $url, array<mixed> $options)

@@ -1,7 +1,7 @@
 /**
  * Stage diagnostics for the admin table reads.
  *
- * Maps server-emitted stage codes (e.g. table_redirects, paginationLinksTop)
+ * Maps server-emitted stage codes (e.g. table_redirects, paginationLinks)
  * to UI-friendly diagnostic objects with queryLabel + whatsHappening + stageNumber.
  * The live AJAX failure notice renders text from this lookup, so a missed
  * mapping shows up to the admin as "(stage ?, unknown)".
@@ -38,15 +38,14 @@ function abj404AjaxStageDiagnostics(stage, subpage) {
             whatsHappening: 'Loading Logs table rows',
             stageNumber: 1
         },
-        paginationLinksTop: {
-            queryLabel: 'getPaginationLinks(top) -> read top pagination count from wp_abj404_redirects (single-table live read)',
-            whatsHappening: 'Rendering top pagination links',
+        // One stage, not two: the server renders the strip once and sends the
+        // same markup for both the top and bottom slots. The retired
+        // paginationLinksTop / paginationLinksBottom codes fall through to the
+        // subpage fallback like any other removed stage.
+        paginationLinks: {
+            queryLabel: 'getPaginationLinks() -> read pagination count from wp_abj404_redirects (single-table live read)',
+            whatsHappening: 'Rendering pagination links',
             stageNumber: 3
-        },
-        paginationLinksBottom: {
-            queryLabel: 'getPaginationLinks(bottom) -> read bottom pagination count from wp_abj404_redirects (single-table live read)',
-            whatsHappening: 'Rendering bottom pagination links',
-            stageNumber: 4
         },
         table_cache_rows: {
             queryLabel: 'getRedirectsForView',

@@ -221,6 +221,15 @@ class ABJ_404_Solution_AdminTableResponseParts {
     }
 
     /**
+     * The pagination strip, for both slots.
+     *
+     * The response carries two keys because the page has two strips, above
+     * and below the table. It does NOT carry two renders: the renderer takes
+     * no top/bottom argument and reads the same row count either way, so a
+     * per-slot render can only reproduce the first one -- at the price of a
+     * second count query and a second read of paginationLinks.html on every
+     * admin table request, on every tab, for every user.
+     *
      * @param ABJ_404_Solution_View $view
      * @param mixed $viewReadService
      * @param array<string, mixed> $context
@@ -229,19 +238,14 @@ class ABJ_404_Solution_AdminTableResponseParts {
     private static function buildPaginationPart(string $subpage, $view, $viewReadService, array &$context): array {
         unset($viewReadService);
         $queryOptions = self::queryBudgetOptions();
-        $top = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
+        $links = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
             $context,
-            'paginationLinksTop',
-            static fn() => $view->getPaginationLinks($subpage, true, $queryOptions)
-        );
-        $bottom = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
-            $context,
-            'paginationLinksBottom',
-            static fn() => $view->getPaginationLinks($subpage, false, $queryOptions)
+            'paginationLinks',
+            static fn() => $view->getPaginationLinks($subpage, $queryOptions)
         );
         return array(
-            'paginationLinksTop' => $top,
-            'paginationLinksBottom' => $bottom,
+            'paginationLinksTop' => $links,
+            'paginationLinksBottom' => $links,
         );
     }
 

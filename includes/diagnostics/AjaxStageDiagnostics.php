@@ -164,7 +164,7 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
      * later in the same request can attach the last-known stage.
      *
      * @param array<string, mixed> $context  Passed by reference; mutated in place.
-     * @param string $stage  Stage label (e.g. 'table_captured', 'paginationLinksTop').
+     * @param string $stage  Stage label (e.g. 'table_captured', 'paginationLinks').
      * @return void
      */
     public static function setStage(&$context, $stage) {
@@ -208,13 +208,15 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
                 'query_label' => 'getAdminLogsPageTable() -> getLogRecords()',
                 'what_happening' => 'Loading Logs table rows',
             ),
-            'paginationLinksTop' => array(
-                'query_label' => 'getPaginationLinks(top) -> read top pagination count from wp_abj404_redirects (single-table live read)', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Rendering top pagination links',
-            ),
-            'paginationLinksBottom' => array(
-                'query_label' => 'getPaginationLinks(bottom) -> read bottom pagination count from wp_abj404_redirects (single-table live read)', // allow-prefix-literal: display-only diagnostic label.
-                'what_happening' => 'Rendering bottom pagination links',
+            // One stage, not two: the strip is rendered once and used for
+            // both the top and bottom slots. The retired paginationLinksTop /
+            // paginationLinksBottom codes are deliberately absent rather than
+            // kept as decoders -- a label naming work the plugin no longer
+            // does is what sent the i900 diagnosis after a removed
+            // architecture for months.
+            'paginationLinks' => array(
+                'query_label' => 'getPaginationLinks() -> read pagination count from wp_abj404_redirects (single-table live read)', // allow-prefix-literal: display-only diagnostic label.
+                'what_happening' => 'Rendering pagination links',
             ),
             'table_cache_rows' => array(
                 'query_label' => 'getRedirectsForView',
