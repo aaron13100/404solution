@@ -18,6 +18,9 @@ class ABJ_404_Solution_RedirectConditionsRepository {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_TableReadinessGate */
+    private $readiness;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Logging|null $logging
@@ -25,6 +28,10 @@ class ABJ_404_Solution_RedirectConditionsRepository {
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $logging = null) {
         $this->dbCore = $dbCore;
         $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->readiness = new ABJ_404_Solution_TableReadinessGate(
+            $dbCore,
+            $dbCore->tableNameResolver()
+        );
     }
 
     /**
@@ -34,7 +41,13 @@ class ABJ_404_Solution_RedirectConditionsRepository {
     public function getRedirectConditions(int $redirectId): array {
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirect_conditions}');
 
-        if (!$this->dbCore->tableNameResolver()->tableExists($table)) {
+        // Only a table the engine ANSWERED "not there" about skips the read. A
+        // probe that could not run is not evidence of absence, and reading it
+        // as one is worse here than anywhere else in the plugin: no conditions
+        // means the redirect matches unconditionally, so a database hiccup
+        // would fire redirects their owner had explicitly narrowed -- silently,
+        // since skipping the query also skips everything that would log it.
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirect_conditions}')) {
             return [];
         }
 
@@ -80,7 +93,7 @@ class ABJ_404_Solution_RedirectConditionsRepository {
     public function saveRedirectConditions(int $redirectId, array $conditions): string {
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirect_conditions}');
 
-        if (!$this->dbCore->tableNameResolver()->tableExists($table)) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirect_conditions}')) {
             $this->logger->warn("saveRedirectConditions: conditions table missing, skipping save for redirect_id={$redirectId}.");
             return '';
         }
@@ -185,4 +198,5 @@ class ABJ_404_Solution_RedirectConditionsRepository {
             'not_equals', 'not_contains', 'cidr',
         ];
     }
+
 }

@@ -39,21 +39,66 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
         $this->queryRunner = $queryRunner;
     }
 
+    /** The engine answered, and the table is there. */
+    const TABLE_PRESENT = 'present';
+
+    /** The engine answered, and the table is not there. */
+    const TABLE_ABSENT = 'absent';
+
+    /** The engine did not answer, so presence is not known either way. */
+    const TABLE_UNKNOWN = 'unknown';
+
     /**
      * Check if a database table exists.
+     *
+     * Answers the question callers who are about to CREATE or upgrade a table
+     * ask -- "can I count on it being there?" -- so an unanswerable probe reads
+     * as false, the same as absence. Callers deciding whether to SUPPRESS a read
+     * must use {@see tableExistenceStatus()} instead, because for them the two
+     * are not the same answer at all.
      *
      * @param string $tableName Full table name to check (including prefix)
      * @return bool
      */
     public function tableExists($tableName): bool {
+        return $this->tableExistenceStatus((string)$tableName) === self::TABLE_PRESENT;
+    }
+
+    /**
+     * Whether a table is there, is not there, or could not be asked about.
+     *
+     * SHOW TABLES LIKE answers with a name or with nothing, and wpdb renders
+     * "nothing" as NULL -- the same NULL it returns when the query never ran at
+     * all. A lost connection, a revoked SHOW grant and a driver that does not
+     * speak the statement are therefore indistinguishable from a genuinely
+     * missing table unless last_error is read alongside the value, which is the
+     * pair getTableColumnNames() below already reads for the same reason.
+     *
+     * The distinction is the whole point of this method: a caller that
+     * suppresses a query on "absent" turns a transient database fault into a
+     * confident, query-free zero on screen if it also suppresses on "could not
+     * ask" -- silent by construction, because no query means nothing for the
+     * centralized error handler to log. Unknown belongs to the caller to decide,
+     * and the safe decision is to attempt the read and let that handler speak.
+     *
+     * @param string $tableName Full table name to check (including prefix)
+     * @return string One of TABLE_PRESENT, TABLE_ABSENT, TABLE_UNKNOWN.
+     */
+    public function tableExistenceStatus(string $tableName): string {
         global $wpdb;
         if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_var'))) {
-            return false;
+            return self::TABLE_UNKNOWN;
         }
-        // @utf8-audit: opt-out - tableExists receives system-generated plugin table names from DAO/core callers.
+        // @utf8-audit: opt-out - tableExistenceStatus receives system-generated plugin table names from DAO/core callers.
         // DAO-bypass-approved: metadata table existence probe for system-generated plugin table names.
         $table = $wpdb->get_var("SHOW TABLES LIKE '" . esc_sql($tableName) . "'");
-        return ($table == $tableName);
+        if ($table == $tableName) {
+            return self::TABLE_PRESENT;
+        }
+        // Read after the probe, never before: wpdb clears last_error at the
+        // start of every query, so what is there now belongs to this one.
+        $lastError = isset($wpdb->last_error) && is_string($wpdb->last_error) ? trim($wpdb->last_error) : '';
+        return $lastError === '' ? self::TABLE_ABSENT : self::TABLE_UNKNOWN;
     }
 
     /**

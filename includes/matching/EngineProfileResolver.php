@@ -169,7 +169,7 @@ class ABJ_404_Solution_EngineProfileResolver {
 
         $table = $this->getTableName();
 
-        if (!$this->tableExists($table)) {
+        if ($this->tableIsAbsent($table)) {
             $this->cachedProfiles = [];
             $this->cachedProfilesBlogId = $currentBlogId;
             return $this->cachedProfiles;
@@ -315,23 +315,36 @@ class ABJ_404_Solution_EngineProfileResolver {
     }
 
     /**
-     * Check if the engine profiles table exists in the current database.
+     * Whether the engine profiles table is known NOT to be there.
+     *
+     * SHOW TABLES LIKE returns no rows both for a table that is not there and
+     * for a probe that never ran, and the two answers must not share a code
+     * path: a false "absent" caches an empty profile set for the rest of the
+     * request, so one failed probe silently drops every custom search-engine
+     * profile out of matching (and out of the admin list) until the next
+     * request. last_error is what separates them, and an unanswerable probe
+     * lets the SELECT below run so the centralized handler reports the fault.
      *
      * @param string $table
      * @return bool
      */
-    private function tableExists(string $table): bool {
+    private function tableIsAbsent(string $table): bool {
         $queryResult = $this->dbCore()->queryAndGetResults(
             'SHOW TABLES LIKE %s',
             ['query_params' => [$table]]
         );
+        $lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error'])
+            ? trim($queryResult['last_error']) : '';
+        if ($lastError !== '' || !empty($queryResult['timed_out'])) {
+            return false;
+        }
         $rows = isset($queryResult['rows']) && is_array($queryResult['rows']) ? $queryResult['rows'] : [];
         $first = $rows[0] ?? null;
         if (!is_array($first)) {
-            return false;
+            return true;
         }
         $firstValue = reset($first);
-        return $firstValue === $table;
+        return $firstValue !== $table;
     }
 
     /**
@@ -413,7 +426,7 @@ class ABJ_404_Solution_EngineProfileResolver {
     public function getAllProfilesForAdmin(): array {
         $table = $this->getTableName();
 
-        if (!$this->tableExists($table)) {
+        if ($this->tableIsAbsent($table)) {
             return [];
         }
 

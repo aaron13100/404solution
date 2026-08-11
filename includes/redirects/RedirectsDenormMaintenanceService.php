@@ -44,6 +44,9 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var ABJ_404_Solution_TableReadinessGate */
+    private $readiness;
+
     /** @var array<string,bool>|null Memoized lowercased column-name set of the
      *  redirects table (one SHOW COLUMNS per instance), the source for both the
      *  dest_for_view presence check and the narrow sort-key presence gates. */
@@ -65,6 +68,10 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore, $logging = null) {
         $this->dbCore = $dbCore;
         $this->logger = $logging !== null ? $logging : abj_service('logging');
+        $this->readiness = new ABJ_404_Solution_TableReadinessGate(
+            $dbCore,
+            $dbCore->tableNameResolver()
+        );
     }
 
     /**
@@ -188,7 +195,7 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
      */
     private function reverseLookupRedirectIds(array $types, int $finalDestId): array {
         $typeList = implode(',', array_map('intval', $types));
-        if ($typeList === '' || !$this->redirectsTableExists()) {
+        if ($typeList === '' || $this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return array();
         }
         $result = $this->dbCore->queryAndGetResults(
@@ -329,7 +336,7 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
         if ($this->redirectsColumnSetCache !== null) {
             return $this->redirectsColumnSetCache;
         }
-        if (!$this->redirectsTableExists()) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return array();
         }
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
@@ -354,12 +361,6 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
             $this->redirectsColumnSetCache = $set;
         }
         return $set;
-    }
-
-    /** Whether the redirects table is ready for maintenance reads. */
-    private function redirectsTableExists(): bool {
-        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        return $this->dbCore->tableNameResolver()->tableExists($table);
     }
 
     /**

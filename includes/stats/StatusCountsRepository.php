@@ -51,11 +51,8 @@ class ABJ_404_Solution_StatusCountsRepository {
     /** @var ABJ_404_Solution_ViewQueryBuilder */
     private $queryBuilder;
 
-    /** @var ABJ_404_Solution_DatabaseTableNameResolver */
-    private $tableNameResolver;
-
-    /** @var bool */
-    private $redirectsTableReady = false;
+    /** @var ABJ_404_Solution_TableReadinessGate */
+    private $readiness;
 
     /**
      * @param ABJ_404_Solution_DatabaseQueryInterface $dbCore
@@ -72,7 +69,7 @@ class ABJ_404_Solution_StatusCountsRepository {
         $this->dbCore = $dbCore;
         $this->logsRepo = $logsRepo;
         $this->queryBuilder = $queryBuilder;
-        $this->tableNameResolver = $tableNameResolver;
+        $this->readiness = new ABJ_404_Solution_TableReadinessGate($dbCore, $tableNameResolver);
     }
 
     /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
@@ -107,7 +104,7 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @param int|null $timeoutSeconds Null uses the unattended budget.
      */
     public function recomputeRedirectStatusCounts(?int $timeoutSeconds = null): bool {
-        if (!$this->redirectsTableExists()) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return false;
         }
 
@@ -163,7 +160,7 @@ class ABJ_404_Solution_StatusCountsRepository {
             'eleven_to_hundred_hits' => 0,
             'over_hundred_hits' => 0,
         );
-        if (!$this->redirectsTableExists()) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return $emptyHistogram;
         }
 
@@ -219,7 +216,7 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @param int|null $timeoutSeconds Null uses the unattended budget.
      */
     public function recomputeCapturedStatusCounts(?int $timeoutSeconds = null): bool {
-        if (!$this->redirectsTableExists()) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return false;
         }
 
@@ -334,7 +331,7 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @param int|null $timeoutSeconds Null uses the unattended budget.
      */
     public function recomputeHighImpactCapturedCount(?int $timeoutSeconds = null): bool {
-        if (!$this->redirectsTableExists()) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return false;
         }
         if (!$this->logsRepo->logsHitsTableExists()) {
@@ -376,7 +373,7 @@ class ABJ_404_Solution_StatusCountsRepository {
 
     /** @return int */
     public function getCapturedCount(): int {
-        if (!$this->redirectsTableExists()) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return 0;
         }
 
@@ -404,7 +401,7 @@ class ABJ_404_Solution_StatusCountsRepository {
         if (count($types) < 1) {
             return 0;
         }
-        if (!$this->redirectsTableExists()) {
+        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
             return 0;
         }
         $filteredTypes = array_map('absint', $types);
@@ -421,23 +418,6 @@ class ABJ_404_Solution_StatusCountsRepository {
         }
         $row = is_array($rows[0] ?? null) ? $rows[0] : array();
         return isset($row['count']) && is_scalar($row['count']) ? intval($row['count']) : 0;
-    }
-
-    /**
-     * Whether aggregate reads can safely address the redirects table.
-     *
-     * A positive result is stable for the rest of the request and is cached.
-     * A negative result is deliberately re-probed so an in-request repair can
-     * make later reads available without rebuilding the service graph.
-     */
-    private function redirectsTableExists(): bool {
-        if ($this->redirectsTableReady) {
-            return true;
-        }
-
-        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
-        $this->redirectsTableReady = $this->tableNameResolver->tableExists($table);
-        return $this->redirectsTableReady;
     }
 
     /**
