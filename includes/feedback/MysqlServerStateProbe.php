@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/FeedbackTransportLog.php';
+
 /**
  * Read-only probes of the MySQL/MariaDB server's own state for the feedback
  * payload's `environment_extras` field.

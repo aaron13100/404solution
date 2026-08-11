@@ -10,6 +10,7 @@ require_once __DIR__ . '/RollupFreshnessProbe.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_HostProbes.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_PlatformFingerprint.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
+require_once __DIR__ . '/FeedbackTransportLog.php';
 require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
 
 /**

@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/FeedbackTransportLog.php';
+
 /**
  * Validates outbound report payloads against the shared server JSON Schema.
  *

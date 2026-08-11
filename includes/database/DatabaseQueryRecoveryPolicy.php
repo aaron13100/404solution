@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DatabaseInfrastructureErrorTaxonomy.php';
+
 /**
  * Post-execution recovery policy for DatabaseCore queryAndGetResults().
  *

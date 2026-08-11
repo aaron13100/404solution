@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__DIR__) . '/diagnostics/QueryBudgetInstrumentation.php';
+
 /**
  * Query diagnostics for safe source labels, latency simulation, and logging.
  *

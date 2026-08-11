@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 // for the directory that holds it. A class whose FILE is not named after it --
 // several classes sharing one file, or a file renamed without its class --
 // goes in $abj404ClassFileExceptions instead.
+// A standalone class omitted from this map must be require_once'd by every production file that loads or statically references it.
 //
 // Grepping: search the short name (`grep -rn "SpellChecker" includes/classmap.php`).
 // The fully prefixed class name appears here only for the exceptions.

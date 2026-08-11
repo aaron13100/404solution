@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/../core/PhpErrorLogFallback.php';
+require_once __DIR__ . '/../core/ServiceContainer.php';
 
 /**
  * Global service-locator helper functions.

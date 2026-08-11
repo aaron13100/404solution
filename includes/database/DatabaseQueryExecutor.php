@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DatabaseInfrastructureErrorTaxonomy.php';
+
 /**
  * Central query pipeline for the plugin's DAO layer.
  *

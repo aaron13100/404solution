@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DebugLogEvidenceBudget.php';
+require_once __DIR__ . '/FeedbackTransportLog.php';
 
 /**
  * Collects content, redirect, captured-404, log, and debug-file diagnostics

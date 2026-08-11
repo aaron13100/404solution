@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/FeedbackTransportLog.php';
+
 /**
  * Read-only probes of THIS PLUGIN's own storage shape for the feedback
  * payload's `environment_extras` field: how large each plugin table is, how

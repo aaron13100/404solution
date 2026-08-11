@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/FeedbackTransportLog.php';
+
 /**
  * Last-resort wp_mail() transport for feedback reports. Used when the HTTP
  * POST in FeedbackHttpClient fails. Routes to type-specific email body

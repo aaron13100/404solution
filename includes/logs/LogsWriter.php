@@ -4,6 +4,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/LogsEntrySanitizer.php';
+require_once __DIR__ . '/LogsRequestedUrlColumnMetadata.php';
+require_once __DIR__ . '/LogsQueueFlusher.php';
+
 /**
  * Log-write pipeline for the wp_abj404_logsv2 table.
  *

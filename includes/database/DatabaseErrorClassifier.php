@@ -3,6 +3,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DatabaseInfrastructureErrorTaxonomy.php';
+require_once __DIR__ . '/DatabaseErrorTableInspector.php';
+require_once __DIR__ . '/DatabasePrefixDiagnostics.php';
+
 /**
  * Coordinates database error response: applies notice and runtime-flag side
  * effects on top of focused error-classification collaborators.

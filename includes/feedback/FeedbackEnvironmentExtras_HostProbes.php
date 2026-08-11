@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/FeedbackTransportLog.php';
+
 /**
  * Host / runtime environment probes for the feedback payload's
  * `environment_extras` field.

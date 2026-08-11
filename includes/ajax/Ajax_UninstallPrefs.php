@@ -5,6 +5,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__DIR__) . '/feedback/FeedbackTransportLog.php';
+
 /**
  * AJAX handler for saving deactivation/uninstall preferences from the
  * deactivation modal. Persists user choices (keep redirects/logs,
