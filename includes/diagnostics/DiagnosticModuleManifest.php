@@ -79,6 +79,8 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'view-build/RedirectsDenormSchemaReadiness.php',
         // Foreground status-count cache and cron scheduling authorities.
         'stats/StatusCountsRepository.php',
+        'stats/RedirectHitCountHistogramRepository.php',
+        'stats/RedirectRowCountRepository.php',
         'view-build/StatusCountsRefreshCoordinator.php',
         'services/CronScheduler.php',
         // The per-query attribution hook, which lives with the DB layer.

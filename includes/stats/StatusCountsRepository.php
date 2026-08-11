@@ -12,7 +12,6 @@ if (!defined('ABSPATH')) {
  *   - Active/manual/auto/regex/trash counts (admin redirects list badges)
  *   - Captured/ignored/later/trash counts (admin captures list badges)
  *   - High-impact captured count (logs-joined; gated by hits table presence)
- *   - The simple total counters (`getCapturedCount`, `getRecordCount`)
  *
  * Extracted in the i805 ViewReadService decomposition. The cache TTLs and
  * key names are reused verbatim from ViewReadRuntimeState so existing
@@ -58,18 +57,18 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @param ABJ_404_Solution_DatabaseQueryInterface $dbCore
      * @param ABJ_404_Solution_LogsRepository $logsRepo
      * @param ABJ_404_Solution_ViewQueryBuilder $queryBuilder
-     * @param ABJ_404_Solution_DatabaseTableNameResolver $tableNameResolver
+     * @param ABJ_404_Solution_TableReadinessGate $readiness
      */
     public function __construct(
         ABJ_404_Solution_DatabaseQueryInterface $dbCore,
         ABJ_404_Solution_LogsRepository $logsRepo,
         ABJ_404_Solution_ViewQueryBuilder $queryBuilder,
-        ABJ_404_Solution_DatabaseTableNameResolver $tableNameResolver
+        ABJ_404_Solution_TableReadinessGate $readiness
     ) {
         $this->dbCore = $dbCore;
         $this->logsRepo = $logsRepo;
         $this->queryBuilder = $queryBuilder;
-        $this->readiness = new ABJ_404_Solution_TableReadinessGate($dbCore, $tableNameResolver);
+        $this->readiness = $readiness;
     }
 
     /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
@@ -144,49 +143,6 @@ class ABJ_404_Solution_StatusCountsRepository {
         set_transient(self::CACHE_KEY_REDIRECT_STATUS, $counts, self::STATUS_CACHE_TTL);
         set_transient(self::CACHE_KEY_REDIRECT_STATUS_LAST_KNOWN, $counts, self::STATUS_LAST_KNOWN_CACHE_TTL);
         return true;
-    }
-
-    /**
-     * Aggregate active redirect usage by denormalized hit-count bucket. The
-     * result is intentionally bucketed only; it never exports redirect URLs or
-     * per-row traffic patterns.
-     *
-     * @return array<string, int>
-     */
-    public function getRedirectHitCountHistogram(): array {
-        $emptyHistogram = array(
-            'zero_hits' => 0,
-            'one_to_ten_hits' => 0,
-            'eleven_to_hundred_hits' => 0,
-            'over_hundred_hits' => 0,
-        );
-        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
-            return $emptyHistogram;
-        }
-
-        $redirectStatuses = ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX;
-        $query = "SELECT
-            SUM(CASE WHEN disabled = 0 AND status IN (" . $redirectStatuses . ") AND logshits <= 0 THEN 1 ELSE 0 END) as zero_hits,
-            SUM(CASE WHEN disabled = 0 AND status IN (" . $redirectStatuses . ") AND logshits BETWEEN 1 AND 10 THEN 1 ELSE 0 END) as one_to_ten_hits,
-            SUM(CASE WHEN disabled = 0 AND status IN (" . $redirectStatuses . ") AND logshits BETWEEN 11 AND 100 THEN 1 ELSE 0 END) as eleven_to_hundred_hits,
-            SUM(CASE WHEN disabled = 0 AND status IN (" . $redirectStatuses . ") AND logshits > 100 THEN 1 ELSE 0 END) as over_hundred_hits
-            FROM {wp_abj404_redirects}
-            WHERE status IN (" . $redirectStatuses . ")";
-        $query = $this->dbCore->doTableNameReplacements($query);
-
-        $result = $this->dbCore->queryAndGetResults($query);
-        if (!empty($result['last_error']) || !empty($result['timed_out'])) {
-            throw new \RuntimeException('redirect hit histogram query failed');
-        }
-        $rows = is_array($result['rows']) ? $result['rows'] : array();
-        $row = !empty($rows) && is_array($rows[0] ?? null) ? $rows[0] : array();
-
-        return array(
-            'zero_hits' => self::scalarToInt($row['zero_hits'] ?? 0),
-            'one_to_ten_hits' => self::scalarToInt($row['one_to_ten_hits'] ?? 0),
-            'eleven_to_hundred_hits' => self::scalarToInt($row['eleven_to_hundred_hits'] ?? 0),
-            'over_hundred_hits' => self::scalarToInt($row['over_hundred_hits'] ?? 0),
-        );
     }
 
     /**
@@ -369,55 +325,6 @@ class ABJ_404_Solution_StatusCountsRepository {
         set_transient(self::CACHE_KEY_HIGH_IMPACT_CAPTURED_LAST_KNOWN, $count, self::STATUS_LAST_KNOWN_CACHE_TTL);
 
         return true;
-    }
-
-    /** @return int */
-    public function getCapturedCount(): int {
-        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
-            return 0;
-        }
-
-        // allow-unbounded-select: COUNT aggregate; returns a single row
-        $query = "select count(id) from {wp_abj404_redirects} where status = " . absint(ABJ404_STATUS_CAPTURED);
-        $result = $this->dbCore->queryAndGetResults($query);
-        if (!empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] != '')) {
-            return 0;
-        }
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
-        if (empty($rows)) {
-            return 0;
-        }
-        $first = $rows[0];
-        $value = is_array($first) ? reset($first) : $first;
-        return self::scalarToInt($value);
-    }
-
-    /**
-     * @param array<int, int> $types Status codes to include (passed through absint).
-     * @param int $trashed 0 for live rows, 1 for trashed rows.
-     * @return int
-     */
-    public function getRecordCount(array $types = array(), $trashed = 0): int {
-        if (count($types) < 1) {
-            return 0;
-        }
-        if ($this->readiness->isKnownAbsent('{wp_abj404_redirects}')) {
-            return 0;
-        }
-        $filteredTypes = array_map('absint', $types);
-        $typesForSQL = implode(', ', $filteredTypes);
-        // allow-unbounded-select: COUNT aggregate; returns a single row
-        $query = "select count(id) as count from {wp_abj404_redirects} where 1 and (status in ("
-            . $typesForSQL . "))"
-            . " and disabled = " . absint($trashed);
-
-        $result = $this->dbCore->queryAndGetResults($query);
-        $rows = is_array($result['rows']) ? $result['rows'] : array();
-        if (empty($rows)) {
-            return 0;
-        }
-        $row = is_array($rows[0] ?? null) ? $rows[0] : array();
-        return isset($row['count']) && is_scalar($row['count']) ? intval($row['count']) : 0;
     }
 
     /**

@@ -9,24 +9,19 @@ require_once __DIR__ . '/AdminViewReadCoordinator.php';
 /**
  * Compatibility facade for admin view-read collaborators.
  *
- * The class started as a kitchen-sink "ViewReadService" carrying status
- * counts, bulk redirect reads, logs metrics, DB metadata, and the staged
- * view-read pipeline itself. Its current responsibility is preserving the
- * public interface while delegating the actual work to focused collaborators:
+ * Preserves the public view-read interface while delegating each operation to
+ * focused collaborators:
  *
  *   - ABJ_404_Solution_AdminViewReadCoordinator -- row/count reads + snapshots
- *   - ABJ_404_Solution_StatusCountsRepository  -- aggregate status tallies
+ *   - ABJ_404_Solution_StatusCountsRepository -- cached aggregate status tallies
+ *   - ABJ_404_Solution_RedirectHitCountHistogramRepository -- telemetry buckets
+ *   - ABJ_404_Solution_RedirectRowCountRepository -- uncached row totals
  *   - ABJ_404_Solution_RedirectsBulkReader     -- non-paginated redirect reads
  *   - ABJ_404_Solution_LogsMetricsReader       -- logs row count + disk usage
  *   - ABJ_404_Solution_DatabaseMetadataReader  -- engine + post-type metadata
  *   - ABJ_404_Solution_ViewQueryBuilder        -- single-table SQL construction
  *   - ABJ_404_Solution_ViewCacheInvalidator    -- invalidation primitives
  *   - ABJ_404_Solution_ViewDiagnostics         -- failure diagnostics
- *
- * The slim-facade pattern matches NGramFilter (i804): the interface stays
- * intact so existing callers and ~80 test stubs keep working, while the
- * actual work happens in single-responsibility collaborators that the rest
- * of the codebase can also wire directly.
  *
  * @see docs/dataaccess-refactor-plan.md Phase 6.
  */
@@ -44,12 +39,6 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
-    /** @var ABJ_404_Solution_Functions */
-    private $f;
-
-    /** @var ABJ_404_Solution_Logging */
-    private $logger;
-
     // --- Collaborators ---
 
     /** @var ABJ_404_Solution_ViewQueryBuilder */
@@ -61,8 +50,11 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     /** @var ABJ_404_Solution_ViewCacheInvalidator */
     private $cacheInvalidator;
 
-    /** @var ABJ_404_Solution_StatusCountsRepository */
-    private $statusCounts;
+    /** @var ABJ_404_Solution_RedirectHitCountHistogramRepository */
+    private $redirectHitCountHistogram;
+
+    /** @var ABJ_404_Solution_RedirectRowCountRepository */
+    private $redirectRowCounts;
 
     /** @var ABJ_404_Solution_StatusCountsRefreshCoordinator */
     private $statusCountsRefreshCoordinator;
@@ -100,40 +92,52 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $logger = null
     ) {
         $this->dbCore = $dbCore;
-        $this->f = $f !== null ? $f : abj_service('functions');
-        $this->logger = $logger !== null ? $logger : abj_service('logging');
+        $functions = $f !== null ? $f : abj_service('functions');
+        $resolvedLogger = $logger !== null ? $logger : abj_service('logging');
 
         $this->diagnostics = new ABJ_404_Solution_ViewDiagnostics($dbCore);
         $this->cacheInvalidator = new ABJ_404_Solution_ViewCacheInvalidator(
             $dbCore, $redirectsRepo, $this->viewDoneFreshnessOptionName()
         );
         $this->queryBuilder = new ABJ_404_Solution_ViewQueryBuilder($dbCore);
-        $this->liveResolver = new ABJ_404_Solution_RedirectsViewLiveResolver($dbCore, $this->f);
+        $this->liveResolver = new ABJ_404_Solution_RedirectsViewLiveResolver($dbCore, $functions);
 
-        $this->statusCounts = new ABJ_404_Solution_StatusCountsRepository(
+        $readiness = new ABJ_404_Solution_TableReadinessGate(
+            $dbCore,
+            $dbCore->tableNameResolver()
+        );
+        $statusCounts = new ABJ_404_Solution_StatusCountsRepository(
             $dbCore,
             $logsRepo,
             $this->queryBuilder,
-            $dbCore->tableNameResolver()
+            $readiness
+        );
+        $this->redirectHitCountHistogram = new ABJ_404_Solution_RedirectHitCountHistogramRepository(
+            $dbCore,
+            $readiness
+        );
+        $this->redirectRowCounts = new ABJ_404_Solution_RedirectRowCountRepository(
+            $dbCore,
+            $readiness
         );
         $this->statusCountsRefreshCoordinator = new ABJ_404_Solution_StatusCountsRefreshCoordinator(
-            $this->statusCounts,
+            $statusCounts,
             new ABJ_404_Solution_StatsRefreshLock($dbCore),
-            function(string $message): void {
-                $this->logger->warn($message);
+            static function(string $message) use ($resolvedLogger): void {
+                $resolvedLogger->warn($message);
             }
         );
-        $this->redirectsBulkReader = new ABJ_404_Solution_RedirectsBulkReader($dbCore, $this->queryBuilder, $this->f);
-        $this->logsMetricsReader = new ABJ_404_Solution_LogsMetricsReader($dbCore, $logsRepo, $this->f, $this->logger);
+        $this->redirectsBulkReader = new ABJ_404_Solution_RedirectsBulkReader($dbCore, $this->queryBuilder, $functions);
+        $this->logsMetricsReader = new ABJ_404_Solution_LogsMetricsReader($dbCore, $logsRepo, $functions, $resolvedLogger);
         $this->dbMetadataReader = new ABJ_404_Solution_DatabaseMetadataReader($dbCore);
-        $this->hitsTableRebuildPolicy = new ABJ_404_Solution_HitsTableRebuildPolicy($dbCore, $logsRepo, $this->logger);
+        $this->hitsTableRebuildPolicy = new ABJ_404_Solution_HitsTableRebuildPolicy($dbCore, $logsRepo, $resolvedLogger);
         $this->adminViewReadCoordinator = new ABJ_404_Solution_AdminViewReadCoordinator(
             $dbCore,
             $this->queryBuilder,
             $this->diagnostics,
             $this->cacheInvalidator,
             $this->liveResolver,
-            $this->logger
+            $resolvedLogger
         );
     }
 
@@ -291,7 +295,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
     }
 
     // =========================================================================
-    // Delegated: StatusCountsRepository
+    // Delegated: status and row-count repositories
     // =========================================================================
 
     /**
@@ -311,7 +315,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
     /** @return array<string, int> */
     function getRedirectHitCountHistogram(): array {
-        return $this->statusCounts->getRedirectHitCountHistogram();
+        return $this->redirectHitCountHistogram->getRedirectHitCountHistogram();
     }
 
     /**
@@ -344,7 +348,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
 
     /** @return int */
     function getCapturedCount() {
-        return $this->statusCounts->getCapturedCount();
+        return $this->redirectRowCounts->getCapturedCount();
     }
 
     /**
@@ -353,7 +357,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      * @return int
      */
     function getRecordCount($types = array(), $trashed = 0) {
-        return $this->statusCounts->getRecordCount(is_array($types) ? $types : array(), $trashed);
+        return $this->redirectRowCounts->getRecordCount(is_array($types) ? $types : array(), $trashed);
     }
 
     // =========================================================================
