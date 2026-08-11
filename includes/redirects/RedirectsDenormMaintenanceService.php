@@ -188,7 +188,7 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
      */
     private function reverseLookupRedirectIds(array $types, int $finalDestId): array {
         $typeList = implode(',', array_map('intval', $types));
-        if ($typeList === '') {
+        if ($typeList === '' || !$this->redirectsTableExists()) {
             return array();
         }
         $result = $this->dbCore->queryAndGetResults(
@@ -317,7 +317,9 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
 
     /**
      * Lowercased column-name set of wp_abj404_redirects via one SHOW COLUMNS,
-     * memoized per instance. A failed/empty probe yields an empty set, so every
+     * memoized per instance after a successful non-empty probe. A failed/empty
+     * probe yields an uncached empty set, so an in-request schema repair can be
+     * observed by the next call. Every
      * presence check (dest_for_view, dest_sort_key, url_sort_key) degrades to
      * false -- the safe schema-drift fallback (skip the write / omit the UPDATE).
      *
@@ -326,6 +328,9 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
     private function redirectsColumnSet(): array {
         if ($this->redirectsColumnSetCache !== null) {
             return $this->redirectsColumnSetCache;
+        }
+        if (!$this->redirectsTableExists()) {
+            return array();
         }
         $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
         $result = $this->dbCore->queryAndGetResults(
@@ -345,8 +350,16 @@ class ABJ_404_Solution_RedirectsDenormMaintenanceService {
                 }
             }
         }
-        $this->redirectsColumnSetCache = $set;
+        if (!empty($set)) {
+            $this->redirectsColumnSetCache = $set;
+        }
         return $set;
+    }
+
+    /** Whether the redirects table is ready for maintenance reads. */
+    private function redirectsTableExists(): bool {
+        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        return $this->dbCore->tableNameResolver()->tableExists($table);
     }
 
     /**

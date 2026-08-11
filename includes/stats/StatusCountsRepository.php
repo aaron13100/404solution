@@ -51,19 +51,28 @@ class ABJ_404_Solution_StatusCountsRepository {
     /** @var ABJ_404_Solution_ViewQueryBuilder */
     private $queryBuilder;
 
+    /** @var ABJ_404_Solution_DatabaseTableNameResolver */
+    private $tableNameResolver;
+
+    /** @var bool */
+    private $redirectsTableReady = false;
+
     /**
      * @param ABJ_404_Solution_DatabaseQueryInterface $dbCore
      * @param ABJ_404_Solution_LogsRepository $logsRepo
      * @param ABJ_404_Solution_ViewQueryBuilder $queryBuilder
+     * @param ABJ_404_Solution_DatabaseTableNameResolver $tableNameResolver
      */
     public function __construct(
         ABJ_404_Solution_DatabaseQueryInterface $dbCore,
         ABJ_404_Solution_LogsRepository $logsRepo,
-        ABJ_404_Solution_ViewQueryBuilder $queryBuilder
+        ABJ_404_Solution_ViewQueryBuilder $queryBuilder,
+        ABJ_404_Solution_DatabaseTableNameResolver $tableNameResolver
     ) {
         $this->dbCore = $dbCore;
         $this->logsRepo = $logsRepo;
         $this->queryBuilder = $queryBuilder;
+        $this->tableNameResolver = $tableNameResolver;
     }
 
     /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
@@ -98,6 +107,9 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @param int|null $timeoutSeconds Null uses the unattended budget.
      */
     public function recomputeRedirectStatusCounts(?int $timeoutSeconds = null): bool {
+        if (!$this->redirectsTableExists()) {
+            return false;
+        }
 
         $query = "SELECT
             SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active_count,
@@ -145,6 +157,16 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @return array<string, int>
      */
     public function getRedirectHitCountHistogram(): array {
+        $emptyHistogram = array(
+            'zero_hits' => 0,
+            'one_to_ten_hits' => 0,
+            'eleven_to_hundred_hits' => 0,
+            'over_hundred_hits' => 0,
+        );
+        if (!$this->redirectsTableExists()) {
+            return $emptyHistogram;
+        }
+
         $redirectStatuses = ABJ404_STATUS_MANUAL . ", " . ABJ404_STATUS_AUTO . ", " . ABJ404_STATUS_REGEX;
         $query = "SELECT
             SUM(CASE WHEN disabled = 0 AND status IN (" . $redirectStatuses . ") AND logshits <= 0 THEN 1 ELSE 0 END) as zero_hits,
@@ -197,6 +219,9 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @param int|null $timeoutSeconds Null uses the unattended budget.
      */
     public function recomputeCapturedStatusCounts(?int $timeoutSeconds = null): bool {
+        if (!$this->redirectsTableExists()) {
+            return false;
+        }
 
         $query = "SELECT
             COUNT(*) as total,
@@ -309,6 +334,9 @@ class ABJ_404_Solution_StatusCountsRepository {
      * @param int|null $timeoutSeconds Null uses the unattended budget.
      */
     public function recomputeHighImpactCapturedCount(?int $timeoutSeconds = null): bool {
+        if (!$this->redirectsTableExists()) {
+            return false;
+        }
         if (!$this->logsRepo->logsHitsTableExists()) {
             $this->logsRepo->scheduleHitsTableRebuild();
             return false;
@@ -348,6 +376,10 @@ class ABJ_404_Solution_StatusCountsRepository {
 
     /** @return int */
     public function getCapturedCount(): int {
+        if (!$this->redirectsTableExists()) {
+            return 0;
+        }
+
         // allow-unbounded-select: COUNT aggregate; returns a single row
         $query = "select count(id) from {wp_abj404_redirects} where status = " . absint(ABJ404_STATUS_CAPTURED);
         $result = $this->dbCore->queryAndGetResults($query);
@@ -372,6 +404,9 @@ class ABJ_404_Solution_StatusCountsRepository {
         if (count($types) < 1) {
             return 0;
         }
+        if (!$this->redirectsTableExists()) {
+            return 0;
+        }
         $filteredTypes = array_map('absint', $types);
         $typesForSQL = implode(', ', $filteredTypes);
         // allow-unbounded-select: COUNT aggregate; returns a single row
@@ -386,6 +421,23 @@ class ABJ_404_Solution_StatusCountsRepository {
         }
         $row = is_array($rows[0] ?? null) ? $rows[0] : array();
         return isset($row['count']) && is_scalar($row['count']) ? intval($row['count']) : 0;
+    }
+
+    /**
+     * Whether aggregate reads can safely address the redirects table.
+     *
+     * A positive result is stable for the rest of the request and is cached.
+     * A negative result is deliberately re-probed so an in-request repair can
+     * make later reads available without rebuilding the service graph.
+     */
+    private function redirectsTableExists(): bool {
+        if ($this->redirectsTableReady) {
+            return true;
+        }
+
+        $table = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        $this->redirectsTableReady = $this->tableNameResolver->tableExists($table);
+        return $this->redirectsTableReady;
     }
 
     /**
