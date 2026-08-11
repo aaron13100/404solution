@@ -206,7 +206,7 @@ final class ABJ_404_Solution_DurableOperationRecorder {
     }
 
     /**
-     * Keep only the latest fixed-sink state for each operation checkpoint.
+     * Keep only the latest durable and active state for each operation identity.
      *
      * @param array<int, string> $lines
      * @return array<int, string>
@@ -226,20 +226,23 @@ final class ABJ_404_Solution_DurableOperationRecorder {
                 $latestIndexes[$requestId . '|' . $checkpointId] = $index;
             }
         }
-        if ($latestIndexes === array()) {
-            return $lines;
+        $compacted = $lines;
+        if ($latestIndexes !== array()) {
+            $keep = array_fill_keys(array_values($latestIndexes), true);
+            $compacted = array_values(array_filter(
+                $lines,
+                static function (string $line, int $index) use ($keep): bool {
+                    $record = json_decode($line, true);
+                    return !is_array($record)
+                        || ($record['event'] ?? '') !== 'durable_operation_state'
+                        || isset($keep[$index]);
+                },
+                ARRAY_FILTER_USE_BOTH
+            ));
         }
-        $keep = array_fill_keys(array_values($latestIndexes), true);
-        return array_values(array_filter(
-            $lines,
-            static function (string $line, int $index) use ($keep): bool {
-                $record = json_decode($line, true);
-                return !is_array($record)
-                    || ($record['event'] ?? '') !== 'durable_operation_state'
-                    || isset($keep[$index]);
-            },
-            ARRAY_FILTER_USE_BOTH
-        ));
+        return class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')
+            ? ABJ_404_Solution_ActiveOperationBreadcrumbs::compactSupportLines($compacted)
+            : $compacted;
     }
 
     /** Active-state path for support collection, or empty when unavailable. */

@@ -79,11 +79,6 @@ final class ABJ_404_Solution_AjaxClientReportBeaconResponder {
             ABJ_404_Solution_AjaxCheckpointLogger::resolveDirectoryPath(),
             $reportedAttemptId
         );
-        usort($active, static function (array $left, array $right): int {
-            $leftSequence = is_int($left['breadcrumb_seq'] ?? null) ? $left['breadcrumb_seq'] : 0;
-            $rightSequence = is_int($right['breadcrumb_seq'] ?? null) ? $right['breadcrumb_seq'] : 0;
-            return $leftSequence <=> $rightSequence;
-        });
         $operation = $active === array() ? array() : $active[count($active) - 1];
         $fields = array(
             'threshold_ms' => $thresholdMs,

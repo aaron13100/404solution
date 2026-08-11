@@ -5,20 +5,27 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Fixed-size, crash-safe state for operations that run after verbose caps.
+ * Bounded append-only state for operations that run after verbose caps.
  *
- * The ordinary checkpoint journal is append-only and intentionally stops
- * recording detailed query/row-operation events at a request-local ceiling.
- * This file keeps one latest state per request and boundary instead. Each
- * replacement is written to a sibling temporary file, flushed, and atomically
- * renamed, so a worker death leaves either the previous complete file or the
- * new complete file. It never leaves a deliberately truncated target.
+ * One flushed JSONL record is appended for every transition. Readers fold the
+ * stream by (request_id, boundary), keeping the latest 32 live pairs. The raw
+ * journal is capped at 1 MiB; only the writer that would cross that bound pays
+ * for an atomic compaction to the folded table.
  *
- * The caller supplies a frequent checkpoint record. This class owns the
- * bounded persistence and nothing else: which fields of a boundary may be
- * persisted at all is ABJ_404_Solution_ActiveOperationBoundaryManifest's,
- * because two consumers need that contract without ever touching this file,
- * and event semantics stay with AjaxCheckpointLogger.
+ * A worker death during append can leave a final unterminated fragment. Readers
+ * discard only that final fragment and retain the complete prefix; the next
+ * writer compacts it away before appending. A malformed terminated line still
+ * fails closed. Compaction itself writes and flushes a complete snapshot before
+ * renaming, so a death leaves either the append-only source or the complete
+ * compacted file. No deliberately truncated target is exposed.
+ *
+ * This class owns the bounded persistence contract. Boundary field privacy is
+ * owned by ABJ_404_Solution_ActiveOperationBoundaryManifest, and event semantics
+ * remain with AjaxCheckpointLogger.
+ *
+ * @phpstan-type EncodedRecord array{record: array<string, mixed>, line: string}
+ * @phpstan-type Snapshot array{ino: mixed, dev: mixed, size: int,
+ *   max_sequence: int, torn_tail: bool, records: array<int, EncodedRecord>}
  */
 final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
 
@@ -26,23 +33,19 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     const LOCK_FILE = 'abj404_ajax_active_operations.lock';
     const MAX_RECORDS = 32;
     const MAX_RECORD_BYTES = 2048;
+    const MAX_FILE_BYTES = 1048576;
     const LOCK_WAIT_TIMEOUT_US = 50000;
 
     /**
-     * The record table this process last wrote, by path, with the file identity
-     * that makes it trustworthy. See readExistingOrRemembered().
+     * Last validated fold per path. Same-inode growth is parsed from the old
+     * size, so a sibling append joins the fold before this process compacts.
      *
-     * Each entry of `records` is an encoded record: the decoded record and the
-     * exact line that persists it, bound together by encodeRecord(). See that
-     * method for why the two travel as one value.
-     *
-     * @var array<string, array{ino: mixed, dev: mixed, size: mixed, mtime: mixed,
-     *   records: array<int, array{record: array<string, mixed>, line: string}>}>
+     * @var array<string, Snapshot>
      */
     private static $rememberedTable = array();
 
     /**
-     * Replace the latest record for one request/boundary pair.
+     * Append the latest transition for one request/boundary pair.
      *
      * @param array<string, mixed> $record
      * @return array{status: string, reason: string}
@@ -59,6 +62,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                 return self::failure('directory_unavailable');
             }
 
+            $path = $directory . self::FILE;
             $lockPath = $directory . self::LOCK_FILE;
             $acquired = ABJ_404_Solution_DiagnosticAppendStream::acquireExclusive(
                 $lockPath,
@@ -73,16 +77,44 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
                     self::reportFailure('active-operation lock wait exceeded: ' . $lockPath);
                     return self::failure('lock_wait_exceeded');
                 }
-                $records = self::readExistingOrRemembered($directory . self::FILE);
-                if ($records === null) {
+                $snapshot = self::readExistingOrRemembered($path);
+                if ($snapshot === null) {
                     return self::failure('existing_file_unparseable');
                 }
-                $records = self::replaceMatchingRecord($records, $record);
-                if ($records === null) {
+
+                $record['breadcrumb_format_version'] = 2;
+                $record['breadcrumb_seq'] = $snapshot['max_sequence'] >= PHP_INT_MAX
+                    ? 1 : $snapshot['max_sequence'] + 1;
+                $encoded = self::encodeRecord($record);
+                if ($encoded === null) {
                     self::reportFailure('active-operation file contains an over-budget record.');
                     return self::failure('record_too_large');
                 }
-                return self::atomicWrite($directory, $records);
+                $payloadBytes = strlen($encoded['line']) + 1;
+                if ($snapshot['torn_tail']
+                        || $snapshot['size'] + $payloadBytes > self::MAX_FILE_BYTES) {
+                    $snapshot = self::compactFile($path, $snapshot);
+                    if ($snapshot === null) {
+                        return self::failure('compaction_failed');
+                    }
+                }
+
+                $append = ABJ_404_Solution_DiagnosticAppendStream::append(
+                    $path,
+                    $encoded['line'] . "\n"
+                );
+                if ($append['status'] !== 'complete') {
+                    unset(self::$rememberedTable[$path]);
+                    self::reportFailure('active-operation append failed: '
+                        . ($append['reason'] ?? 'unknown'));
+                    return self::failure('append_failed');
+                }
+                $snapshot['records'] = self::foldEncodedRecord($snapshot['records'], $encoded);
+                $snapshot['size'] += $payloadBytes;
+                $snapshot['max_sequence'] = $record['breadcrumb_seq'];
+                $snapshot['torn_tail'] = false;
+                self::rememberSnapshot($path, $snapshot);
+                return array('status' => 'complete', 'reason' => '');
             } finally {
                 if (ABJ_404_Solution_DiagnosticAppendStream::release($lockPath)['status'] === 'failed') {
                     self::reportFailure('active-operation lock could not be released: ' . $lockPath);
@@ -100,11 +132,7 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     }
 
     /**
-     * Return the bounded active identities for one ledger request.
-     *
-     * Atomic replacement makes a lock unnecessary for readers: they see the
-     * complete old file or the complete new file. Invalid or corrupt input
-     * fails closed because a threshold report must never invent attribution.
+     * Return the latest active identities for one ledger request.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -112,12 +140,12 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
         if (preg_match('/^[A-Za-z0-9]{8,64}$/', $requestId) !== 1) {
             return array();
         }
-        $records = self::readExisting(self::path($directory));
-        if (!is_array($records)) {
+        $snapshot = self::readSnapshot(self::path($directory));
+        if ($snapshot === null) {
             return array();
         }
         return array_values(array_filter(
-            $records,
+            array_column($snapshot['records'], 'record'),
             static function (array $record) use ($requestId): bool {
                 return ($record['request_id'] ?? null) === $requestId
                     && ($record['state'] ?? null) === 'active';
@@ -126,9 +154,48 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     }
 
     /**
-     * The record as it is allowed to be persisted: the core identity every
-     * boundary carries, plus whatever that boundary's privacy allowlist admits.
+     * Fold active-operation lines for support consumers while preserving every
+     * unrelated or malformed line for its owning policy to inspect.
      *
+     * @param array<int, string> $lines
+     * @return array<int, string>
+     */
+    public static function compactSupportLines(array $lines): array {
+        $latest = array();
+        foreach ($lines as $index => $line) {
+            $record = json_decode($line, true);
+            $key = is_array($record) ? self::recordKey($record) : '';
+            if ($key === '') {
+                continue;
+            }
+            unset($latest[$key]);
+            $latest[$key] = $index;
+            if (count($latest) > self::MAX_RECORDS) {
+                array_shift($latest);
+            }
+        }
+        if ($latest === array()) {
+            return $lines;
+        }
+        $keep = array_fill_keys(array_values($latest), true);
+        return array_values(array_filter(
+            $lines,
+            static function (string $line, int $index) use ($keep): bool {
+                $record = json_decode($line, true);
+                return !is_array($record)
+                    || self::recordKey($record) === ''
+                    || isset($keep[$index]);
+            },
+            ARRAY_FILTER_USE_BOTH
+        ));
+    }
+
+    /** Discard request-local cached state between PHPUnit request fixtures. */
+    public static function resetForTests(): void {
+        self::$rememberedTable = array();
+    }
+
+    /**
      * @param array<string, mixed> $record
      * @return array<string, mixed>
      */
@@ -176,84 +243,8 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
     }
 
     /**
-     * The current record table, re-read only when this process is not already
-     * holding the answer.
-     *
-     * WHY. Every post-cap operation replaces one slot in this file, and a
-     * plugin-heavy request makes 2,104 of them: measured on the owner's
-     * localhost on 2026-08-10 through the real table AJAX endpoint, where
-     * replace() cost 1.055 s of a 2.4 s request, roughly half of everything
-     * debug_mode added (deliverables/t_260809_224020_311/request-cost.jsonl,
-     * label recorder-attribution). Almost all of it was re-reading and
-     * re-decoding a table this process had just written itself: up to 32
-     * json_decode calls plus 32 validations, 2,104 times over.
-     *
-     * The remembered table is only trusted while the file on disk is still the
-     * exact file this process last wrote. atomicWrite() renames a fresh
-     * temporary over the target, so EVERY write, ours or a sibling request's,
-     * produces a new inode; an inode, size and mtime that all still match what
-     * we recorded after our own write means nothing has replaced it since. One
-     * stat answers that, against a read plus a full decode.
-     *
-     * Correctness is what the check protects: a sibling request's breadcrumb
-     * lives in the same table, so writing from a stale copy would erase the
-     * operation IT is inside, which is the one thing this file exists to name.
-     *
-     * @return array<int, array{record: array<string, mixed>, line: string}>|null
-     *   Null when the file on disk is unparseable, exactly as readExisting()
-     *   reports it.
-     */
-    private static function readExistingOrRemembered(string $path): ?array {
-        clearstatcache(true, $path);
-        $current = @stat($path);
-        $remembered = self::$rememberedTable[$path] ?? null;
-        if (is_array($remembered) && is_array($current)
-                && $remembered['ino'] === ($current['ino'] ?? null)
-                && $remembered['dev'] === ($current['dev'] ?? null)
-                && $remembered['size'] === ($current['size'] ?? null)
-                && $remembered['mtime'] === ($current['mtime'] ?? null)) {
-            return $remembered['records'];
-        }
-        $records = self::readExisting($path);
-        if ($records === null) {
-            return null;
-        }
-        $encoded = array();
-        foreach ($records as $record) {
-            $encodedRecord = self::encodeRecord($record);
-            if ($encodedRecord === null) {
-                // Unreachable through readExisting(), which validates every
-                // decoded record against the same byte budget. Fail closed
-                // rather than assume that stays true: a table we cannot encode
-                // is a table we cannot rewrite without losing a sibling.
-                self::reportFailure('active-operation file contains an over-budget record: ' . $path);
-                return null;
-            }
-            $encoded[] = $encodedRecord;
-        }
-        return $encoded;
-    }
-
-    /**
-     * Bind a record to the exact line that persists it.
-     *
-     * WHY THE PAIR. atomicWrite() rewrites the whole fixed-size table on every
-     * replacement, but exactly one of its 32 records has changed; re-encoding
-     * the other 31 was the largest remaining cost in a path a plugin-heavy
-     * request takes 2,120 times (566 ms of one request, measured on the owner's
-     * localhost on 2026-08-10, deliverables/t_260809_224020_311). Carrying the
-     * line beside its record lets the untouched ones be imploded as they are.
-     *
-     * The pair is what makes that safe. A cached encoding is only wrong when it
-     * outlives the record it describes, so the two are created together, here,
-     * and nothing afterwards edits one half: replaceMatchingRecord() drops and
-     * appends whole pairs, and PHP array value semantics mean no caller can
-     * reach into a pair it was handed. Drift is not guarded against, it is
-     * unrepresentable.
-     *
      * @param array<string, mixed> $record
-     * @return array{record: array<string, mixed>, line: string}|null Null when
-     *   the record does not fit its fixed per-record byte budget.
+     * @return array{record: array<string, mixed>, line: string}|null
      */
     private static function encodeRecord(array $record): ?array {
         $line = json_encode($record, JSON_UNESCAPED_SLASHES);
@@ -263,118 +254,181 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
         return array('record' => $record, 'line' => $line);
     }
 
-    /**
-     * Remember what we just wrote, so the next replacement in this request can
-     * skip the re-read. Forgotten rather than guessed at when the file cannot
-     * be stat()ed, because a wrong memory here erases a sibling's evidence.
-     *
-     * @param array<int, array{record: array<string, mixed>, line: string}> $records
-     */
-    private static function rememberWrittenTable(string $path, array $records): void {
+    /** @return Snapshot|null */
+    private static function readExistingOrRemembered(string $path): ?array {
         clearstatcache(true, $path);
-        $stat = @stat($path);
-        if (!is_array($stat)) {
-            unset(self::$rememberedTable[$path]);
-            return;
+        $current = @stat($path);
+        if (!is_array($current) || !@is_file($path)) {
+            return self::emptySnapshot();
         }
-        self::$rememberedTable[$path] = array(
-            'ino' => $stat['ino'] ?? null,
-            'dev' => $stat['dev'] ?? null,
-            'size' => $stat['size'] ?? null,
-            'mtime' => $stat['mtime'] ?? null,
-            'records' => $records,
-        );
+        $size = is_int($current['size'] ?? null) ? $current['size'] : -1;
+        if ($size < 0 || $size > self::MAX_FILE_BYTES) {
+            self::reportFailure('active-operation file exceeds its fixed byte bound: ' . $path);
+            return null;
+        }
+        $remembered = self::$rememberedTable[$path] ?? null;
+        if (is_array($remembered)
+                && $remembered['ino'] === ($current['ino'] ?? null)
+                && $remembered['dev'] === ($current['dev'] ?? null)
+                && $size >= $remembered['size']) {
+            if ($size === $remembered['size']) {
+                return $remembered;
+            }
+            return self::readSnapshot($path, $remembered['size'], $remembered);
+        }
+        return self::readSnapshot($path);
     }
 
     /**
-     * Discard the remembered table. The request-scoped reset seam, called by
-     * name from ABJ404_RequestScopedStateReset: a PHPUnit worker replays many
-     * requests in one process and deletes each one's directory, so a table
-     * remembered for a path a later test recreates must not be reused.
+     * @param Snapshot|null $base Previously validated prefix.
+     * @return Snapshot|null
      */
-    public static function resetForTests(): void {
-        self::$rememberedTable = array();
-    }
-
-    /** @return array<int, array<string, mixed>>|null */
-    private static function readExisting(string $path): ?array {
-        if (!is_file($path)) {
-            return array();
+    private static function readSnapshot(string $path, int $offset = 0, ?array $base = null): ?array {
+        if (!@is_file($path)) {
+            return self::emptySnapshot();
         }
         $handle = @fopen($path, 'rb');
         if ($handle === false) {
             self::reportFailure('active-operation file could not be read: ' . $path);
             return null;
         }
-        $records = array();
         try {
-            while (($line = @fgets($handle, self::MAX_RECORD_BYTES + 2)) !== false) {
-                if (strlen($line) > self::MAX_RECORD_BYTES + 1
-                        || count($records) >= self::MAX_RECORDS) {
-                    self::reportFailure('active-operation file exceeds its fixed bounds: ' . $path);
-                    return null;
-                }
-                $decoded = json_decode(trim($line), true);
-                if (!is_array($decoded) || self::validateRecord($decoded)['status'] !== 'complete') {
-                    self::reportFailure('active-operation file contains an unparseable record: ' . $path);
-                    return null;
-                }
-                $records[] = $decoded;
+            $stat = @fstat($handle);
+            $size = is_array($stat) && is_int($stat['size'] ?? null) ? $stat['size'] : -1;
+            if ($size < 0 || $size > self::MAX_FILE_BYTES || $offset > $size) {
+                self::reportFailure('active-operation file exceeds its fixed byte bound: ' . $path);
+                return null;
             }
+            if ($offset > 0 && @fseek($handle, $offset) !== 0) {
+                self::reportFailure('active-operation file suffix could not be read: ' . $path);
+                return null;
+            }
+            $snapshot = $base ?? self::emptySnapshot();
+            $snapshot['ino'] = is_array($stat) ? ($stat['ino'] ?? null) : null;
+            $snapshot['dev'] = is_array($stat) ? ($stat['dev'] ?? null) : null;
+            $snapshot['size'] = $size;
+            $snapshot['torn_tail'] = false;
+            while (($line = @fgets($handle, self::MAX_RECORD_BYTES + 3)) !== false) {
+                $parsed = self::parseJournalLine($line, @feof($handle), $path);
+                if ($parsed['status'] === 'torn') {
+                    $snapshot['torn_tail'] = true;
+                    break;
+                }
+                if ($parsed['status'] !== 'complete') {
+                    return null;
+                }
+                $snapshot['records'] = self::foldEncodedRecord(
+                    $snapshot['records'],
+                    $parsed['encoded']
+                );
+                $snapshot['max_sequence'] = max(
+                    $snapshot['max_sequence'],
+                    $parsed['sequence']
+                );
+            }
+            return $snapshot;
         } finally {
             @fclose($handle);
         }
-        return $records;
+    }
+
+    /** @return Snapshot */
+    private static function emptySnapshot(): array {
+        return array(
+            'ino' => null,
+            'dev' => null,
+            'size' => 0,
+            'max_sequence' => 0,
+            'torn_tail' => false,
+            'records' => array(),
+        );
     }
 
     /**
-     * Swap one boundary's slot for its replacement, keeping every other pair
-     * exactly as it was read or last written, line included.
+     * Parse one bounded journal read without letting a torn final append poison
+     * the complete prefix.
      *
-     * @param array<int, array{record: array<string, mixed>, line: string}> $records
-     * @param array<string, mixed> $replacement
-     * @return array<int, array{record: array<string, mixed>, line: string}>|null
-     *   Null when the replacement, once its sequence number is assigned, no
-     *   longer fits its fixed per-record byte budget.
+     * @return array{status: 'complete', encoded: EncodedRecord, sequence: int}
+     *   |array{status: 'torn'|'failed'}
      */
-    private static function replaceMatchingRecord(array $records, array $replacement): ?array {
-        $nextSequence = 1;
-        $kept = array();
-        foreach ($records as $encodedRecord) {
-            $record = $encodedRecord['record'];
-            $recordSequence = is_int($record['breadcrumb_seq'] ?? null)
-                ? $record['breadcrumb_seq'] : 0;
-            $nextSequence = max($nextSequence, $recordSequence + 1);
-            if (($record['request_id'] ?? null) === $replacement['request_id']
-                    && ($record['boundary'] ?? null) === $replacement['boundary']) {
-                continue;
+    private static function parseJournalLine(string $line, bool $atEof, string $path): array {
+        if (substr($line, -1) !== "\n") {
+            if ($atEof) {
+                return array('status' => 'torn');
             }
-            $kept[] = $encodedRecord;
+            self::reportFailure('active-operation file contains an over-budget record: ' . $path);
+            return array('status' => 'failed');
         }
-        $replacement['breadcrumb_seq'] = $nextSequence;
-        $encodedReplacement = self::encodeRecord($replacement);
-        if ($encodedReplacement === null) {
-            return null;
+        $line = rtrim($line, "\r\n");
+        if (strlen($line) > self::MAX_RECORD_BYTES) {
+            self::reportFailure('active-operation file contains an over-budget record: ' . $path);
+            return array('status' => 'failed');
         }
-        $kept[] = $encodedReplacement;
-        if (count($kept) > self::MAX_RECORDS) {
-            $kept = array_slice($kept, -self::MAX_RECORDS);
+        $decoded = json_decode($line, true);
+        if (!is_array($decoded) || self::recordKey($decoded) === '') {
+            self::reportFailure('active-operation file contains an unparseable record: ' . $path);
+            return array('status' => 'failed');
         }
-        return $kept;
+        $record = array();
+        foreach ($decoded as $key => $value) {
+            $record[(string)$key] = $value;
+        }
+        $sequence = is_int($record['breadcrumb_seq'] ?? null)
+            ? $record['breadcrumb_seq'] : 0;
+        return array(
+            'status' => 'complete',
+            'encoded' => array('record' => $record, 'line' => $line),
+            'sequence' => $sequence,
+        );
     }
 
     /**
      * @param array<int, array{record: array<string, mixed>, line: string}> $records
-     * @return array{status: string, reason: string}
+     * @param array{record: array<string, mixed>, line: string} $replacement
+     * @return array<int, array{record: array<string, mixed>, line: string}>
      */
-    private static function atomicWrite(string $directory, array $records): array {
-        $lines = array_column($records, 'line');
+    private static function foldEncodedRecord(array $records, array $replacement): array {
+        $key = self::recordKey($replacement['record']);
+        $kept = array_values(array_filter(
+            $records,
+            static function (array $encoded) use ($key): bool {
+                return self::recordKey($encoded['record']) !== $key;
+            }
+        ));
+        $kept[] = $replacement;
+        return count($kept) > self::MAX_RECORDS
+            ? array_slice($kept, -self::MAX_RECORDS)
+            : $kept;
+    }
+
+    /** @param array<mixed, mixed> $record */
+    private static function recordKey(array $record): string {
+        $requestId = $record['request_id'] ?? null;
+        $boundary = $record['boundary'] ?? null;
+        $state = $record['state'] ?? null;
+        if (($record['event'] ?? '') !== 'active_operation_breadcrumb'
+                || !is_string($requestId)
+                || preg_match('/^[A-Za-z0-9]{8,64}$/', $requestId) !== 1
+                || !is_string($boundary)
+                || !ABJ_404_Solution_ActiveOperationBoundaryManifest::hasBoundary($boundary)
+                || !in_array($state, array('active', 'complete'), true)) {
+            return '';
+        }
+        return $requestId . '|' . $boundary;
+    }
+
+    /**
+     * @param Snapshot $snapshot Validated folded state.
+     * @return Snapshot|null Compacted snapshot, or null on failure.
+     */
+    private static function compactFile(string $path, array $snapshot): ?array {
+        $lines = array_column($snapshot['records'], 'line');
         $payload = implode("\n", $lines) . ($lines === array() ? '' : "\n");
-        $temporary = $directory . self::FILE . '.tmp';
+        $temporary = $path . '.compact.tmp';
         $handle = @fopen($temporary, 'wb');
         if ($handle === false) {
-            self::reportFailure('active-operation temporary file could not be opened: ' . $temporary);
-            return self::failure('temporary_open_failed');
+            self::reportFailure('active-operation compaction file could not be opened: ' . $temporary);
+            return null;
         }
         try {
             $written = @fwrite($handle, $payload);
@@ -383,31 +437,50 @@ final class ABJ_404_Solution_ActiveOperationBreadcrumbs {
             @fclose($handle);
         }
         if ($written !== strlen($payload) || !$flushed) {
-            self::reportFailure('active-operation temporary file could not be flushed: ' . $temporary);
+            self::reportFailure('active-operation compaction file could not be flushed: '
+                . $temporary);
             @unlink($temporary);
-            return self::failure('temporary_write_failed');
+            return null;
         }
-        if (!@rename($temporary, $directory . self::FILE)) {
-            self::reportFailure('active-operation file could not be atomically replaced: '
-                . $directory . self::FILE);
+        if (!@rename($temporary, $path)) {
+            self::reportFailure('active-operation compacted file could not be atomically replaced: '
+                . $path);
             @unlink($temporary);
-            return self::failure('atomic_replace_failed');
+            return null;
         }
-        self::rememberWrittenTable($directory . self::FILE, $records);
-        return array('status' => 'complete', 'reason' => '');
+        ABJ_404_Solution_DiagnosticAppendStream::invalidate($path);
+        clearstatcache(true, $path);
+        $stat = @stat($path);
+        if (!is_array($stat)) {
+            self::reportFailure('active-operation compacted file identity could not be read: ' . $path);
+            return null;
+        }
+        $snapshot['ino'] = $stat['ino'] ?? null;
+        $snapshot['dev'] = $stat['dev'] ?? null;
+        $snapshot['size'] = strlen($payload);
+        $snapshot['torn_tail'] = false;
+        return $snapshot;
+    }
+
+    /** @param Snapshot $snapshot Validated folded state. */
+    private static function rememberSnapshot(string $path, array $snapshot): void {
+        if ($snapshot['ino'] === null || $snapshot['dev'] === null) {
+            clearstatcache(true, $path);
+            $stat = @stat($path);
+            if (!is_array($stat)) {
+                unset(self::$rememberedTable[$path]);
+                return;
+            }
+            $snapshot['ino'] = $stat['ino'] ?? null;
+            $snapshot['dev'] = $stat['dev'] ?? null;
+        }
+        self::$rememberedTable[$path] = $snapshot;
     }
 
     /** @return array{status: string, reason: string} */
     private static function failure(string $reason): array {
         return array('status' => 'failed', 'reason' => $reason);
     }
-
-    // The bounded lock wait these two clock helpers served now lives in
-    // ABJ_404_Solution_DiagnosticAppendStream::acquireExclusive(), together
-    // with the descriptor it locks, so the clock-unavailable rule they encoded
-    // (fail the wait CLOSED rather than treat it as zero elapsed, which would
-    // make the recorder used to diagnose stalls wait unboundedly) has one home
-    // instead of a copy per writer.
 
     private static function reportFailure(string $message): void {
         abj404_logPhpFallback('active-operation-breadcrumb', $message);

@@ -21,6 +21,9 @@ final class ABJ_404_Solution_RequiredCheckpointEvidence {
      * @return array<int, string>
      */
     public static function select(array $lines): array {
+        if (class_exists('ABJ_404_Solution_ActiveOperationBreadcrumbs')) {
+            $lines = ABJ_404_Solution_ActiveOperationBreadcrumbs::compactSupportLines($lines);
+        }
         $operationState = array();
         foreach (array_reverse($lines) as $line) {
             $record = json_decode($line, true);

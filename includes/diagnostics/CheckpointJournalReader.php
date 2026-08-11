@@ -99,7 +99,9 @@ final class ABJ_404_Solution_CheckpointJournalReader {
         ));
         $rankedSelection = self::withoutPathFromSelection($fileSelection, $activePath);
         $activeLines = $activePath === '' ? array()
-            : ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines(array($activePath));
+            : ABJ_404_Solution_ActiveOperationBreadcrumbs::compactSupportLines(
+                ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines(array($activePath))
+            );
         $activeClosedIds =
             ABJ_404_Solution_CheckpointIntentCorrelation::closedCheckpointIds($activeLines);
         $ranked = ABJ_404_Solution_DiagnosticJournalExcerpt::compose(

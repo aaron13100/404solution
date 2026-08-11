@@ -41,7 +41,7 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      *
      * So this is sized to hold the checkpoint channel's whole retained source:
      * two 4 MB ordinary generations, two 4 MB fixed-intent generations, and
-     * the 32 x 2 KB active-operation state. Whatever survived rotation is then
+     * the 1 MB append-only active-operation journal. Whatever survived rotation is then
      * always fully read, and retention has one owner (the writer bounds)
      * instead of a smaller second retention window in the reader. Written as
      * a literal rather than derived from those constants so this class stays
@@ -53,7 +53,7 @@ final class ABJ_404_Solution_DiagnosticJournalExcerpt {
      * per line by the ranking pass, so the live cost is the raw lines, not a
      * parsed copy of them.
      */
-    const MAX_TOTAL_READ_BYTES = 16842752;
+    const MAX_TOTAL_READ_BYTES = 17825792;
 
     /** Bytes held back from the content budget for the accounting line and its newline. */
     const SUMMARY_RESERVE_BYTES = 512;
