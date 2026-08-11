@@ -85,30 +85,27 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
     private $networkSites = null;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
+     * @param ABJ_404_Solution_NGramRebuildRuntime $runtime Database, logging and
+     *        cron: the platform a rebuild tick runs against.
      * @param mixed $rebuilder Object exposing rebuildCache().
-     * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_NGramNetworkOptionStore $optionStore
-     * @param ABJ_404_Solution_CronScheduler|null $cronScheduler
      * @param ABJ_404_Solution_NGramRebuildRetryPolicy|null $retryPolicy Defaults to
      *        the shipped policy; supplied by tests that pin the jitter window.
      * @throws InvalidArgumentException When $rebuilder cannot rebuild.
      */
     public function __construct(
-        ABJ_404_Solution_DatabaseCore $dbCore,
+        ABJ_404_Solution_NGramRebuildRuntime $runtime,
         $rebuilder,
-        ABJ_404_Solution_Logging $logger,
         ABJ_404_Solution_NGramNetworkOptionStore $optionStore,
-        ?ABJ_404_Solution_CronScheduler $cronScheduler = null,
         ?ABJ_404_Solution_NGramRebuildRetryPolicy $retryPolicy = null
     ) {
         // The types are DECLARED rather than only documented, for the same
-        // reason the rebuilder is checked below: four positional objects whose
-        // types nothing verifies means transposing two of them is legal PHP,
-        // and the mistake then surfaces as a fatal on some later cron tick
-        // instead of at the wiring site. $rebuilder is the one that cannot be
-        // declared -- it is anything exposing rebuildCache() -- so it keeps the
-        // explicit check that a declaration would otherwise have given it.
+        // reason the rebuilder is checked below: positional objects whose types
+        // nothing verifies means transposing two of them is legal PHP, and the
+        // mistake then surfaces as a fatal on some later cron tick instead of
+        // at the wiring site. $rebuilder is the one that cannot be declared --
+        // it is anything exposing rebuildCache() -- so it keeps the explicit
+        // check that a declaration would otherwise have given it.
         //
         // Reject a rebuilder that cannot rebuild HERE, where the wiring mistake
         // actually is. Accepting anything and only checking three dispatch
@@ -120,17 +117,19 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
                 (is_object($rebuilder) ? get_class($rebuilder) : gettype($rebuilder)) . '.'
             );
         }
-        $this->dbCore = $dbCore;
-        $this->logger = $logger;
+        // Unpacked into fields rather than held as a runtime and dereferenced
+        // at each use: the runtime is how these three ARRIVE together, not a
+        // thing this class needs to keep. Holding both would be two references
+        // to the same collaborator that could be read inconsistently.
+        $this->dbCore = $runtime->dbCore();
+        $this->logger = $runtime->logger();
+        $this->cronScheduler = $runtime->cronScheduler();
         $this->optionStore = $optionStore;
         $this->progress = new ABJ_404_Solution_NGramRebuildProgressState($optionStore);
         $this->drain = new ABJ_404_Solution_NGramRebuildDrain(
             array($rebuilder, 'rebuildCache'), $this->progress);
-        $this->cronScheduler = $cronScheduler instanceof ABJ_404_Solution_CronScheduler
-            ? $cronScheduler
-            : abj_cron_scheduler();
         $this->rescheduleFailureReport = new ABJ_404_Solution_NGramRescheduleFailureReport(
-            $this->dbCore, $this->cronScheduler, $this->progress, $this->logger);
+            $runtime, $this->progress);
         $this->retryPolicy = $retryPolicy instanceof ABJ_404_Solution_NGramRebuildRetryPolicy
             ? $retryPolicy
             : new ABJ_404_Solution_NGramRebuildRetryPolicy();

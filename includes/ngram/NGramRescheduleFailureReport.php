@@ -35,16 +35,24 @@ class ABJ_404_Solution_NGramRescheduleFailureReport {
     private $logger;
 
     /**
-     * @param ABJ_404_Solution_DatabaseCore $dbCore
-     * @param ABJ_404_Solution_CronScheduler $cronScheduler
+     * Types are declared rather than only documented: this report is built
+     * from four collaborators of which three were interchangeable at the call
+     * site, so transposing two was legal PHP that failed later, inside the
+     * failure path, which is the worst possible place to discover a wiring
+     * mistake.
+     *
+     * @param ABJ_404_Solution_NGramRebuildRuntime $runtime Database, logging and
+     *        cron: the platform a rebuild tick runs against.
      * @param ABJ_404_Solution_NGramRebuildProgressState $progress
-     * @param ABJ_404_Solution_Logging $logger
      */
-    public function __construct($dbCore, $cronScheduler, $progress, $logger) {
-        $this->dbCore = $dbCore;
-        $this->cronScheduler = $cronScheduler;
+    public function __construct(
+        ABJ_404_Solution_NGramRebuildRuntime $runtime,
+        ABJ_404_Solution_NGramRebuildProgressState $progress
+    ) {
+        $this->dbCore = $runtime->dbCore();
+        $this->cronScheduler = $runtime->cronScheduler();
         $this->progress = $progress;
-        $this->logger = $logger;
+        $this->logger = $runtime->logger();
     }
 
     /**

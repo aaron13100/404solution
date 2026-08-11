@@ -298,13 +298,28 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
         );
     }
 
+    /**
+     * The platform services a rebuild tick runs against.
+     *
+     * The null-vs-instance decision about the cron scheduler is made once, in
+     * the runtime's constructor, instead of once here and again in each
+     * receiving constructor.
+     *
+     * @return ABJ_404_Solution_NGramRebuildRuntime
+     */
+    private function newRebuildRuntime(): ABJ_404_Solution_NGramRebuildRuntime {
+        return new ABJ_404_Solution_NGramRebuildRuntime(
+            $this->dbCore,
+            $this->logger,
+            $this->cronScheduler instanceof ABJ_404_Solution_CronScheduler ? $this->cronScheduler : null
+        );
+    }
+
     private function newBatchRunner(): ABJ_404_Solution_NGramCacheRebuildBatchRunner {
         return new ABJ_404_Solution_NGramCacheRebuildBatchRunner(
-            $this->dbCore,
+            $this->newRebuildRuntime(),
             $this->resolveNGramRebuilder(),
-            $this->logger,
-            $this->newOptionStore(),
-            $this->cronScheduler instanceof ABJ_404_Solution_CronScheduler ? $this->cronScheduler : null
+            $this->newOptionStore()
         );
     }
 
