@@ -305,12 +305,12 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     function getRedirectStatusCounts($bypassCache = false, array $tableOptions = array()): array {
         unset($bypassCache, $tableOptions);
-        return $this->statusCountsRefreshCoordinator->getRedirectStatusCounts();
+        return $this->statusCountsRefreshCoordinator->refreshingRedirectStatusCounts();
     }
 
-    /** @inheritDoc */
+    /** @inheritDoc Enqueues a recomputation when the cache is stale. */
     function getRedirectStatusCountsResult(): array {
-        return $this->statusCountsRefreshCoordinator->getRedirectStatusCountsResult();
+        return $this->statusCountsRefreshCoordinator->refreshingRedirectStatusCountsResult();
     }
 
     /** @return array<string, int> */
@@ -325,12 +325,12 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
      */
     function getCapturedStatusCounts($bypassCache = false, array $tableOptions = array()): array {
         unset($bypassCache, $tableOptions);
-        return $this->statusCountsRefreshCoordinator->getCapturedStatusCounts();
+        return $this->statusCountsRefreshCoordinator->refreshingCapturedStatusCounts();
     }
 
-    /** @inheritDoc */
+    /** @inheritDoc Enqueues a recomputation when the cache is stale. */
     function getCapturedStatusCountsResult(): array {
-        return $this->statusCountsRefreshCoordinator->getCapturedStatusCountsResult();
+        return $this->statusCountsRefreshCoordinator->refreshingCapturedStatusCountsResult();
     }
 
     /**
@@ -341,9 +341,9 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->statusCountsRefreshCoordinator->refresh($scope);
     }
 
-    /** @return int|null */
+    /** @return int|null Enqueues a recomputation when the cache is stale. */
     function getHighImpactCapturedCount(): ?int {
-        return $this->statusCountsRefreshCoordinator->getHighImpactCapturedCount();
+        return $this->statusCountsRefreshCoordinator->refreshingHighImpactCapturedCount();
     }
 
     /** @return int */

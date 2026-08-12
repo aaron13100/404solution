@@ -31,6 +31,11 @@ if (!defined('ABSPATH')) {
  *
  * Unlike the bounded status-count backstop here, the logs/hits rollup rebuild
  * is unbounded full-table work and therefore runs only from its WP-Cron hook.
+ *
+ * The foreground read methods are named `refreshing*` rather than `get*` for
+ * that reason: they are not pure queries, and a `get*` name at a call site
+ * hides the fact that reading can schedule cron work and register a shutdown
+ * hook. `refresh()` and `performRefresh()` are the write side proper.
  */
 class ABJ_404_Solution_StatusCountsRefreshCoordinator {
 
@@ -98,9 +103,17 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
      * Counts plus the freshness state that produced them, so a caller can tell
      * "never computed" apart from "computed and genuinely zero".
      *
+     * NOT a plain getter, which is why it is not named like one: a read that
+     * finds the cache stale ENQUEUES a recomputation (a cron single event, plus
+     * a `shutdown` backstop on non-AJAX requests). The enqueue deliberately
+     * lives inside the read rather than in a separate command a caller has to
+     * remember, because a caller who forgets it leaves the site rendering "-"
+     * in every tab for as long as the cache stays cold. Nothing is ever
+     * recomputed inline here; see the class doc block for the four bounds.
+     *
      * @return array{counts: array<string, int>, state: string}
      */
-    public function getRedirectStatusCountsResult(): array {
+    public function refreshingRedirectStatusCountsResult(): array {
         return self::trace('status_count_scope', array('scope' => self::SCOPE_REDIRECTS),
             function (): array {
                 return $this->resolveRead(
@@ -111,15 +124,23 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
         );
     }
 
-    /** @return array<string, int> */
-    public function getRedirectStatusCounts(): array {
-        return self::flatten($this->getRedirectStatusCountsResult());
+    /**
+     * Flat legacy shape of refreshingRedirectStatusCountsResult(), and it
+     * enqueues a refresh on the same terms.
+     *
+     * @return array<string, int>
+     */
+    public function refreshingRedirectStatusCounts(): array {
+        return self::flatten($this->refreshingRedirectStatusCountsResult());
     }
 
     /**
+     * Captured-tab counts plus freshness state. Enqueues a recomputation when
+     * the cache is stale, on the same terms as the redirect scope above.
+     *
      * @return array{counts: array<string, int>, state: string}
      */
-    public function getCapturedStatusCountsResult(): array {
+    public function refreshingCapturedStatusCountsResult(): array {
         return self::trace('status_count_scope', array('scope' => self::SCOPE_CAPTURED),
             function (): array {
                 return $this->resolveRead(
@@ -130,13 +151,23 @@ class ABJ_404_Solution_StatusCountsRefreshCoordinator {
         );
     }
 
-    /** @return array<string, int> */
-    public function getCapturedStatusCounts(): array {
-        return self::flatten($this->getCapturedStatusCountsResult());
+    /**
+     * Flat legacy shape of refreshingCapturedStatusCountsResult(), and it
+     * enqueues a refresh on the same terms.
+     *
+     * @return array<string, int>
+     */
+    public function refreshingCapturedStatusCounts(): array {
+        return self::flatten($this->refreshingCapturedStatusCountsResult());
     }
 
-    /** @return int|null */
-    public function getHighImpactCapturedCount(): ?int {
+    /**
+     * The high-impact captured count, enqueuing a recomputation when its cache
+     * is stale. Same read-enqueues-a-write contract as the two scopes above.
+     *
+     * @return int|null
+     */
+    public function refreshingHighImpactCapturedCount(): ?int {
         return self::trace('status_count_scope', array('scope' => self::SCOPE_HIGH_IMPACT),
             function (): ?int {
                 $state = $this->statusCounts->readHighImpactCapturedCountCache();
