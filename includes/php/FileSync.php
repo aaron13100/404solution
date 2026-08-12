@@ -48,11 +48,27 @@ class ABJ_404_Solution_FileSync {
 	function getOwnerFromFile(string $key): string {
 		$filePath = $this->getSyncFilePath($key);
 
-		// Fixed: TOCTOU race condition - catch exception instead of check-then-read
+		// Read and catch rather than check-then-read, so there is no TOCTOU
+		// window between "does it exist" and "read it".
 		try {
 			$contents = ABJ_404_Solution_FileSystemService::readFileContents($filePath, false);
 			return $contents;
-		} catch (Exception $e) { // allow-silent-catch: TOCTOU-safe file read; missing or unreadable file returns empty, caller treats as "no lock owner"
+		} catch (Exception $e) {
+			// Empty means "no lock owner" to every caller, and for a missing
+			// file that is exactly right. For a file that EXISTS and could not
+			// be read it is dangerous: a permissions problem or a full disk
+			// then presents as an unlocked resource, two workers proceed at
+			// once, and nothing downstream can tell the difference.
+			//
+			// So report rather than decide. This class does file I/O; whether
+			// an unreadable lock file should stop the caller is lock policy,
+			// and lock policy lives in LockOwnerStore. Deciding here also meant
+			// writing a log line from inside a getter, which is its own problem
+			// (lint-hidden-write-getters) and a fair one: a get* that emits
+			// telemetry surprises every caller.
+			if (is_file($filePath)) {
+				throw $e;
+			}
 			return "";
 		}
 	}

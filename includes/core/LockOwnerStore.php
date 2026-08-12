@@ -163,7 +163,26 @@ class ABJ_404_Solution_LockOwnerStore {
     	$owner = '';
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
-    		$owner = $fileSync->getOwnerFromFile($key);
+    		try {
+    			$owner = $fileSync->getOwnerFromFile($key);
+    		} catch (Throwable $e) {
+    			// The lock file is present but unreadable. Treating that as
+    			// "unlocked" is what the caller will do with '', and it is the
+    			// only answer available -- but it is a guess, and an I/O failure
+    			// read as an unlocked resource lets two workers into the same
+    			// critical section. Record it so the corruption that may follow
+    			// has something pointing back here.
+    			$logger = abj_service('logging');
+    			if (is_object($logger) && method_exists($logger, 'debugMessage')) {
+    				$logger->debugMessage(
+    					'Lock owner file for key "' . $key . '" exists but could not be read; '
+    					. 'proceeding as if unowned. ' . get_class($e) . ' (code '
+    					. (string)$e->getCode() . '): ' . $e->getMessage(),
+    					$e
+    				);
+    			}
+    			$owner = '';
+    		}
 
     	} else {
     		// MULTISITE: Use network-aware option for N-gram locks

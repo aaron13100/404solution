@@ -236,6 +236,7 @@ $abj404ClassesByDirectory = array(
     ),
     'policies' => array(
         'SettingsAdminExcludedPagesPolicy', 'SettingsBooleanModePolicy',
+        'AdminStatusFallbackResolver',
         'SettingsNotificationPolicy', 'SetupWizardAnswerPolicy', 'SettingsRedirectPolicy',
         'SettingsRegexPatternPolicy', 'SettingsRetentionPolicy', 'SettingsSuggestionPolicy',
         'SettingsWordPressPolicy', 'PluginAdminAccessPolicy', 'ErrorTypeClassifier',

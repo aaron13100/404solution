@@ -460,31 +460,6 @@ class ABJ_404_Solution_Ajax_AdminEndpointSupport {
      * @return bool
      */
     public static function resolveIsPluginAdminFallback(bool $isPluginAdmin, bool $includeWpUserFallback = false): bool {
-        if ($isPluginAdmin) {
-            return true;
-        }
-        $adminAccessPolicy = abj_service('admin_access_policy');
-        if (is_object($adminAccessPolicy) && method_exists($adminAccessPolicy, 'isPluginAdmin')) {
-            try {
-                $isPluginAdmin = (bool)$adminAccessPolicy->isPluginAdmin();
-            } catch (Throwable $ignored) { // allow-silent-catch: admin-status detection; PluginLogic may be the broken component, default to non-admin (hide details)
-                $isPluginAdmin = false;
-            }
-        }
-        if (!$includeWpUserFallback) {
-            return $isPluginAdmin;
-        }
-        if (!$isPluginAdmin) {
-            if (function_exists('wp_get_current_user')) {
-                $user = ABJ_404_Solution_UserRef::fromWpUser(wp_get_current_user());
-                if ($user !== null) {
-                    $isPluginAdmin = $user->isAdministrator();
-                }
-            }
-            if (!$isPluginAdmin && function_exists('is_super_admin') && is_super_admin()) {
-                $isPluginAdmin = true;
-            }
-        }
-        return $isPluginAdmin;
+        return ABJ_404_Solution_AdminStatusFallbackResolver::resolve($isPluginAdmin, $includeWpUserFallback);
     }
 }

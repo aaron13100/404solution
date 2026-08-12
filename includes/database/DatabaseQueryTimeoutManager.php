@@ -166,7 +166,20 @@ class ABJ_404_Solution_DatabaseQueryTimeoutManager {
                     ),
                 )
             );
-        } catch (\Throwable $e) { // allow-silent-catch: test doubles / early-boot wpdb may lack db_version(); defaulting to MySQL (no MariaDB timeout syntax) is safe
+        } catch (\Throwable $e) {
+            // Falling back to "not MariaDB" is safe (it only forgoes MariaDB's
+            // timeout syntax), and on a test double or an early-boot wpdb
+            // without db_version() it is also expected. But safe is not the
+            // same as uninteresting: if this starts throwing at runtime, the
+            // statement-timeout path quietly turns itself off on every query
+            // for the rest of the request, and a silent catch here is the
+            // reason nobody would ever find out. Record it and degrade.
+            $this->logger->debugMessage(
+                'DB engine detection failed; assuming not-MariaDB and skipping the MariaDB '
+                . 'statement-timeout syntax. Source: ' . $source . '. '
+                . get_class($e) . ' (code ' . (string)$e->getCode() . '): ' . $e->getMessage(),
+                $e
+            );
             return false;
         }
     }
