@@ -7,9 +7,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Persists setup wizard completion and setup-derived option changes.
+ * Reads and persists setup wizard state.
  */
 class ABJ_404_Solution_SetupWizardOptionStore {
+
+    public const OPTION_NAME = 'abj404_setup_completed';
 
     /**
      * Return true when the setup wizard has already been completed.
@@ -17,7 +19,7 @@ class ABJ_404_Solution_SetupWizardOptionStore {
      * @return bool
      */
     public static function isComplete(): bool {
-        $completed = get_option(ABJ_404_Solution_SetupWizard::OPTION_NAME, '');
+        $completed = get_option(self::OPTION_NAME, '');
         return !empty($completed);
     }
 
@@ -27,29 +29,34 @@ class ABJ_404_Solution_SetupWizardOptionStore {
      * @return void
      */
     public static function markCompleteToday(): void {
-        update_option(ABJ_404_Solution_SetupWizard::OPTION_NAME, gmdate('Y-m-d', abj_clock()->now()));
+        update_option(self::OPTION_NAME, gmdate('Y-m-d', abj_clock()->now()));
     }
 
     /**
-     * Persist plugin options derived from validated setup answers.
+     * Return the currently persisted plugin options.
      *
-     * @param array{q1:string,q2:string,q3:string} $answers Validated setup answers.
-     * @return void
+     * @return array<string,mixed>
      */
-    public static function saveAnswers(array $answers): void {
+    public static function loadPluginOptions(): array {
         $optionsRepository = abj_service('options_repository');
         $options = $optionsRepository->getOptions();
-        if (!is_array($options)) {
-            $options = array();
-        }
+        return is_array($options) ? $options : array();
+    }
 
+    /**
+     * Return the site administrator email used by setup decisions.
+     */
+    public static function adminEmail(): string {
         $adminEmail = get_option('admin_email');
-        $options = ABJ_404_Solution_SetupWizardAnswerPolicy::applyToOptions(
-            $options,
-            $answers,
-            is_string($adminEmail) ? $adminEmail : ''
-        );
+        return is_string($adminEmail) ? $adminEmail : '';
+    }
 
-        $optionsRepository->updateOptions($options);
+    /**
+     * Persist plugin options already derived by the setup policy.
+     *
+     * @param array<string,mixed> $options
+     */
+    public static function savePluginOptions(array $options): void {
+        abj_service('options_repository')->updateOptions($options);
     }
 }

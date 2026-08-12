@@ -22,7 +22,7 @@ class ABJ_404_Solution_SetupWizard {
     /**
      * Option name for storing setup completion date
      */
-    const OPTION_NAME = 'abj404_setup_completed';
+    const OPTION_NAME = ABJ_404_Solution_SetupWizardOptionStore::OPTION_NAME;
 
     /**
      * Initialize the setup wizard functionality
@@ -118,7 +118,12 @@ class ABJ_404_Solution_SetupWizard {
 
         // If user clicked "Save & Get Started", apply their settings
         if ($action === 'save') {
-            ABJ_404_Solution_SetupWizardOptionStore::saveAnswers($answers);
+            $options = ABJ_404_Solution_SetupWizardAnswerPolicy::applyToOptions(
+                ABJ_404_Solution_SetupWizardOptionStore::loadPluginOptions(),
+                $answers,
+                ABJ_404_Solution_SetupWizardOptionStore::adminEmail()
+            );
+            ABJ_404_Solution_SetupWizardOptionStore::savePluginOptions($options);
         }
 
         $redirect_url = ABJ_404_Solution_SetupWizardAnswerPolicy::redirectPath($answers);
