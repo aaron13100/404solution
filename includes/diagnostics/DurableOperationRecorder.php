@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  * CheckpointRecordFactory, and ActiveOperationBreadcrumbs remain the persistence
  * implementations.
  *
- * allow-no-test-found: exercised through the real AJAX table handler in tests/AjaxQueryAttributionTest.php and tests/TableRendererPreludeTracerTest.php
+ * allow-no-test-found: exercised through the real AJAX table handler in tests/AjaxRowProgressAttributionTest.php and tests/TableRendererPreludeTracerTest.php
  */
 final class ABJ_404_Solution_DurableOperationRecorder {
 

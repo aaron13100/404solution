@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
  * failure-safe, while exceptions from traced database work are recorded and
  * rethrown unchanged.
  *
- * allow-no-test-found: exercised through both real table AJAX entry points in tests/AjaxQueryAttributionTest.php
+ * allow-no-test-found: exercised through both real table AJAX entry points in tests/AjaxQueryPreflightAttributionTest.php
  */
 final class ABJ_404_Solution_DatabaseQueryPreflightTracer {
 

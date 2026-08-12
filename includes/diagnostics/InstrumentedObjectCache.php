@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  * record budget. The original cache remains available for capability and
  * metrics inspection without the adapter making magic methods look real.
  *
- * allow-no-test-found: exercised through the real AJAX table render entry point in tests/AjaxQueryAttributionTest.php
+ * allow-no-test-found: exercised through the real AJAX table render entry point in tests/AjaxRowProgressAttributionTest.php
  */
 final class ABJ_404_Solution_InstrumentedObjectCache {
     /** @var object */

@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * can; the boundary phases (PHASE_REGISTRATION / PHASE_REMOVAL) distinguish
  * them from the surrounding install/restore traversal in support evidence.
  *
- * allow-no-test-found: exercised through the real table AJAX entry point in tests/TableRendererPreludeTracerTest.php, tests/OptionPersistenceTracerTest.php, and tests/AjaxQueryAttributionTest.php
+ * allow-no-test-found: exercised through the real table AJAX entry point in tests/TableRendererPreludeTracerTest.php, tests/OptionPersistenceTracerTest.php, and tests/AjaxHookCallbackAttributionTest.php
  *
  * @phpstan-type LifecycleToken array{
  *   operation_id: string,

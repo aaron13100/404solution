@@ -1,5 +1,5 @@
 <?php
-// allow-no-test-found: covered through Ajax_GetPaginationLinks by tests/ClientTransportReportTest.php
+// allow-no-test-found: covered through Ajax_GetPaginationLinks by tests/ClientTransportBeaconTest.php
 
 if (!defined('ABSPATH')) {
     exit;

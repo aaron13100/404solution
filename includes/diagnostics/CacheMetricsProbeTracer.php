@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
  * diagnostics-owned reads out of the rendered-row Redis attribution channel
  * and supports nested decorators without invoking their magic pass-through.
  *
- * allow-no-test-found: exercised through the real AJAX table render entry point in tests/AjaxQueryAttributionTest.php
+ * allow-no-test-found: exercised through the real AJAX table render entry point in tests/AjaxRowProgressAttributionTest.php
  */
 final class ABJ_404_Solution_CacheMetricsProbeTracer {
 

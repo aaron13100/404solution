@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
  *
  * Registry mutation is lifecycle-traced here; callers own callback records.
  *
- * allow-no-test-found: exercised through real AJAX hook dispatch in tests/OptionPersistenceTracerTest.php, tests/AjaxQueryAttributionTest.php, and tests/TableRendererPreludeTracerTest.php
+ * allow-no-test-found: exercised through real AJAX hook dispatch in tests/OptionPersistenceTracerTest.php, tests/AjaxHookCallbackAttributionTest.php, and tests/TableRendererPreludeTracerTest.php
  *
  * @phpstan-type CallbackIdentity array{callback: string, source: string, has_reference: bool}
  * The registration shapes are defined by the class that stores them, so a

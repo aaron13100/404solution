@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// allow-no-test-found: exercised through public report builders in tests/FeedbackTransportPayloadTest.php.
+// allow-no-test-found: exercised through public report builders in tests/FeedbackTransportSupportPayloadTest.php.
 
 /**
  * Allocates the fixed debug-log wire budget between an error anchor and the

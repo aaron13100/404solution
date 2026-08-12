@@ -9,7 +9,7 @@
       "producer": {
         "file": "includes/FeedbackTransport.php",
         "test": [
-          "tests/FeedbackTransportPayloadTest.php",
+          "tests/FeedbackTransportSupportPayloadTest.php",
           "tests/FeedbackPayloadSchemaContractTest.php"
         ]
       },
@@ -549,9 +549,9 @@
       },
       "consumer": {
         "file": "includes/ajax/AjaxClientReportBeaconResponder.php",
-        "test": "tests/ClientTransportReportTest.php"
+        "test": "tests/ClientTransportBeaconTest.php"
       },
-      "parityTest": "tests/ClientTransportReportTest.php",
+      "parityTest": "tests/ClientTransportBeaconTest.php",
       "fixtures": {
         "valid": [
           "fixtures/ajax-client-report-beacon.valid.json"
@@ -752,9 +752,9 @@
       },
       "consumer": {
         "file": "includes/ajax/Ajax_CanaryLadder.php",
-        "test": "tests/AjaxCanaryLadderHandlerTest.php"
+        "test": "tests/AjaxCanaryPayloadAndReceiptTest.php"
       },
-      "parityTest": "tests/AjaxCanaryLadderHandlerTest.php",
+      "parityTest": "tests/AjaxCanaryPayloadAndReceiptTest.php",
       "fixtures": {
         "valid": [
           "fixtures/ajax-run-canary-step.valid.json",

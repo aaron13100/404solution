@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
  * One coordinator owns nested scopes so the exact host cache and query hook
  * are installed once, restored once, and never replaced by a nested render.
  *
- * allow-no-test-found: real-entry coverage is in tests/AjaxQueryAttributionTest.php
+ * allow-no-test-found: real-entry coverage is in tests/AjaxPaginationOptionAttributionTest.php
  */
 final class ABJ_404_Solution_RenderOptionIoTracer
     implements ABJ_404_Solution_DiagnosticInternalHookObserver {

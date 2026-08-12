@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
  * replacement and WordPress query-filter installation belong to
  * RenderOptionIoTracer.
  *
- * allow-no-test-found: real-entry coverage is in tests/AjaxQueryAttributionTest.php
+ * allow-no-test-found: real-entry coverage is in tests/AjaxPaginationOptionAttributionTest.php
  */
 final class ABJ_404_Solution_RenderOptionIoOperationJournal
     implements ABJ_404_Solution_CacheOperationTraceSink {
