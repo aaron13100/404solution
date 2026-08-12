@@ -126,7 +126,7 @@
             if (!window.abj404ClientTelemetryStore) {
                 return '';
             }
-            var records = window.abj404ClientTelemetryStore.drainAll();
+            var records = window.abj404ClientTelemetryStore.readAll();
             if (!records || records.length === 0) {
                 return '';
             }

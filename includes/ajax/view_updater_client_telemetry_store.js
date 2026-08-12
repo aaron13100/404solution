@@ -20,20 +20,21 @@
  * the record that disappears is as likely as not the failing attempt the admin
  * is about to report. Keying the buffer by tab makes that impossible by
  * construction rather than merely unlikely -- no tab ever writes a key another
- * tab writes. Reads (drainAll) union every tab's buffer, so a support request
+ * tab writes. Reads (readAll) union every tab's buffer, so a support request
  * still carries the whole origin's evidence; writes and delivery marking stay
  * strictly local to the writing tab. Chrome's "duplicate tab" copies
  * sessionStorage, which can give two live tabs the same identity, so a write
  * additionally merges against whatever is in its own key at write time.
  *
- * Two consumers drain it:
+ * Two consumers read it, and only one of them consumes:
  *   1. The next outgoing table request carries the newest not-yet-delivered
  *      record THIS TAB produced in its params (takeUndelivered), so the server
  *      pairs the client and server views of a failure even when no support
  *      request is sent. Delivery is never marked on another tab's record: a
  *      record flagged delivered by a request that did not carry it is evidence
  *      recorded as sent that the server never received.
- *   2. The support request drains everything, from every tab (drainAll).
+ *   2. The support request reads everything, from every tab (readAll), and
+ *      leaves it all in place.
  *
  * Retention rule (matrix requirement 4, "never outcome-delete telemetry"):
  * nothing is dropped because it succeeded or because it was already reported.
@@ -410,13 +411,14 @@
 
     /**
      * Every stored record from every tab of this origin, oldest first by send
-     * time. Used by the support request; it does NOT clear anything, so a
-     * failed send can be retried and a second support request still carries
-     * the same history.
+     * time. A pure read: nothing is removed or marked, so a failed send can be
+     * retried and a second support request still carries the same history.
+     * takeUndelivered() is the consuming half of this pair; this is the half
+     * that may be called as many times as a caller likes with the same answer.
      *
      * @returns {Array<object>}
      */
-    function drainAll() {
+    function readAll() {
         var sources = [LEGACY_KEY].concat(keysWithPrefix(TAB_KEY_PREFIX));
         var own = ownBufferKey();
         if (sources.indexOf(own) < 0) {
@@ -484,7 +486,7 @@
     global.abj404ClientTelemetryStore = {
         put: put,
         takeUndelivered: takeUndelivered,
-        drainAll: drainAll,
+        readAll: readAll,
         clear: clear,
         storageHealth: storageHealth,
         LEGACY_KEY: LEGACY_KEY,
