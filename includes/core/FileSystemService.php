@@ -68,17 +68,6 @@ class ABJ_404_Solution_FileSystemService {
         return false;
     }
 
-    /** Returns true if the file does not exist after calling this method.
-     * @param string $path
-     * @return boolean
-     */
-    static function safeRmdir($path) {
-        if (file_exists($path)) {
-            return rmdir($path);
-        }
-        return true;
-    }
-
     /** Recursively delete a directory.
      * @param string $dir
      * @throws Exception
@@ -402,73 +391,6 @@ class ABJ_404_Solution_FileSystemService {
             return false;
         }
         return strtolower(substr($haystack, -$length)) === strtolower($needle);
-    }
-
-    /** Deletes the existing file at $filePath and puts the URL contents in it's place.
-     * @param string $url
-     * @param string $filePath
-     * @return void
-     */
-    static function readURLtoFile(string $url, string $filePath): void {
-        $abj404logging = abj_service('logging');
-
-        self::safeUnlink($filePath);
-
-        // if we can't read the file that way then try curl.
-        if (function_exists('curl_init')) {
-            try {
-                //This is the file where we save the information
-                $destinationFileWriteHandle = fopen($filePath, 'w+');
-                //Here is the file we are downloading, replace spaces with %20
-                $ch = curl_init(str_replace(" ", "%20", $url));
-                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 '
-                . '(KHTML, like Gecko) Chrome/27.0.1453.94 Safari/537.36 (404 Solution WordPress Plugin)');
-                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-                // write curl response to file
-                if (is_resource($destinationFileWriteHandle)) {
-                    curl_setopt($ch, CURLOPT_FILE, $destinationFileWriteHandle);
-                }
-                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                // get curl response
-                curl_exec($ch);
-                if (is_resource($destinationFileWriteHandle)) {
-                    fclose($destinationFileWriteHandle);
-                }
-
-                if (file_exists($filePath) && filesize($filePath) > 0) {
-                    return;
-                }
-            } catch (Exception $e) {
-                $abj404logging->debugMessage("curl didn't work for downloading a URL. " . $e->getMessage());
-            }
-        }
-
-        // Fallback to file_put_contents if curl didn't work or isn't available
-        self::safeUnlink($filePath);
-        try {
-            // Bound the stream-wrapper fallback the same way the curl path
-            // above is bounded (CURLOPT_TIMEOUT, 10s): without a stream
-            // context timeout, a stalled remote peer holds fopen() open
-            // indefinitely (PHP's http:// wrapper defaults to
-            // default_socket_timeout, typically 60s, and applies to https://
-            // too since the https wrapper reuses the http context options).
-            $streamContext = stream_context_create(array(
-                'http' => array('timeout' => 10),
-            ));
-            $fileHandle = @fopen($url, 'r', false, $streamContext);
-            if ($fileHandle === false) {
-                $abj404logging->errorMessage("Failed to open URL for reading: " . $url);
-                return;
-            }
-            $result = file_put_contents($filePath, $fileHandle);
-            fclose($fileHandle);
-
-            if ($result === false) {
-                $abj404logging->errorMessage("Failed to write file: " . $filePath);
-            }
-        } catch (Exception $e) {
-            $abj404logging->errorMessage("Failed to download URL to file. URL: " . $url . ", Error: " . $e->getMessage());
-        }
     }
 
     private static function logWarning(string $message): void {

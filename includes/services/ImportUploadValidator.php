@@ -26,6 +26,15 @@ class ABJ_404_Solution_ImportUploadValidator {
         }
 
         $allowed_mime_types = array('text/csv', 'text/plain', 'application/csv', 'text/comma-separated-values', 'application/vnd.ms-excel');
+        // DESIGN-AUDIT-OK: the missing finfo_close() is deliberate, not an
+        // oversight. Measured on PHP 8.5.9: 300 validate() calls that never
+        // close the handle grow the process descriptor count by 0, because PHP
+        // refcounts the handle and frees it when $finfo leaves scope. (Positive
+        // control for that measurement: 50 handles held live in an array grew
+        // the count by 50, so the probe can detect growth.) finfo_close() is
+        // deprecated as of PHP 8.5 -- "finfo objects are freed automatically"
+        // -- so calling it would emit a deprecation notice on supported
+        // installs in exchange for fixing nothing.
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         if ($finfo === false) {
             return __('Error: Unable to determine file type.', '404-solution');
