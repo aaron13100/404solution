@@ -12,7 +12,7 @@ require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
  * stamping, the measured json_encode + echo boundary, connection-detach
  * (fastcgi_finish_request / litespeed_finish_request,
  * including the Bruno timeout cause matrix gap G9 detach A/B diagnostic),
- * and exit. Split out of ABJ_404_Solution_Ajax_AdminEndpointSupport (which
+ * and exit. Split out of ABJ_404_Solution_AjaxAdminEndpointSupport (which
  * owns the surrounding request lifecycle: auth gate, error envelope,
  * debug-context, failure-logging delegation, service resolution) because
  * response emission is its own cohesive responsibility with its own heavy

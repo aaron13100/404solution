@@ -27,12 +27,12 @@ final class ABJ_404_Solution_AjaxFailureDetailsBuilder {
             $details['wpdb'] = array(
                 'last_error' => $GLOBALS['wpdb']->last_error ?? '',
                 'last_query_redacted' =>
-                    ABJ_404_Solution_Ajax_AdminEndpointSupport::redactSqlShape($lastQuery),
+                    ABJ_404_Solution_AjaxAdminEndpointSupport::redactSqlShape($lastQuery),
                 'last_query_length' => is_string($lastQuery) ? strlen($lastQuery) : 0,
             );
         }
         $viewQueryDiagnostics =
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::extractViewQueryDiagnostics($error);
+            ABJ_404_Solution_AjaxAdminEndpointSupport::extractViewQueryDiagnostics($error);
         if ($viewQueryDiagnostics !== null) {
             $details['view_query_diagnostics'] = $viewQueryDiagnostics;
         }

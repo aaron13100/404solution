@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  * rungs of the ladder: most stop after re-asking the policy, while the
  * pagination endpoint also consults the WP user.
  *
- * @see ABJ_404_Solution_Ajax_AdminEndpointSupport
+ * @see ABJ_404_Solution_AjaxAdminEndpointSupport
  */
 class ABJ_404_Solution_AdminStatusFallbackResolver {
 

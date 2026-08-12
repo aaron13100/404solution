@@ -19,7 +19,7 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
      * BOOT_WAYPOINT_ACTIONS, and deliberately separate from it: a boot
      * waypoint is written before the handler is even known, while these are
      * armed inside
-     * ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext(),
+     * ABJ_404_Solution_AjaxAdminEndpointSupport::startAjaxDebugContext(),
      * which all three of these endpoints route through.
      *
      * ajaxRefreshHealthBar belongs here because the foreground status-count

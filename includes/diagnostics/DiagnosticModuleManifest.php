@@ -58,7 +58,7 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'ajax/AjaxAdminEndpointRegistrar.php',
         'ajax/AjaxSecurityGate.php',
         'ajax/Ajax_Php.php',
-        'ajax/Ajax_AdminEndpointSupport.php',
+        'ajax/AjaxAdminEndpointSupport.php',
         'ajax/Ajax_GetPaginationLinks.php',
         'ajax/Ajax_RefreshHealthBar.php',
         // AjaxStageDiagnostics.php is deliberately absent: it now lives under

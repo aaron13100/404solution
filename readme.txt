@@ -202,7 +202,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
-= Version 4.3.3 (August 9, 2026) =
+= Version 4.3.3 (August 12, 2026) =
 
 **New Features**
 

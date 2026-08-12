@@ -60,7 +60,7 @@ $abj404ClassesByDirectory = array(
         'Ajax_SuggestionCompute', 'Ajax_SuggestionPolling', 'Ajax_TrashLink',
         'Ajax_EngineProfiles', 'Ajax_UninstallPrefs', 'AjaxAdminEndpointRegistrar',
         'AjaxClientReportBeaconResponder',
-        'Ajax_AdminEndpointSupport', 'AjaxResponseEmitter', 'Ajax_GetPaginationLinks',
+        'AjaxAdminEndpointSupport', 'AjaxResponseEmitter', 'Ajax_GetPaginationLinks',
         'AdminTableResponseParts',
         'Ajax_RefreshStatsDashboard', 'Ajax_RefreshHealthBar', 'Ajax_RefreshAdminNonces',
         'Ajax_CanaryLadder',

@@ -54,7 +54,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
 
     /** @return void */
     public function handle() {
-        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $requestReader = ABJ_404_Solution_AjaxAdminEndpointSupport::getRequestReader();
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
             $requestReader->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
         $step = ABJ_404_Solution_AjaxCanaryLadder::normalizeStep($requestReader->getPostOrGetSanitize('canaryStep', ''));
@@ -72,12 +72,12 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
             'handler_class' => __CLASS__,
         ), $ledger);
-        $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_CanaryLadder::handle');
+        $context = ABJ_404_Solution_AjaxAdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_CanaryLadder::handle');
 
         ABJ_404_Solution_AjaxRequestLedger::recordHeaderMismatchIfAny($requestId, (string)$ledger['header_request_id']);
 
         try {
-            if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
+            if (!ABJ_404_Solution_AjaxAdminEndpointSupport::requireAdminWithNonceOrRespond(
                 ABJ_404_Solution_AjaxCanaryLadder::NONCE_ACTION,
                 $context,
                 'ajaxRunCanaryStep'
@@ -97,10 +97,10 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                 $requestId, $requestReader->getPostOrGetSanitize('canaryStepReceipts', ''));
 
             if ($step === '') {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX unknown canary step in ajaxRunCanaryStep.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Unknown canary step.', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+                ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX unknown canary step in ajaxRunCanaryStep.', $context);
+                ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+                $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Unknown canary step.', null, false);
+                ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 400);
                 return;
             }
@@ -117,8 +117,8 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             $data['canaryStep'] = $step;
 
             ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+            ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+            ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
             ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($data, 200);
             return;
 
@@ -166,10 +166,10 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
         if (!ABJ_404_Solution_Ajax_Php::consumeRateLimit('canary_ladder_work', 120, 60)) {
             return true;
         }
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRunCanaryStep.', $context);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRunCanaryStep.', $context);
+        ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+        ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
         ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
         return false;
     }
@@ -312,7 +312,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                         echo str_repeat(' ', ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES);
                         // Routed through the same output-buffer-management
                         // filter every other flush in this codebase respects
-                        // (Ajax_AdminEndpointSupport::checkpointedFlushAndFinish),
+                        // (AjaxAdminEndpointSupport::checkpointedFlushAndFinish),
                         // so tests that disable OB management (and so must
                         // read the whitespace back via ob_get_clean()) are
                         // unaffected: this is a real mid-response flush only
@@ -437,7 +437,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
      * @param array<string, mixed> $context
      */
     private static function handleCanaryException(Throwable $e, bool $isPluginAdmin, array $context): void {
-        $isPluginAdmin = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveIsPluginAdminFallback($isPluginAdmin);
+        $isPluginAdmin = ABJ_404_Solution_AjaxAdminEndpointSupport::resolveIsPluginAdminFallback($isPluginAdmin);
 
         $details = array(
             'exception' => array(
@@ -448,14 +448,14 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             ),
             'context' => $context,
         );
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX exception in ajaxRunCanaryStep.', $details, $e);
-        $capturedOutput = ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX exception in ajaxRunCanaryStep.', $details, $e);
+        $capturedOutput = ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
         if ($capturedOutput !== '') {
             $details['buffered_output'] = substr($capturedOutput, 0, 8000);
         }
 
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(
+        ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
             'Server error while running the canary ladder.',
             $details,
             $isPluginAdmin

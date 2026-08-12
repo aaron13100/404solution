@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ajaxAdminEndpointSupportEnvelope",
-  "description": "Shared admin AJAX response envelope emitted by Ajax_AdminEndpointSupport (success flag plus optional data payload).",
+  "description": "Shared admin AJAX response envelope emitted by AjaxAdminEndpointSupport (success flag plus optional data payload).",
   "type": "object",
   "required": ["success"],
   "properties": {

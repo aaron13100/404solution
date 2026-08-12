@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  * Four production filters run foreign WordPress callbacks at response-critical
  * boundaries that no other tracer covers:
  *
- *   - Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput() dispatches
+ *   - AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput() dispatches
  *     `abj404_should_manage_output_buffer` before the output buffer is read or
  *     drained.
  *   - AjaxResponseEmitter::sendJsonResponseAndExit() dispatches

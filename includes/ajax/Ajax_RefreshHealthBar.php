@@ -23,7 +23,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             return;
         }
 
-        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $requestReader = ABJ_404_Solution_AjaxAdminEndpointSupport::getRequestReader();
         /** @var ABJ_404_Solution_ViewReadServiceInterface $viewReadService */
         $viewReadService = abj_service('view_read_service');
         /** @var ABJ_404_Solution_LogsRepositoryInterface $logsRepository */
@@ -48,10 +48,10 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             'request_uri' => array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : '',
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
         );
-        $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_RefreshHealthBar::handle');
+        $context = ABJ_404_Solution_AjaxAdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_RefreshHealthBar::handle');
 
         try {
-            if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
+            if (!ABJ_404_Solution_AjaxAdminEndpointSupport::requireAdminWithNonceOrRespond(
                 'abj404_refreshHealthBar',
                 $context,
                 'ajaxRefreshHealthBar'
@@ -63,10 +63,10 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             // Match the pagination AJAX rate limit ceiling. Admin workflows can
             // re-trigger this on filter typing and tab switches.
             if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_health_bar', 1500, 60)) {
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshHealthBar.', $context);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+                ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshHealthBar.', $context);
+                ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+                $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
                 return;
             }
@@ -92,13 +92,13 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
                 'statusCounts' => $statusCounts,
             );
 
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+            ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+            ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
             ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($response, 200);
             return;
 
         } catch (Throwable $e) {
-            $isPluginAdmin = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveIsPluginAdminFallback($isPluginAdmin);
+            $isPluginAdmin = ABJ_404_Solution_AjaxAdminEndpointSupport::resolveIsPluginAdminFallback($isPluginAdmin);
 
             $details = array(
                 'exception' => array(
@@ -109,14 +109,14 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
                 ),
                 'context' => $context,
             );
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailure('AJAX exception in ajaxRefreshHealthBar.', $details, $e);
-            $capturedOutput = ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+            ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX exception in ajaxRefreshHealthBar.', $details, $e);
+            $capturedOutput = ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
             if ($capturedOutput !== '') {
                 $details['buffered_output'] = substr($capturedOutput, 0, 8000);
             }
 
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-            $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(
+            ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+            $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
                 'Server error while refreshing health bar.',
                 $details,
                 $isPluginAdmin

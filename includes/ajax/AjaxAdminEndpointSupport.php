@@ -20,8 +20,18 @@ if (!defined('ABSPATH')) {
  * classifier, debug-context starter, admin-nonce action list) for the
  * per-endpoint admin-table AJAX handlers, so each handler can own a single
  * endpoint's logic in its own file while reusing this common surface.
+ *
+ * Named without the `Ajax_` endpoint prefix (it is infrastructure, not a
+ * request handler) so it stays out of the per-endpoint contract / auth /
+ * adversarial structural test globs, matching AjaxAdminEndpointRegistrar and
+ * AjaxSecurityGate. It registers no `wp_ajax_*` action and has no request
+ * entry point; every method here runs only after a real handler has already
+ * authorized the request. Carrying the handler prefix made the auth glob scan
+ * this file as though it were an endpoint, which it passed by coincidence
+ * (a substring in policy code) until that code moved to
+ * AdminStatusFallbackResolver.
  */
-class ABJ_404_Solution_Ajax_AdminEndpointSupport {
+class ABJ_404_Solution_AjaxAdminEndpointSupport {
 
     /**
      * Admin nonce action verbs JS call sites consume. Keep in sync with

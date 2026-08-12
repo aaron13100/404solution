@@ -318,7 +318,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * The decisive-measurement rule for the detach A/B experiment (Bruno
      * timeout cause matrix, gap G9 / c434;
      * ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode() picks the
-     * mode, ABJ_404_Solution_Ajax_AdminEndpointSupport::checkpointedFlushAndFinish()
+     * mode, ABJ_404_Solution_AjaxAdminEndpointSupport::checkpointedFlushAndFinish()
      * records it per request ID). Kept as its own pure function rather than
      * folded into interpretResults(): two independent verdicts computed from
      * disjoint inputs -- the ladder's canary observations vs. the

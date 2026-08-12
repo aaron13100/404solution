@@ -34,7 +34,7 @@ final class ABJ_404_Solution_AjaxClientReportBeaconResponder {
      * request passes, so this is not a new unauthenticated write surface.
      */
     public static function respondIfReportOnly(string $requestId): bool {
-        $reader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $reader = ABJ_404_Solution_AjaxAdminEndpointSupport::getRequestReader();
         if ((string)$reader->getPostOrGetSanitize('clientReportOnly', '0') !== '1') {
             return false;
         }
@@ -58,8 +58,8 @@ final class ABJ_404_Solution_AjaxClientReportBeaconResponder {
             self::recordThresholdCrossing($reportedAttemptId, $thresholdMs);
         }
         ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+        ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
         ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(
             array(
                 'clientReportReceived' => true,

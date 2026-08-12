@@ -242,7 +242,7 @@ final class ABJ_404_Solution_ClientTransportReport {
      * The request reader, straight from the container.
      *
      * Resolved here rather than through
-     * ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader(), which
+     * ABJ_404_Solution_AjaxAdminEndpointSupport::getRequestReader(), which
      * returns this same service and belongs to the endpoint layer. Reading
      * request parameters is not an endpoint-only need, and routing through
      * that class made a recorder depend on the presentation surface it exists

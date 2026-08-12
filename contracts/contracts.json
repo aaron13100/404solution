@@ -498,11 +498,11 @@
     },
     {
       "id": "ajax-admin-endpoint-support-helper",
-      "description": "Shared admin AJAX response envelope emitted by Ajax_AdminEndpointSupport for every admin endpoint",
+      "description": "Shared admin AJAX response envelope emitted by AjaxAdminEndpointSupport for every admin endpoint",
       "schema": "schemas/ajax-admin-endpoint-support-helper.schema.json",
       "direction": "server-to-client",
       "consumer": {
-        "file": "includes/ajax/Ajax_AdminEndpointSupport.php",
+        "file": "includes/ajax/AjaxAdminEndpointSupport.php",
         "test": "tests/ViewQueryFailureDiagnosticsTest.php"
       },
       "parityTest": "tests/AjaxRuntimeContractValidationTest.php",

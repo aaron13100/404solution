@@ -381,7 +381,7 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
             // is one of the channels a request ID must be recoverable from; the
             // others are the POST body / query string, the X-ABJ404-Request-ID
             // request/response headers, and error payloads (Ajax_GetPaginationLinks
-            // + Ajax_AdminEndpointSupport). session_id and retry_parent_id ride
+            // + AjaxAdminEndpointSupport). session_id and retry_parent_id ride
             // along so a retried request can be joined back to its parent attempt.
             'request_id' => self::readIdField($context, 'request_id', 'unknown00'),
             'plugin_version' => defined('ABJ404_VERSION') ? (string)ABJ404_VERSION : 'unknown',

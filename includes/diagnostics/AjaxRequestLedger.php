@@ -200,7 +200,7 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * detach fix (`607307c5`) from the other three things beta.2 also ships
      * (carried develop fixes, new instrumentation, or a transient that
      * simply passed). This counterbalances whether
-     * Ajax_AdminEndpointSupport::checkpointedFlushAndFinish() actually calls
+     * AjaxAdminEndpointSupport::checkpointedFlushAndFinish() actually calls
      * the detach function within matched request-part and payload pairs. Each
      * pair contains one ON and one OFF request, and the next pair reverses
      * their order, so a clean separation (ON completes, OFF times out) cannot

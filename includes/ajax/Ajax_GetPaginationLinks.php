@@ -24,7 +24,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     public function handle() {
         ABJ_404_Solution_AjaxRequestContractValidator::enforceCurrentRequest('ajax-update-pagination');
 
-        $requestReader = ABJ_404_Solution_Ajax_AdminEndpointSupport::getRequestReader();
+        $requestReader = ABJ_404_Solution_AjaxAdminEndpointSupport::getRequestReader();
         // Read+normalize the request ID before any service resolution so the
         // checkpoint pairs below (matrix coverage req. 2) can be correlated
         // to this request from their very first boundary.
@@ -90,7 +90,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 0,
             'handler_class' => __CLASS__,
         ), $ledger);
-        $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_GetPaginationLinks::handle');
+        $context = ABJ_404_Solution_AjaxAdminEndpointSupport::startAjaxDebugContext($context, 'Ajax_GetPaginationLinks::handle');
 
         ABJ_404_Solution_AjaxRequestLedger::recordHeaderMismatchIfAny(
             $checkpointRequestId, (string)$ledger['header_request_id']);
@@ -103,7 +103,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             ABJ_404_Solution_SameSiteRequestCensus::PHASE_HANDLER);
 
         try {
-            if (!ABJ_404_Solution_Ajax_AdminEndpointSupport::requireAdminWithNonceOrRespond(
+            if (!ABJ_404_Solution_AjaxAdminEndpointSupport::requireAdminWithNonceOrRespond(
                 'abj404_updatePaginationLink',
                 $context,
                 'ajaxUpdatePaginationLinks',
@@ -118,7 +118,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             // arm the durable flight recorder now that nonce and admin access
             // have been proved. Never trust raw retryCount before this point.
             if ($retryCount > 0) {
-                $context = ABJ_404_Solution_Ajax_AdminEndpointSupport::
+                $context = ABJ_404_Solution_AjaxAdminEndpointSupport::
                     armAuthorizedRetryDiagnostics($context);
                 $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::
                     instrumentedRequestId($context);
@@ -150,7 +150,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             }
 
             /** @var ABJ_404_Solution_View $view */
-            $view = ABJ_404_Solution_Ajax_AdminEndpointSupport::resolveViewInstance($abj404view);
+            $view = ABJ_404_Solution_AjaxAdminEndpointSupport::resolveViewInstance($abj404view);
 
             // Background detect-only refresh: a "did anything change?" poll the
             // client fires every ~30s while the admin is idle. It must NOT do the
@@ -178,8 +178,8 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
                     'retryCount' => $retryCount,
                 );
                 ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+                ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+                ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($data, 200);
                 return;
             }
@@ -200,8 +200,8 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             $data['retryCount'] = $retryCount;
 
             ABJ_404_Solution_AjaxStageDiagnostics::finishRequest('complete');
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-            ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+            ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+            ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
             ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($data, 200);
             return;
 
@@ -249,14 +249,14 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'rate_limit_branch', array(
             'max_requests_per_minute' => $maxRequestsPerMinute,
         ));
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailureBranch(
+        ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailureBranch(
             'rate_limit',
             'AJAX rate limit in ajaxUpdatePaginationLinks.',
             static fn() => $context
         );
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+        ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
         ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
         return false;
     }
@@ -287,11 +287,11 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
     private static function handlePaginationLinksException(
         Throwable $e, bool $isPluginAdmin, array $context
     ): void {
-        $failure = ABJ_404_Solution_Ajax_AdminEndpointSupport::safeLogAjaxFailureBranch(
+        $failure = ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailureBranch(
             'exception_caught',
             'AJAX exception in ajaxUpdatePaginationLinks.',
             static function () use ($e, $isPluginAdmin, $context): array {
-                $resolvedIsPluginAdmin = ABJ_404_Solution_Ajax_AdminEndpointSupport::
+                $resolvedIsPluginAdmin = ABJ_404_Solution_AjaxAdminEndpointSupport::
                     resolveIsPluginAdminFallback($isPluginAdmin, true);
                 if (isset($GLOBALS['abj404_ajax_context'])
                         && is_array($GLOBALS['abj404_ajax_context'])) {
@@ -312,13 +312,13 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $details = isset($failure['details']) && is_array($failure['details'])
             ? $failure['details']
             : array();
-        $capturedOutput = ABJ_404_Solution_Ajax_AdminEndpointSupport::getAndClearAjaxBufferedOutput();
+        $capturedOutput = ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
         if ($capturedOutput !== '') {
             $details['buffered_output'] = substr($capturedOutput, 0, 8000);
         }
 
-        ABJ_404_Solution_Ajax_AdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_Ajax_AdminEndpointSupport::buildAjaxErrorResponse(
+        ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
+        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
             'Server error while updating the table.',
             $details,
             $isPluginAdmin
