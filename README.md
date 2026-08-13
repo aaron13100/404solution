@@ -233,6 +233,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed the "Post types" and "Categories" settings fields being able to alter the database queries built from them. Values from those two fields were placed into queries without being escaped, so a value containing a quote could change what the query did. Both fields are now escaped, and text carrying invalid characters is repaired before it reaches the database.
 * Fixed automatic redirects being able to save a destination that cannot be reached. The destination was checked as a positive number but stored exactly as entered, so a value such as `-3` was checked against page 3 and then stored as `-3`. Automatic redirects are created with nobody watching, so nothing later would have questioned it.
 * Fixed 404 URLs losing their hit counts and their "View Logs" row action when their log rows had no canonical URL recorded. Those rows were dropped from the hit-count roll-up entirely, with nothing to say so.
+* Fixed the "Hits" columns going stale, or being rebuilt on every check along with a repeating admin notice, on sites whose database server is not set to UTC. The age of the hit-count roll-up was measured by comparing a time the database rendered in its own time zone against a time measured in UTC, so it was wrong by that server's offset, in one direction or the other depending on which side of UTC the server sits.
 
 **Improvements**
 
