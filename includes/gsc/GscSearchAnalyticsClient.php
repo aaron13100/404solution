@@ -170,9 +170,10 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
 
         $siteUrl = $s['site_url'];
         $now = abj_clock()->now();
-        $endDate = date('Y-m-d', $now);
-        $startTimestamp = strtotime("-{$days} days", $now);
-        $startDate = date('Y-m-d', $startTimestamp !== false ? $startTimestamp : 0);
+        $endDayIndex = intdiv($now, 86400);
+        $startDayIndex = $endDayIndex - $days;
+        $endDate = gmdate('Y-m-d', $endDayIndex * 86400);
+        $startDate = gmdate('Y-m-d', $startDayIndex * 86400);
 
         $urls = array_slice($urls, 0, 500);
         $allRows = array();

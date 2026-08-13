@@ -223,26 +223,29 @@ class ABJ_404_Solution_LogsReadQueries {
             $this->logger->debugMessage(__FUNCTION__ . ' getMaxLogId() failed: ' . $e->getMessage() . '. Falling back to maxLogId=0 (cache key uses 0).');
             $maxLogId = 0;
         }
-        $cacheKey = 'abj404_trend_v1_' . $blogId . '_' . $days . '_' . $maxLogId;
+        $cacheKey = 'abj404_trend_v2_' . $blogId . '_' . $days . '_' . $maxLogId;
         if (function_exists('get_transient')) { $cached = get_transient($cacheKey); if (is_array($cached)) { return $cached; } }
         $logsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_logsv2}');
-        $cutoff = abj_clock()->now() - ($days * 86400);
+        $now = abj_clock()->now();
+        $cutoff = $now - ($days * 86400);
         $notFoundDest = '404';
-        $query = "SELECT DATE(FROM_UNIXTIME(`timestamp`)) AS `date`, SUM(CASE WHEN `dest_url` = %s THEN 1 ELSE 0 END) AS `hits_404`, SUM(CASE WHEN `dest_url` <> %s THEN 1 ELSE 0 END) AS `hits_redirect` FROM " . $logsTable . " WHERE `timestamp` >= " . intval($cutoff) . " GROUP BY DATE(FROM_UNIXTIME(`timestamp`)) ORDER BY `date` ASC";
+        $query = "SELECT FLOOR(`timestamp` / 86400) AS `day_index`, SUM(CASE WHEN `dest_url` = %s THEN 1 ELSE 0 END) AS `hits_404`, SUM(CASE WHEN `dest_url` <> %s THEN 1 ELSE 0 END) AS `hits_redirect` FROM " . $logsTable . " WHERE `timestamp` >= " . intval($cutoff) . " GROUP BY FLOOR(`timestamp` / 86400) ORDER BY `day_index` ASC";
         $result = $this->dbCore->queryAndGetResults($query, array('query_params' => array($notFoundDest, $notFoundDest)));
         $hadError = !empty($result['timed_out']) || (isset($result['last_error']) && $result['last_error'] !== '');
         $rows = (isset($result['rows']) && is_array($result['rows'])) ? $result['rows'] : array();
-        $byDate = array();
+        $byDayIndex = array();
         foreach ($rows as $row) {
             if (!is_array($row)) { continue; }
-            $d = isset($row['date']) ? (string)$row['date'] : '';
-            if ($d === '') { continue; }
-            $byDate[$d] = array('date' => $d, 'hits_404' => intval($row['hits_404'] ?? 0), 'hits_redirect' => intval($row['hits_redirect'] ?? 0), 'new_captures' => intval($row['hits_404'] ?? 0));
+            if (!isset($row['day_index']) || !is_numeric($row['day_index'])) { continue; }
+            $dayIndex = intval($row['day_index']);
+            $byDayIndex[$dayIndex] = array('hits_404' => intval($row['hits_404'] ?? 0), 'hits_redirect' => intval($row['hits_redirect'] ?? 0), 'new_captures' => intval($row['hits_404'] ?? 0));
         }
         $output = array();
         for ($i = $days - 1; $i >= 0; $i--) {
-            $d = date('Y-m-d', abj_clock()->now() - ($i * 86400));
-            $output[] = isset($byDate[$d]) ? $byDate[$d] : array('date' => $d, 'hits_404' => 0, 'hits_redirect' => 0, 'new_captures' => 0);
+            $dayIndex = intdiv($now - ($i * 86400), 86400);
+            $date = gmdate('Y-m-d', $dayIndex * 86400);
+            $counts = $byDayIndex[$dayIndex] ?? array('hits_404' => 0, 'hits_redirect' => 0, 'new_captures' => 0);
+            $output[] = array('date' => $date) + $counts;
         }
         if (!$hadError && function_exists('set_transient')) { set_transient($cacheKey, $output, self::TREND_DATA_CACHE_TTL_SECONDS); }
         return $output;
