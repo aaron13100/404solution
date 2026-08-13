@@ -206,6 +206,15 @@ class ABJ_404_Solution_DatabaseUpgradesEtc {
 		$this->components()->selfHealUpgrade()->runSelfHealPrologue();
 	}
 
+	/**
+	 * Bounded, never-throwing missing-table repair for a user-facing request.
+	 *
+	 * @return void
+	 */
+	public function repairMissingTablesForRequest() {
+		$this->components()->selfHealUpgrade()->repairMissingTablesForRequest();
+	}
+
 	/** @return void */
 	public function runDatabaseMaintenanceTasks() {
 		$this->components()->dailyMaintenanceUpgrade()->runDatabaseMaintenanceTasks();

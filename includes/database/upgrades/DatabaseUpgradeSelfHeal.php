@@ -75,6 +75,47 @@ class ABJ_404_Solution_DatabaseUpgradeSelfHeal extends ABJ_404_Solution_Database
     }
 
     /**
+     * The bounded counterpart to runSelfHealPrologue(), for a request a person
+     * is waiting on: close whatever plugin tables are missing and do nothing
+     * else.
+     *
+     * Exists because the plugin's own admin pages used to recover a dropped
+     * table for free rather than on purpose. Every render ran the status-count
+     * aggregate inline, that aggregate read the redirects table, so a missing
+     * table surfaced as a failing query and the DAO's per-query auto-repair
+     * closed it. Nothing declared the repair; it was a side effect of an
+     * unrelated read. When that read became cache-only with a rate-limited
+     * background refresh -- correctly, it was a full aggregate on every page
+     * view -- the recovery went with it, and a page that renders no list stopped
+     * healing at all: inside the refresh cooldown a settings screen queries the
+     * redirects table not at all, so nothing fails and nothing repairs.
+     *
+     * Bounded means the missing-only pass, never createDatabaseTables(): one
+     * metadata probe per DDL file plus CREATE TABLE for whatever is genuinely
+     * absent. The schema-wide passes (collations, indexes, engine, orphan
+     * adoption, backfills) scale with site size and belong to the maintenance
+     * tick that repairMissingTables() queues for itself when it creates
+     * something.
+     *
+     * A repair failure is contained here and never reaches the caller. This is
+     * insurance, not a precondition: a host that refuses DDL (read-only
+     * replica, revoked CREATE grant, full disk) still owes the admin the page,
+     * which is where they read the log line explaining why.
+     *
+     * @return void
+     */
+    public function repairMissingTablesForRequest() {
+        try {
+            $this->upgrades()->bootstrapUpgrade()->repairMissingTables();
+        } catch (\Throwable $e) {
+            $this->logger->warn(
+                'Bounded missing-table repair failed during a user-facing request: '
+                . get_class($e) . ' code=' . (string)$e->getCode() . ' message=' . $e->getMessage()
+            );
+        }
+    }
+
+    /**
      * Verify and repair tables for the current site only.
      *
      * Derives the list of required tables dynamically from create*Table.sql files

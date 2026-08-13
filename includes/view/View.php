@@ -423,6 +423,14 @@ class ABJ_404_Solution_View {
 				return;
 			}
 
+			// Close any missing plugin table before drawing anything. The bounded
+			// counterpart to the boot prologue, and it contains its own failures;
+			// see DatabaseUpgradeSelfHeal::repairMissingTablesForRequest() for why
+			// a render has to ask for this rather than cause it by accident.
+			// After the authorization gate on purpose: an unauthorized visitor
+			// must not be able to make the site issue DDL.
+			abj_service('database_upgrades')->repairMissingTablesForRequest();
+
 			$instance->maintainLogsHitsRollupOnAdminPageLoad();
 
 			$sub = "";
