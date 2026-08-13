@@ -105,8 +105,13 @@ class ABJ_404_Solution_RedirectWriteService {
                     esc_url($fromURL) . " to: " . esc_url($finalDest) . ", Type: " . esc_html((string)$type) . ", Status: " . $status);
         }
 
-        $statusAsInt = is_numeric($status) ? absint($status) : -1;
-        $typeAsInt = is_numeric($type) ? absint($type) : -1;
+        // (int), not absint(): status and type are stored with %d, which casts
+        // rather than takes an absolute value. absint() here would gate a
+        // status of -2 as ABJ404_STATUS_AUTO and then write -2, so the row that
+        // passed the admission rules is not the row that lands in the table.
+        // -1 keeps its existing meaning of "no rule applies to this value".
+        $statusAsInt = is_numeric($status) ? (int)$status : -1;
+        $typeAsInt = is_numeric($type) ? (int)$type : -1;
 
         if ($statusAsInt === ABJ404_STATUS_REGEX && !$this->admissionPolicy()->regexSourceIsValid($fromURL)) {
             return 0;

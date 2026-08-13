@@ -76,7 +76,7 @@ class ABJ_404_Solution_RedirectWriteAdmissionPolicy {
      * @return bool
      */
     public function isValidAutomaticRedirectDestination($type, $finalDest): bool {
-        $destId = absint(is_scalar($finalDest) ? $finalDest : 0);
+        $destId = self::exactDestinationId($finalDest);
 
         if ($type === ABJ404_TYPE_POST) {
             if ($destId <= 0) {
@@ -112,5 +112,31 @@ class ABJ_404_Solution_RedirectWriteAdmissionPolicy {
         }
 
         return false;
+    }
+
+    /**
+     * The destination id exactly as the write will store it, or 0 when the
+     * value is not one.
+     *
+     * absint() answers a different question than the write path asks: it maps
+     * -3 to 3 and '12abc' to 12. final_dest is stored verbatim (it is a string
+     * column, because an external redirect keeps its URL there), so a coerced
+     * id would validate one destination and then write another. Checking a
+     * value the write will not use is how an automatic redirect to an
+     * unreachable page passes the one gate that exists to stop it -- so the
+     * value is parsed rather than coerced, and anything that is not already an
+     * id is refused.
+     *
+     * @param mixed $finalDest
+     * @return int Positive id, or 0 when the value is not usable as one.
+     */
+    private static function exactDestinationId($finalDest): int {
+        if (is_int($finalDest)) {
+            return $finalDest > 0 ? $finalDest : 0;
+        }
+        if (is_string($finalDest) && preg_match('/^[0-9]+$/', $finalDest) === 1) {
+            return (int)$finalDest;
+        }
+        return 0;
     }
 }
