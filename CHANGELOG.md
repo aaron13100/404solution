@@ -30,6 +30,7 @@
 
 * The hit-count roll-up no longer runs at the very end of an admin request, where it added as much as 21 seconds to the page on a 900,000-row test site.
 * On LiteSpeed servers the admin table response is handed back as soon as it is ready, instead of waiting for the rest of the request to finish.
+* Creating, editing or deleting a redirect no longer scans the whole WordPress options table. The plugin was still clearing a results cache it stopped using in 4.3.1, and the pattern it searched for could not use an index, so on a site with a large options table every redirect change read the entire table to delete nothing.
 * Automatic error reports and support previews now include log evidence for the error they describe, even when the error falls outside the most recent log tail. Admin table retries also preserve a diagnostic trail under the plugin's shipped default settings.
 
 ## Version 4.3.2 (July 11, 2026) ##
