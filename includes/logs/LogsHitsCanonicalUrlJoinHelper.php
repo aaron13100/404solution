@@ -38,12 +38,19 @@ class ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper {
     /**
      * Request-scoped cache for isRedirectsCanonicalUrlBackfillComplete().
      * Null = not yet evaluated this request; bool = cached decision.
-     * The redirects check carries a NULL re-probe so the result is cached
-     * to keep the rebuild pipeline at one extra LIMIT 1 query at most.
+     * Both checks carry a NULL re-probe, so the results are cached to keep
+     * the rebuild pipeline at one extra LIMIT 1 query per column at most.
      *
      * @var bool|null
      */
     private $redirectsCanonicalBackfillCompleteCache = null;
+
+    /**
+     * Request-scoped cache for isLogsv2CanonicalUrlBackfillComplete().
+     *
+     * @var bool|null
+     */
+    private $logsv2CanonicalBackfillCompleteCache = null;
 
     public function __construct(ABJ_404_Solution_DatabaseCore $dbCore) {
         $this->dbCore = $dbCore;
@@ -60,36 +67,76 @@ class ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper {
         return $this->dbCore->collationHelper()->getColumnCollationString($redirectsTable, 'canonical_url');
     }
 
-    /** @return bool */
+    /**
+     * Logsv2-side backfill completion check, with the same defensive NULL
+     * re-probe the redirects side carries.
+     *
+     * The consequence of getting this wrong is worse than on the redirects
+     * side. A logsv2 row whose canonical_url is NULL groups under NULL in
+     * phase 1, so it never joins a redirect in phase 2 and vanishes from the
+     * hits rollup entirely: the URL loses its hit counts and its "View Logs"
+     * row action, silently. The option flag alone cannot rule that out --
+     * it records that a backfill ran, not that every row currently in the
+     * table went through it.
+     *
+     * @return bool
+     */
     public function isLogsv2CanonicalUrlBackfillComplete(): bool {
-        if (!function_exists('get_option')) {
-            return false;
-        }
-        return (bool) get_option('abj404_logsv2_canonical_url_backfill_complete');
+        return $this->backfillCompleteWithNullReprobe(
+            'abj404_logsv2_canonical_url_backfill_complete',
+            '{wp_abj404_logsv2}',
+            $this->logsv2CanonicalBackfillCompleteCache
+        );
     }
 
     /**
      * Redirects-side backfill completion check with defensive NULL re-probe.
      *
-     * The wp_options flag can lag reality if a site admin manually inserts
-     * rows via SQL (skipping setupRedirect) or restores from a partial
-     * backup. If the flag is set but NULL rows still exist, the phase2
-     * JOIN's no-COALESCE form would silently miss those rows. Re-probe on
-     * read to confirm before dropping the wrap. Cached per request.
-     *
      * @return bool
      */
     public function isRedirectsCanonicalUrlBackfillComplete(): bool {
-        if ($this->redirectsCanonicalBackfillCompleteCache !== null) {
-            return $this->redirectsCanonicalBackfillCompleteCache;
+        return $this->backfillCompleteWithNullReprobe(
+            'abj404_redirects_canonical_url_backfill_complete',
+            '{wp_abj404_redirects}',
+            $this->redirectsCanonicalBackfillCompleteCache
+        );
+    }
+
+    /**
+     * "Is this column's backfill complete?" answered from the table rather
+     * than only from the flag.
+     *
+     * The wp_options flag can lag reality if a site admin inserts rows via
+     * SQL (skipping the plugin's own write path) or restores from a partial
+     * backup. Where the flag is used to drop a COALESCE wrap, believing a
+     * stale flag makes the bare-column form silently miss exactly the rows
+     * that were never backfilled. So the flag is treated as a necessary
+     * condition and the table is asked to confirm it.
+     *
+     * Both sides share this because they are the same decision about two
+     * columns, and the logsv2 side went a release without the re-probe
+     * precisely because it was a second hand-written copy.
+     *
+     * @param string $optionName wp_options flag recording that a backfill ran.
+     * @param string $tableToken Table placeholder to probe for NULL canonical_url.
+     * @param bool|null $cache Request-scoped memo slot, by reference. Bounds the
+     *        rebuild pipeline to one extra LIMIT 1 query per column per request.
+     * @return bool
+     */
+    private function backfillCompleteWithNullReprobe(
+        string $optionName,
+        string $tableToken,
+        ?bool &$cache
+    ): bool {
+        if ($cache !== null) {
+            return $cache;
         }
-        if (!function_exists('get_option')
-            || !(bool) get_option('abj404_redirects_canonical_url_backfill_complete')) {
-            return $this->redirectsCanonicalBackfillCompleteCache = false;
+        if (!function_exists('get_option') || !(bool) get_option($optionName)) {
+            return $cache = false;
         }
-        $redirectsTable = $this->dbCore->doTableNameReplacements('{wp_abj404_redirects}');
+        $table = $this->dbCore->doTableNameReplacements($tableToken);
         $probe = $this->dbCore->queryAndGetResults(
-            "SELECT 1 FROM " . $redirectsTable . " WHERE canonical_url IS NULL LIMIT 1",
+            "SELECT 1 FROM " . $table . " WHERE canonical_url IS NULL LIMIT 1",
             array('log_too_slow' => false, 'log_errors' => false)
         );
         $probeRows = is_array($probe['rows'] ?? null) ? $probe['rows'] : array();
@@ -97,19 +144,20 @@ class ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper {
         // Treat any probe error as "do not drop the wrap" so the defensive
         // form runs and reads stay correct.
         if ($probeError !== '' || !empty($probeRows)) {
-            return $this->redirectsCanonicalBackfillCompleteCache = false;
+            return $cache = false;
         }
-        return $this->redirectsCanonicalBackfillCompleteCache = true;
+        return $cache = true;
     }
 
     /**
-     * Test seam: reset the request-scoped cache so the probe runs again
-     * after a fixture toggles the flag or NULL-row state.
+     * Test seam: reset the request-scoped caches so the probes run again
+     * after a fixture toggles a flag or the NULL-row state.
      *
      * @return void
      */
     public function resetRedirectsCanonicalBackfillCompleteCacheForTests(): void {
         $this->redirectsCanonicalBackfillCompleteCache = null;
+        $this->logsv2CanonicalBackfillCompleteCache = null;
     }
 
     /** @param string $sql @return string */
