@@ -257,7 +257,25 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
 
         $quoted = array();
         foreach ($values as $value) {
-            $quoted[] = "'" . esc_sql($value) . "'";
+            // Sanitize BEFORE escaping, and do it here rather than trusting a
+            // caller. esc_sql() reaches mysqli_real_escape_string(), which
+            // escapes quotes and passes malformed byte sequences through
+            // untouched; on a connection whose charset disagrees with those
+            // bytes a truncated lead byte can absorb the escaping backslash and
+            // hand the next quote to the parser as syntax. Pattern 10
+            // ("invalid UTF-8 reaches SQL") is this project's own recurring
+            // class, and these two settings are free-text textareas, so their
+            // bytes are entirely attacker-chosen.
+            //
+            // It looked safe without this: explodeNewlineOrComma() lowercases,
+            // and with mbstring loaded mb_strtolower() substitutes malformed
+            // bytes as a side effect. MbStringAdapterPreg::strtolower() is
+            // plain strtolower() and does not, so every host without the
+            // mbstring extension -- a configuration this plugin supports on
+            // purpose -- had no sanitization at all here. A security property
+            // resting on an incidental side effect of a lowercasing call is not
+            // a security property.
+            $quoted[] = "'" . esc_sql($this->f->sanitizeInvalidUTF8($value)) . "'";
         }
 
         return implode(', ', $quoted);
