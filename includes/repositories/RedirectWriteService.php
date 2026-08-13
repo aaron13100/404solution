@@ -32,6 +32,12 @@ class ABJ_404_Solution_RedirectWriteService {
     /** @var ABJ_404_Solution_RedirectsDenormMaintenanceService|null Memoized Step 3c maintenance service. */
     private $denormMaintenance = null;
 
+    /** @var ABJ_404_Solution_StatusCountsMutationSync|null Memoized cached-count delta writer. */
+    private $countsSync = null;
+
+    /** @var ABJ_404_Solution_RedirectWriteAdmissionPolicy|null Memoized write-admission rules. */
+    private $admissionPolicy = null;
+
     /**
      * Per-instance memoized cache of column-existence probes against the
      * redirects table.
@@ -73,9 +79,11 @@ class ABJ_404_Solution_RedirectWriteService {
         $cleanedID = absint(sanitize_text_field((string)$id));
 
         if (is_numeric($id)) {
+            $before = $this->countsSync()->snapshot('id = %d', array($cleanedID));
             $query = "delete from {wp_abj404_redirects} where id = %d";
             $this->dbCore->queryAndGetResults($query, array('query_params' => array($cleanedID)));
             $this->invalidateRedirectMutationCaches();
+            $this->countsSync()->syncSince($before, 'id = %d', array($cleanedID));
         }
     }
 
@@ -100,12 +108,12 @@ class ABJ_404_Solution_RedirectWriteService {
         $statusAsInt = is_numeric($status) ? absint($status) : -1;
         $typeAsInt = is_numeric($type) ? absint($type) : -1;
 
-        if ($statusAsInt === ABJ404_STATUS_REGEX && !$this->regexSourceIsValid($fromURL)) {
+        if ($statusAsInt === ABJ404_STATUS_REGEX && !$this->admissionPolicy()->regexSourceIsValid($fromURL)) {
             return 0;
         }
 
         if ($statusAsInt === ABJ404_STATUS_AUTO &&
-                !$this->isValidAutomaticRedirectDestination($typeAsInt, $finalDest)) {
+                !$this->admissionPolicy()->isValidAutomaticRedirectDestination($typeAsInt, $finalDest)) {
             $this->logger->debugMessage("Skipping automatic redirect with invalid destination. " .
                     "From: " . esc_url($fromURL) . ", Dest: " . esc_html((string)$finalDest) .
                     ", Type: " . esc_html((string)$type) . ", Status: " . esc_html((string)$status));
@@ -166,6 +174,9 @@ class ABJ_404_Solution_RedirectWriteService {
             } else {
                 abj_service('view_read_service')->invalidateStatusCountsCache();
             }
+            if ($insertId > 0) {
+                $this->countsSync()->syncInserted($statusAsInt, absint($disabled));
+            }
             if ($status == ABJ404_STATUS_REGEX) {
                 $this->regexCacheStore->clear();
             }
@@ -225,12 +236,16 @@ class ABJ_404_Solution_RedirectWriteService {
 
         $typesForSQL = implode(',', $redirectTypes);
 
+        $affectedRows = "status in (" . $typesForSQL . ")";
+        $before = $this->countsSync()->snapshot($affectedRows);
+
         $query = "update {wp_abj404_redirects} set disabled = 1 where status in (" . $typesForSQL . ")";
         $purgeResult = $this->dbCore->queryAndGetResults($query);
         $rowsAffectedRaw = $purgeResult['rows_affected'] ?? 0;
         $redirectCount = is_scalar($rowsAffectedRaw) ? (int)$rowsAffectedRaw : 0;
 
         $this->invalidateRedirectMutationCaches();
+        $this->countsSync()->syncSince($before, $affectedRows);
 
         $result['status'] = 'redirects_purged';
         $result['rows_affected'] = $redirectCount;
@@ -248,7 +263,7 @@ class ABJ_404_Solution_RedirectWriteService {
         }
 
         $statusType = $update->getStatusType();
-        if ((int)$statusType === ABJ404_STATUS_REGEX && !$this->regexSourceIsValid($update->getFromUrl())) {
+        if ((int)$statusType === ABJ404_STATUS_REGEX && !$this->admissionPolicy()->regexSourceIsValid($update->getFromUrl())) {
             return 'invalid_regex_source';
         }
 
@@ -260,6 +275,7 @@ class ABJ_404_Solution_RedirectWriteService {
         );
 
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
+        $before = $this->countsSync()->snapshot('id = %d', array(absint($idForUpdate)));
 
         $updateData = array(
             'url' => $fromUrl,
@@ -316,6 +332,7 @@ class ABJ_404_Solution_RedirectWriteService {
         }
 
         $this->invalidateRedirectMutationCaches();
+        $this->countsSync()->syncSince($before, 'id = %d', array(absint($idForUpdate)));
 
         $this->moveRedirectsToTrash(absint($idForUpdate), 0);
 
@@ -324,18 +341,6 @@ class ABJ_404_Solution_RedirectWriteService {
         $this->recomputeDenormColumns(array(absint($idForUpdate)));
 
         return '';
-    }
-
-    private function regexSourceIsValid(string $source): bool {
-        $validator = new ABJ_404_Solution_RegexSourcePatternValidator($this->f);
-        $validation = $validator->validate($source);
-        if ($validation['valid']) {
-            return true;
-        }
-
-        $detail = $validation['detail'] !== '' ? ' ' . $validation['detail'] : '';
-        $this->logger->warn('Invalid regex source pattern.' . $detail);
-        return false;
     }
 
     /**
@@ -369,12 +374,15 @@ class ABJ_404_Solution_RedirectWriteService {
      * @param string $newstatus
      */
     public function updateRedirectTypeStatus($id, $newstatus): string {
+        $before = $this->countsSync()->snapshot('id = %d', array(absint($id)));
+
         $query = "update {wp_abj404_redirects} set status = %s where id = %d";
         $result = $this->dbCore->queryAndGetResults($query, array(
             'query_params' => array($newstatus, absint($id))
         ));
 
         $this->invalidateRedirectMutationCaches();
+        $this->countsSync()->syncSince($before, 'id = %d', array(absint($id)));
 
         return is_string($result['last_error']) ? $result['last_error'] : '';
     }
@@ -387,6 +395,8 @@ class ABJ_404_Solution_RedirectWriteService {
         $message = "";
         $hadError = false;
         if ($this->f->regexMatch('[0-9]+', '' . $id)) {
+            $before = $this->countsSync()->snapshot('id = %d', array(absint($id)));
+
             $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
             $updateResult = $this->dbCore->queryAndGetResults(
                 "UPDATE `" . $redirectsTable . "` SET disabled = %d WHERE id = %d",
@@ -396,6 +406,7 @@ class ABJ_404_Solution_RedirectWriteService {
             $hadError = $updateError !== '';
 
             $this->invalidateRedirectMutationCaches();
+            $this->countsSync()->syncSince($before, 'id = %d', array(absint($id)));
         } else {
             $hadError = true;
         }
@@ -403,49 +414,6 @@ class ABJ_404_Solution_RedirectWriteService {
             $message = __('Error: Unknown Database Error!', '404-solution');
         }
         return $message;
-    }
-
-    /**
-     * @param int $type
-     * @param mixed $finalDest
-     */
-    private function isValidAutomaticRedirectDestination($type, $finalDest): bool {
-        $destId = absint(is_scalar($finalDest) ? $finalDest : 0);
-
-        if ($type === ABJ404_TYPE_POST) {
-            if ($destId <= 0) {
-                return false;
-            }
-            if (!function_exists('get_post')) {
-                return true;
-            }
-            $ref = ABJ_404_Solution_PostRef::fromWpPost(get_post($destId));
-            if ($ref === null) {
-                return false;
-            }
-            return $ref->isPublished();
-        }
-
-        if ($type === ABJ404_TYPE_CAT || $type === ABJ404_TYPE_TAG) {
-            if ($destId <= 0) {
-                return false;
-            }
-            if (!function_exists('get_term')) {
-                return true;
-            }
-            $taxonomy = ($type === ABJ404_TYPE_CAT) ? 'category' : 'post_tag';
-            $term = get_term($destId, $taxonomy);
-            if ($term === null || is_wp_error($term)) {
-                return false;
-            }
-            return is_object($term);
-        }
-
-        if ($type === ABJ404_TYPE_HOME) {
-            return true;
-        }
-
-        return false;
     }
 
     private function redirectsTableHasColumn(string $columnName): bool {
@@ -469,9 +437,38 @@ class ABJ_404_Solution_RedirectWriteService {
         return isset($this->redirectsTableColumnsCache[$key]);
     }
 
+    /**
+     * Invalidate the caches a redirect mutation affects.
+     *
+     * Invalidation alone is not enough for the tab counts: foreground count
+     * reads are cache-only (the aggregate is deferred to cron), so an
+     * invalidated count keeps serving its last-known value. Every mutation
+     * therefore also brackets itself with ABJ_404_Solution_StatusCountsMutationSync,
+     * which applies the delta the mutation actually caused.
+     *
+     * @return void
+     */
     private function invalidateRedirectMutationCaches(): void {
         abj_service('view_read_service')->invalidateStatusCountsCache();
         $this->regexCacheStore->clear();
+    }
+
+    /** @return ABJ_404_Solution_StatusCountsMutationSync */
+    private function countsSync() {
+        if ($this->countsSync === null) {
+            $this->countsSync = new ABJ_404_Solution_StatusCountsMutationSync($this->dbCore);
+        }
+        return $this->countsSync;
+    }
+
+    /** @return ABJ_404_Solution_RedirectWriteAdmissionPolicy */
+    private function admissionPolicy() {
+        if ($this->admissionPolicy === null) {
+            $this->admissionPolicy = new ABJ_404_Solution_RedirectWriteAdmissionPolicy(
+                $this->f, $this->logger
+            );
+        }
+        return $this->admissionPolicy;
     }
 
     /**

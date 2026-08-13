@@ -60,9 +60,17 @@ class ABJ_404_Solution_TrashEmptier {
             return;
         }
 
+        $trashedRows = "disabled = 1 and status in (" . implode(", ", $statusList) . ")";
+
+        // Snapshot the rows about to be deleted so the Trash tab count drops
+        // to zero as soon as the page re-renders. Foreground count reads are
+        // cache-only (the aggregate is deferred to cron), so invalidating
+        // alone would leave the emptied Trash tab showing its old number.
+        $countsSync = new ABJ_404_Solution_StatusCountsMutationSync($this->dbCore);
+        $emptied = $countsSync->snapshot($trashedRows);
+
         $query = "delete FROM {wp_abj404_redirects} \n" .
-                "where disabled = 1 \n" .
-                "      and status in (" . implode(", ", $statusList) . ")";
+                "where " . $trashedRows;
 
         $result = $this->dbCore->queryAndGetResults($query);
         $rowsAffected = is_array($result) && isset($result['rows_affected']) && is_scalar($result['rows_affected'])
@@ -71,6 +79,7 @@ class ABJ_404_Solution_TrashEmptier {
         $this->logger->debugMessage("doEmptyTrash deleted " . $rowsAffected . " rows total. (" . $sub . ")");
 
         $this->viewRead->invalidateStatusCountsCache();
+        $countsSync->syncRemoved($emptied);
 
         $this->dbCore->queryAndGetResults("optimize table {wp_abj404_redirects}");
     }

@@ -250,6 +250,7 @@ $abj404ClassesByDirectory = array(
         'RedirectScheduleTimezone', 'ExistingRedirectLookup', 'AutoRedirectHandler',
         'RedirectExclusionPolicy', 'RedirectDispatcher', 'RedirectConditionEvaluator',
         'RegexAutoPromote', 'RegexDestinationTemplateValidator', 'RegexSourcePatternValidator',
+        'RedirectWriteAdmissionPolicy',
     ),
     'repositories' => array(
         'ContentRepositoryInterface', 'PublishedContentLookupInterface', 'OldSlugLookupInterface',
@@ -290,7 +291,7 @@ $abj404ClassesByDirectory = array(
         'StopWords', 'SpellChecker', 'SpellCheckerDependencies',
     ),
     'stats' => array(
-        'StatusCountsRepository', 'RedirectHitCountHistogramRepository',
+        'StatusCountBuckets', 'StatusCountsMutationSync', 'StatusCountsRepository', 'RedirectHitCountHistogramRepository',
         'RedirectRowCountRepository', 'UnavailableStatsRepository', 'StatsRepositoryInterface',
         'StatsRefreshLock', 'StatsReadRepository', 'StatsDashboardSnapshotCache',
         'StatsDigestDataProvider', 'StatsRepository',
