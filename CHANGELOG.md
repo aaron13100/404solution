@@ -25,6 +25,10 @@
 * Fixed a multisite network where deleting a site part way through the page-suggestion rebuild could leave a later site with an empty suggestion cache that was marked fully built and never rebuilt. The rebuild now tracks the last site it finished instead of counting positions in a list that shifts whenever a site is removed.
 * Fixed transient database failover and connection-state errors, including Galera nodes that are temporarily unavailable and "Commands out of sync," being treated as permanent failures. Affected queries now recover and retry through the shared database path.
 * Fixed an admin table database failure being mistaken for a successful empty result, which could make the table appear empty instead of showing the real error.
+* Fixed the 404 and redirect trend charts reading all zeros on sites whose database server is not set to UTC, which is common on shared hosting. Each database row was matched to a calendar day by comparing two dates produced in different time zones, so on those sites no row ever matched a day and the chart drew a flat line with no error shown. The Search Console date range was built the same way and is fixed too.
+* Fixed the "Post types" and "Categories" settings fields being able to alter the database queries built from them. Values from those two fields were placed into queries without being escaped, so a value containing a quote could change what the query did. Both fields are now escaped, and text carrying invalid characters is repaired before it reaches the database.
+* Fixed automatic redirects being able to save a destination that cannot be reached. The destination was checked as a positive number but stored exactly as entered, so a value such as `-3` was checked against page 3 and then stored as `-3`. Automatic redirects are created with nobody watching, so nothing later would have questioned it.
+* Fixed 404 URLs losing their hit counts and their "View Logs" row action when their log rows had no canonical URL recorded. Those rows were dropped from the hit-count roll-up entirely, with nothing to say so.
 
 **Improvements**
 
