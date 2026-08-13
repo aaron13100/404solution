@@ -86,7 +86,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             if ($isListPage) {
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-enable_disable_apply_button_js');
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-trash_link_ajax', $includesUrl . 'ajax/trash_link_ajax.js',
-                        array('jquery'));
+                        array('jquery', 'abj404-admin-ajax'));
             }
             if ($isListPage || $isEditPage) {
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-table-interactions', $includesUrl . 'js/tableInteractions.js',
@@ -122,16 +122,16 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
 
             if ($isOptionsPage) {
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-general-js', $includesUrl . 'js/general.js',
-                    array('jquery'));
+                    array('jquery', 'abj404-admin-ajax'));
                 wp_localize_script('abj404-general-js', 'abj404General', array(
                     'savingSettings' => __('Saving settings...', '404-solution'),
                 ));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-theme-preview', $includesUrl . 'js/themePreview.js',
                     array('jquery'));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-settings-mode-toggle', $includesUrl . 'ajax/SettingsModeToggle.js',
-                    array('jquery'));
+                    array('jquery', 'abj404-admin-ajax'));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-restore-defaults', $includesUrl . 'ajax/RestoreDefaults.js',
-                    array('jquery'));
+                    array('jquery', 'abj404-admin-ajax'));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-diagnostic-data-card',
                     $includesUrl . 'js/diagnosticDataCard.js', array('jquery', 'abj404-admin-ajax'));
                 ABJ_404_Solution_WPUtils::my_wp_enq_scrpt('abj404-behavior-tiles', ABJ404_URL . 'includes/js/behaviorTiles.js',

@@ -77,22 +77,17 @@
                     $buttons.prop('disabled', false);
                     $btn.removeClass('loading');
                 },
-                error: function(jqXHR) {
+                error: function(jqXHR, textStatus, errorThrown) {
+                    // Shared describe-and-record seam (abj404-admin-ajax.js), guarded
+                    // so a missing asset degrades to today's generic message instead
+                    // of throwing out of the error handler and showing nothing at all.
                     var errMsg = 'An error occurred while updating settings mode';
-                    try {
-                        if (jqXHR && jqXHR.responseJSON) {
-                            if (jqXHR.responseJSON.message) {
-                                errMsg = jqXHR.responseJSON.message;
-                            } else if (jqXHR.responseJSON.data) {
-                                if (typeof jqXHR.responseJSON.data === 'string') {
-                                    errMsg = jqXHR.responseJSON.data;
-                                } else if (jqXHR.responseJSON.data.message) {
-                                    errMsg = jqXHR.responseJSON.data.message;
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        // ignore and use generic msg
+                    if (typeof abj404AdminAjaxErrorMessage === 'function') {
+                        errMsg = abj404AdminAjaxErrorMessage(jqXHR, {
+                            fallback: errMsg,
+                            source: 'settings-mode-toggle',
+                            errorThrown: errorThrown
+                        });
                     }
                     alert(errMsg);
                     $buttons.prop('disabled', false);

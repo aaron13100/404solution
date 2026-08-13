@@ -73,28 +73,17 @@
                     $confirm.prop('disabled', false).removeClass('loading');
                     $cancel.prop('disabled', false);
                 },
-                error: function(jqXHR) {
+                error: function(jqXHR, textStatus, errorThrown) {
+                    // Shared describe-and-record seam (abj404-admin-ajax.js), guarded
+                    // so a missing asset degrades to today's generic message instead
+                    // of throwing out of the error handler and showing nothing at all.
                     var errMsg = 'An error occurred while restoring defaults';
-                    try {
-                        if (jqXHR && jqXHR.responseJSON) {
-                            if (jqXHR.responseJSON.message) {
-                                errMsg = jqXHR.responseJSON.message;
-                            } else if (jqXHR.responseJSON.data) {
-                                if (typeof jqXHR.responseJSON.data === 'string') {
-                                    errMsg = jqXHR.responseJSON.data;
-                                } else if (jqXHR.responseJSON.data.message) {
-                                    errMsg = jqXHR.responseJSON.data.message;
-                                }
-                            }
-                        }
-                    } catch (e2) {
-                        // Response-shape extraction is best-effort cosmetic; the
-                        // alert() fallback below still surfaces a user-visible
-                        // failure with a generic message. Log so the underlying
-                        // parse/shape issue is diagnosable instead of invisible.
-                        if (window.console && window.console.warn) {
-                            window.console.warn('404 Solution: RestoreDefaults error-response shape extraction failed', e2);
-                        }
+                    if (typeof abj404AdminAjaxErrorMessage === 'function') {
+                        errMsg = abj404AdminAjaxErrorMessage(jqXHR, {
+                            fallback: errMsg,
+                            source: 'restore-defaults',
+                            errorThrown: errorThrown
+                        });
                     }
                     alert(errMsg);
                     $confirm.prop('disabled', false).removeClass('loading');

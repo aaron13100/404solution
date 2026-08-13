@@ -124,31 +124,21 @@ function submitOptions(e) {
             document.body.appendChild(formEl);
             formEl.submit();
         },
-        error: function (request, error) {
+        error: function (request, textStatus, errorThrown) {
             clearTimeout(timeoutId);
+            // Shared describe-and-record seam (abj404-admin-ajax.js), guarded
+            // so a missing asset degrades to a generic message instead of
+            // throwing out of the error handler and leaving the overlay stuck.
             var errMsg = "Error saving settings. Please try again.";
-
-            // Try to get a more specific error message
-            if (request.responseJSON && request.responseJSON.message) {
-                errMsg = request.responseJSON.message;
-            } else if (request.responseJSON && request.responseJSON.data) {
-                // wp_send_json_error() format: { success: false, data: ... }
-                if (typeof request.responseJSON.data === 'string') {
-                    errMsg = request.responseJSON.data;
-                } else if (request.responseJSON.data.message) {
-                    errMsg = request.responseJSON.data.message;
-                }
-            } else if (request.statusText && request.statusText !== 'error') {
-                errMsg = "Error: " + request.statusText;
+            if (typeof abj404AdminAjaxErrorMessage === 'function') {
+                errMsg = abj404AdminAjaxErrorMessage(request, {
+                    fallback: errMsg,
+                    source: 'options-save',
+                    errorThrown: errorThrown
+                });
             }
 
             showSaveError(errMsg);
-
-            // Log full error to console for debugging
-            console.error("Save error details:", {
-                request: request,
-                error: error
-            });
         }
     });
 

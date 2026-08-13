@@ -52,23 +52,16 @@ function bindTrashLinkListeners() {
                 }
             },
             error: function (jqXHR, textStatus, errorThrown) {
-                var errMsg = "failure. result: " + errorThrown;
-                try {
-                    if (jqXHR && jqXHR.responseJSON) {
-                        if (jqXHR.responseJSON.message) {
-                            errMsg = jqXHR.responseJSON.message;
-                        } else if (jqXHR.responseJSON.data) {
-                            if (typeof jqXHR.responseJSON.data === 'string') {
-                                errMsg = jqXHR.responseJSON.data;
-                            } else if (jqXHR.responseJSON.data.message) {
-                                errMsg = jqXHR.responseJSON.data.message;
-                            } else {
-                                errMsg = JSON.stringify(jqXHR.responseJSON.data, null, 2);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    // ignore and use generic msg
+                // Shared describe-and-record seam (abj404-admin-ajax.js), guarded
+                // so a missing asset degrades to a generic message instead of
+                // throwing out of the error handler and showing nothing at all.
+                var errMsg = "The redirect could not be moved to the trash.";
+                if (typeof abj404AdminAjaxErrorMessage === 'function') {
+                    errMsg = abj404AdminAjaxErrorMessage(jqXHR, {
+                        fallback: errMsg,
+                        source: 'trash-link',
+                        errorThrown: errorThrown
+                    });
                 }
                 alert(errMsg);
                 row.css("background-color", "yellow");
