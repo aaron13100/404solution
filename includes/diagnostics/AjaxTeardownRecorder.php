@@ -160,12 +160,11 @@ final class ABJ_404_Solution_AjaxTeardownRecorder {
 
     /**
      * Capture the shutdown-time environment
-     * (ABJ_404_Solution_ShutdownEnvironmentInventory) once per journal rotation
-     * rather than on every request: the roster and extension list are static
-     * within a deploy, so per-request capture would only bloat the journal. The
-     * rotated file's mtime stands in for "which rotation" -- a marker file
-     * records the last rotation actually inventoried, and a same-process static
-     * short-circuits repeat requests inside one worker.
+     * (ABJ_404_Solution_ShutdownEnvironmentInventory) once per journal
+     * generation rather than on every request: the roster and extension list
+     * are static within a deploy, so per-request capture would only bloat the
+     * journal. A marker file records the generation last inventoried, and a
+     * same-process static short-circuits repeat requests inside one worker.
      *
      * Called from every teardown sentinel, not just the WordPress-action one:
      * the case this inventory exists to explain (shutdown work that is not a
@@ -176,27 +175,63 @@ final class ABJ_404_Solution_AjaxTeardownRecorder {
      * @param array<string, mixed> $envelope
      */
     private function recordEnvironmentInventoryOncePerRotation(array $envelope): void {
-        $rotatedPath = $this->directory . ABJ_404_Solution_AjaxTraceJournal::ROTATED_FILE;
-        $rotationMtime = @filemtime($rotatedPath);
-        $rotationKey = is_int($rotationMtime) ? (string)$rotationMtime : 'never-rotated';
-        if ((self::$inventoryCapturedForRotation[$this->directory] ?? null) === $rotationKey) {
+        $generationKey = $this->journalGenerationKey();
+        if ((self::$inventoryCapturedForRotation[$this->directory] ?? null) === $generationKey) {
             return;
         }
         $markerPath = $this->directory . self::SHUTDOWN_INVENTORY_MARKER;
         $existingMarker = @file_get_contents($markerPath);
-        if ($existingMarker === $rotationKey) {
-            self::$inventoryCapturedForRotation[$this->directory] = $rotationKey;
+        if ($existingMarker === $generationKey) {
+            self::$inventoryCapturedForRotation[$this->directory] = $generationKey;
             return;
         }
-        self::$inventoryCapturedForRotation[$this->directory] = $rotationKey;
+        self::$inventoryCapturedForRotation[$this->directory] = $generationKey;
         $this->journal->append(array_merge($envelope, array(
             'event' => 'shutdown_hook_inventory',
-            'rotation_key' => $rotationKey,
+            'rotation_key' => $generationKey,
         ), ABJ_404_Solution_ShutdownEnvironmentInventory::capture()));
-        @file_put_contents($markerPath, $rotationKey, LOCK_EX);
+        @file_put_contents($markerPath, $generationKey, LOCK_EX);
         // Promote here rather than relying on a later sentinel: the sentinel
         // that writes this may be the last one to run, and an unpromoted spool
         // waits 300 seconds for another request to recover it.
         $this->journal->promote();
+    }
+
+    /**
+     * Identify which journal the marker is describing.
+     *
+     * The rotated file's mtime alone is not enough. Before the first rotation
+     * it is the constant "never-rotated", and the marker outlives the records:
+     * any site whose journal is deleted or truncated before it ever rotates --
+     * a host wiping uploads/temp, a log cleanup, a support-bundle reset --
+     * keeps a marker that matches forever, so no further inventory is ever
+     * written. Every support bundle collected afterwards then arrives without a
+     * shutdown_hook_inventory, which is the one record that names WHICH
+     * plugin's shutdown callback held the worker.
+     *
+     * Adding the live journal's inode makes a replaced journal a new
+     * generation, because a deleted-and-recreated file is a different file.
+     * Called after this request's own append, so the live journal exists and
+     * the key is stable for the rest of the generation.
+     */
+    private function journalGenerationKey(): string {
+        $rotationMtime = @filemtime($this->directory . ABJ_404_Solution_AjaxTraceJournal::ROTATED_FILE);
+        $liveInode = @fileinode($this->directory . ABJ_404_Solution_AjaxTraceJournal::JOURNAL_FILE);
+        return (is_int($rotationMtime) ? (string)$rotationMtime : 'never-rotated')
+            . '|' . (is_int($liveInode) && $liveInode > 0 ? (string)$liveInode : 'absent');
+    }
+
+    /**
+     * Test seam: forget which generation this process already inventoried.
+     *
+     * Production never needs it -- a worker serves one journal generation and
+     * the static is exactly the point -- but a PHPUnit worker replays many
+     * requests against many temp directories in one process, so without this a
+     * test cannot observe the generation change it just created.
+     *
+     * @return void
+     */
+    public static function resetInventoryMemoForTests(): void {
+        self::$inventoryCapturedForRotation = array();
     }
 }
