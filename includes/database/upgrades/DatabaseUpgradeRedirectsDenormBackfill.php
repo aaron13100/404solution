@@ -82,7 +82,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
         if ($found !== $redirectsTable) {
             return 0;
         }
-        if (!$this->columnExists($redirectsTable, 'dest_for_view')) {
+        if ($this->columnExists($redirectsTable, 'dest_for_view') !== true) {
             return 0;
         }
 
@@ -281,7 +281,9 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
     public function ensureRedirectsDenormColumns(string $redirectsTable): void {
         $missingClauses = array();
         foreach (self::REDIRECTS_DENORM_COLUMN_DDL as $columnName => $columnDdl) {
-            if (!$this->columnExists($redirectsTable, $columnName)) {
+            if ($this->columnExists($redirectsTable, $columnName) === false) {
+                // Definitely absent. An unreadable probe (null) is not absence,
+                // and adding on it would rewrite a table we cannot introspect.
                 $missingClauses[] = 'ADD COLUMN ' . $columnDdl;
             }
         }

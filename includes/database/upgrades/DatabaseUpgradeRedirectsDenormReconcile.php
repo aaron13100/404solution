@@ -78,7 +78,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormReconcile extends ABJ_404_S
         if ($found !== $redirectsTable) {
             return 0;
         }
-        if (!$this->columnExists($redirectsTable, 'dest_for_view')) {
+        if ($this->columnExists($redirectsTable, 'dest_for_view') !== true) {
             return 0;
         }
         if ($this->dbCore->noticeState()->isWriteBlockActive()) {

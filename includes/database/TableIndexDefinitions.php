@@ -121,10 +121,15 @@ class ABJ_404_Solution_TableIndexDefinitions {
      * semicolon) means this is not a plugin table name and the probe is
      * refused rather than escaped into something plausible.
      *
+     * Public because the column probe next to this one needs the same grammar:
+     * two reads of the same table that disagree about which names are safe to
+     * interpolate is how one of them ends up interpolating a name the other
+     * would have refused.
+     *
      * @param string $tableName
      * @return string|null
      */
-    private static function quoteIdentifier(string $tableName): ?string {
+    public static function quoteIdentifier(string $tableName): ?string {
         if ($tableName === '') {
             return null;
         }

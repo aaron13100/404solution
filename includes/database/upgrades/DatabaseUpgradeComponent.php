@@ -96,7 +96,7 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
      * @param string $columnName Column to look for.
      * @return bool
      */
-    public function columnExists(string $tableName, string $columnName): bool {
+    public function columnExists(string $tableName, string $columnName): ?bool {
         return $this->upgrades()->canonicalUrlBackfillUpgrade()->columnExists($tableName, $columnName);
     }
 

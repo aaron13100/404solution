@@ -62,7 +62,7 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
         if ($found !== $redirectsTable) {
             return 0;
         }
-        if (!$this->columnExists($redirectsTable, 'canonical_url')) {
+        if ($this->columnExists($redirectsTable, 'canonical_url') !== true) {
             return 0;
         }
 
@@ -181,7 +181,7 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
         if ($found !== $logsTable) {
             return 0;
         }
-        if (!$this->columnExists($logsTable, 'canonical_url')) {
+        if ($this->columnExists($logsTable, 'canonical_url') !== true) {
             return 0;
         }
 
@@ -250,14 +250,30 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
      * Case-insensitive on the column name to match MySQL/MariaDB driver
      * variations in returned column-name casing.
      *
+     * Three answers, not two: true, false, and null for "the server did not
+     * tell me". Collapsing the third into false said "the column is absent"
+     * whenever the read was refused, and the ensure*Column() helpers act on
+     * absence by issuing ALTER TABLE ... ADD COLUMN -- so a denied read, a
+     * connection lost mid-upgrade or a table caught mid-rename produced a blind
+     * schema change against a table nothing had managed to introspect. Callers
+     * therefore test against true or false explicitly; null means "leave it
+     * alone and look again next tick".
+     *
      * @param string $tableName  Fully-qualified table name.
      * @param string $columnName Column to look for.
-     * @return bool
+     * @return bool|null
      */
-    public function columnExists(string $tableName, string $columnName): bool {
+    public function columnExists(string $tableName, string $columnName): ?bool {
         $result = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName,
             array('log_errors' => false));
-        $rows = is_array($result['rows'] ?? null) ? $result['rows'] : array();
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error'] : '';
+        if ($lastError !== '' || !is_array($result['rows'] ?? null) || empty($result['rows'])) {
+            // Unreadable, or a live table reporting no columns at all, which is
+            // not a state a real table can be in and so is not an answer either.
+            return null;
+        }
+        $rows = $result['rows'];
         $needle = strtolower($columnName);
         foreach ($rows as $row) {
             if (!is_array($row)) { continue; }
@@ -291,7 +307,8 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
      * @return void
      */
     public function ensureLogsv2CanonicalUrlColumn(string $logsTable): void {
-        if ($this->columnExists($logsTable, 'canonical_url')) {
+        if ($this->columnExists($logsTable, 'canonical_url') !== false) {
+            // Present, or unknown. Only a definite absence justifies an ALTER.
             return;
         }
         $inplaceQuery = "ALTER TABLE " . $logsTable .
@@ -336,7 +353,8 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
      * @return void
      */
     public function ensureRedirectsCanonicalUrlColumn(string $redirectsTable): void {
-        if ($this->columnExists($redirectsTable, 'canonical_url')) {
+        if ($this->columnExists($redirectsTable, 'canonical_url') !== false) {
+            // Present, or unknown. Only a definite absence justifies an ALTER.
             return;
         }
         $inplaceQuery = "ALTER TABLE " . $redirectsTable .

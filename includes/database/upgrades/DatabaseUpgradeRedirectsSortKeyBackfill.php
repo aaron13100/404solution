@@ -164,8 +164,8 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
         // Both columns must exist: source is read, target is written. Either
         // missing means the column-add ALTER has not completed, so there is
         // nothing to drain yet (schema-drift tolerance).
-        if (!$this->columnExists($redirectsTable, $sourceColumn)
-            || !$this->columnExists($redirectsTable, $targetColumn)) {
+        if ($this->columnExists($redirectsTable, $sourceColumn) !== true
+            || $this->columnExists($redirectsTable, $targetColumn) !== true) {
             return 0;
         }
 
@@ -287,7 +287,7 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill extends ABJ_404_S
             return;
         }
         foreach (array_keys(self::SORT_KEY_COLUMNS) as $targetColumn) {
-            if ($this->columnExists($redirectsTable, $targetColumn)) {
+            if ($this->columnExists($redirectsTable, $targetColumn) === true) {
                 $this->markSortKeyLatchIfComplete($redirectsTable, $targetColumn);
             }
         }

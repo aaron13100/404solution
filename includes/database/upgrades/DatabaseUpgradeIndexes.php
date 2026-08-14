@@ -67,6 +67,15 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 			return;
 		}
 
+		// Read the columns next to the indexes, not between deciding and acting:
+		// both loops below need it, and a table whose schema cannot be read is
+		// not a table to issue ALTERs against for any reason.
+		$existingColumns = $this->readExistingColumnNames($tableName);
+		if ($existingColumns === null) {
+			$this->logger->debugMessage("Skipping the index check on {$tableName}: its column metadata could not be read.");
+			return;
+		}
+
 		$missingIndexNames = [];
 		$driftedIndexNames = [];
 		foreach ($goalSpecsByName as $indexName => $spec) {
@@ -101,8 +110,6 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 		if (count($missingIndexNames) > 0) {
 			$this->logger->infoMessage($this->getUpgradeRuntimeId() . ": On {$tableName} I'm adding missing indexes: " . implode(', ', $missingIndexNames));
 		}
-
-		$existingColumns = $this->readExistingColumnNames($tableName);
 
 		foreach ($missingIndexNames as $indexName) {
 			$spec = $goalSpecsByName[$indexName] ?? null;
@@ -197,16 +204,34 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	     * The lowercased column names the table actually has, so an index that
 	     * references a column this install does not carry can be skipped rather
 	     * than attempted (schema-drift tolerance, defensive philosophy #1/#7).
-	     * An unreadable probe yields an empty list, which disables the check
-	     * rather than blocking every index.
+	     *
+	     * Returns null when the probe could not be answered, never an empty list.
+	     * "This table has no columns" is not a thing a live table can report, so
+	     * an empty answer only ever meant "the read failed" -- and read as a
+	     * result it says every index column is present, which is the one
+	     * conclusion that issues DDL against a table we cannot introspect. That
+	     * is the same inference readLive() refuses two probes earlier, and it
+	     * reached production as "Key column 'canonical_url' doesn't exist in
+	     * table" on any host that denies the column read.
 	     *
 	     * @param string $tableName
-	     * @return array<int, string>
+	     * @return array<int, string>|null
 	     */
-	    private function readExistingColumnNames($tableName): array {
+	    private function readExistingColumnNames($tableName): ?array {
 	        $existingColumns = [];
-	        $showColResult = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $tableName);
-	        $showColRows = is_array($showColResult['rows'] ?? null) ? $showColResult['rows'] : [];
+	        $quotedTableName = ABJ_404_Solution_TableIndexDefinitions::quoteIdentifier($tableName);
+	        if ($quotedTableName === null) {
+	            // Not a name we can safely put in a statement, so the probe is
+	            // unanswerable rather than empty -- same contract as readLive().
+	            return null;
+	        }
+	        $showColResult = $this->dbCore->queryAndGetResults("SHOW COLUMNS FROM " . $quotedTableName);
+	        $lastError = isset($showColResult['last_error']) && is_scalar($showColResult['last_error'])
+	            ? (string)$showColResult['last_error'] : '';
+	        if ($lastError !== '' || !is_array($showColResult['rows'] ?? null)) {
+	            return null;
+	        }
+	        $showColRows = $showColResult['rows'];
 	        foreach ($showColRows as $colRow) {
 	            if (!is_array($colRow)) { continue; }
 	            foreach ($colRow as $key => $value) {
@@ -215,6 +240,13 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	                    break;
 	                }
 	            }
+	        }
+	        if (empty($existingColumns)) {
+	            // A live table always has columns, so a successful read that names
+	            // none is not an answer either -- the rows came back in a shape
+	            // this version cannot read. Reporting it as "no columns" would
+	            // warn once per index about columns that are probably all there.
+	            return null;
 	        }
 	        return $existingColumns;
 	    }
@@ -230,9 +262,6 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	     * @return bool
 	     */
 	    private function indexColumnsAllExist($tableName, array $spec, array $existingColumns): bool {
-	        if (empty($existingColumns)) {
-	            return true;
-	        }
 	        $indexColNames = [];
 	        foreach (ABJ_404_Solution_CreateTableIndexParser::ddlColumnList($spec['columns']) as $column) {
 	            $indexColNames[] = $column['column'];
