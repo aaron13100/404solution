@@ -8,7 +8,7 @@
 
 **Bug Fixes**
 
-* Fixed the Page Redirects and Captured 404s tabs being able to hang after their data was already built, on hosts that compress PHP output. The response could keep trying to flush output buffers until the host's execution limit killed the request. Flushing is now bounded, so the table finishes rendering instead of spinning.
+* Fixed the Page Redirects and Captured 404s tabs being able to hang after their data was already built. When something else on the site holds an output buffer open that cannot be closed, whether that is PHP output compression or another plugin, the response could keep trying to flush buffers until the host's execution limit killed the request. Flushing is now bounded, so the table finishes rendering instead of spinning.
 * Fixed a fatal error that could happen while updating from 4.2.x, when the server's PHP bytecode cache was still handing out the previous version's files as the new ones loaded. This guard protects future updates; it cannot protect the update that installs it.
 * Fixed a crashed or killed request being able to leave an internal lock behind, which left redirect lookups on a slower fallback path until the lock expired (more than 24 hours was observed on one site). Locks are now released even when the request dies, and an abandoned lock is reclaimed after at most 5 minutes instead of after the server's maximum execution time.
 * Fixed "Illegal mix of collations" database errors on sites whose plugin tables do not all share the same collation. This affected 404 log cleanup, the admin list counts, the email digest, and the dead-destination check.
