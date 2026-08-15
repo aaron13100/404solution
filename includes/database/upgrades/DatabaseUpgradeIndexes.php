@@ -438,6 +438,26 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	            // would therefore re-run on every upgrade tick.
 	            return;
 	        }
+	        // Preflight the columns on the emit path itself, the same gate
+	        // verifyIndexes() applies to both of its loops. Established drift is
+	        // not authorization to build: the comment above says this composite
+	        // narrows when requested_url is dropped, and a table that lost the
+	        // column presents exactly that way. Emitting anyway answers
+	        // "Key column 'requested_url' doesn't exist in table" -- the line
+	        // production reports carry -- and because the repair is a DROP and an
+	        // ADD in one ALTER, an engine that applied it in halves would leave
+	        // logsv2 with neither index. Probing here rather than beside the
+	        // readLive() call keeps the read off the ticks that return early, and
+	        // leaves no path to the builder that skips the check.
+	        $existingColumns = $this->readExistingColumnNames($logsTable);
+	        if ($existingColumns === null) {
+	            $this->logger->debugMessage("Skipping {$indexName} on {$logsTable}: its column metadata could not be read.");
+	            return;
+	        }
+	        if (!$this->indexColumnsAllExist($logsTable, $spec, $existingColumns)) {
+	            return;
+	        }
+
 	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'],
 	            $spec['unique'], false, is_array($live));
 	        $results = $this->dbCore->queryAndGetResults($query);
