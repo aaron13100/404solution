@@ -83,6 +83,77 @@ function abj404_logRuntimeWarning(string $context, ?\Throwable $throwable = null
 }
 }
 
+if (!function_exists('abj404_isSelfUpdateRaceThrowable')) {
+/**
+ * Is this throwable the plugin's own files being replaced underneath a live
+ * request, rather than a defect in the plugin's code?
+ *
+ * WordPress replaces the plugin directory while requests are still running on
+ * the installed release, so for a few seconds a request can read new class
+ * files, or read no file at all, and be unable to resolve one of OUR classes.
+ * That is a hosting-lifecycle event the plugin can only degrade past and which
+ * resolves itself on the very next request; per the defensive philosophy it
+ * belongs at warning level, not at error level where it emails the maintainer
+ * about a condition nobody needs to act on. Production report 266
+ * (staging-criticalimpactcom.kinsta.cloud, 4.3.2 to 4.3.3) is one such email.
+ *
+ * Deliberately narrow, and safe to be narrow in exactly one direction: an
+ * unresolvable ABJ_404_Solution class can no longer be a plugin BUG, because
+ * ClassLoadingReachabilityTest::testProductionClassReferencesAreReachable()
+ * fails the build when any production class reference is not classmapped,
+ * same-file, or directly required. What is left at runtime is a missing or
+ * mid-swap file, i.e. infrastructure. Everything else -- an \Exception, a
+ * TypeError, a call to an undefined method, a non-plugin class -- stays at
+ * error level and keeps reaching the inbox.
+ *
+ * @param \Throwable|null $throwable
+ * @return bool
+ */
+function abj404_isSelfUpdateRaceThrowable($throwable): bool {
+    if (!($throwable instanceof \Error)) {
+        return false;
+    }
+    // PHP 8 quotes the name with ", PHP 7 with '. Interfaces, traits and enums
+    // are in the same classmap and fail with the same sentence.
+    return preg_match(
+        '/^(Class|Interface|Trait|Enum) ["\']?ABJ_404_Solution[A-Za-z0-9_]*["\']? not found$/',
+        $throwable->getMessage()
+    ) === 1;
+}
+}
+
+if (!function_exists('abj404_logCallbackFailure')) {
+/**
+ * Log a throwable caught by a plugin callback that must not crash its host
+ * (a WordPress hook, a cron-context report send, an admin page render),
+ * choosing the severity from the CAUSE rather than from the call site.
+ *
+ * A self-update race degrades to a warning, so it stays in the debug log for
+ * support without counting as an error or triggering an error report. Anything
+ * else keeps the caller's previous error-level behavior verbatim, including
+ * errorMessage()'s Exception-only second parameter.
+ *
+ * @param object|null     $logger    ABJ_404_Solution_Logging, or anything
+ *                                   exposing warn()/errorMessage().
+ * @param string          $message   Already-composed log line.
+ * @param \Throwable|null $throwable The caught throwable.
+ * @return void
+ */
+function abj404_logCallbackFailure($logger, string $message, $throwable): void {
+    if (abj404_isSelfUpdateRaceThrowable($throwable)
+            && is_object($logger) && method_exists($logger, 'warn')) {
+        $logger->warn($message . ' | plugin files were being replaced mid-request; '
+            . 'this resolves on the next request');
+        return;
+    }
+    if (is_object($logger) && method_exists($logger, 'errorMessage')) {
+        $logger->errorMessage($message, $throwable instanceof \Exception ? $throwable : null);
+        return;
+    }
+    abj404_logRuntimeWarning($message, $throwable instanceof \Throwable ? $throwable : null);
+}
+}
+
 if (!function_exists('abj404_resolve_clock')) {
 /**
  * Resolve the project clock from the root plugin bootstrap.

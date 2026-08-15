@@ -461,10 +461,18 @@ class ABJ_404_Solution_View {
 		} catch (\Throwable $e) {
 			$encodedEx = json_encode($e);
 			$encodedContext = is_string($encodedEx) ? stripcslashes(wp_kses_post($encodedEx)) : '';
-			$instance->logger->errorMessage(
-				"Caught exception (" . get_class($e) . "): " . $e->getMessage()
-				. ($encodedContext !== '' ? " | context=" . $encodedContext : '')
-			);
+			$renderFailureMessage = "Caught exception (" . get_class($e) . "): " . $e->getMessage()
+				. ($encodedContext !== '' ? " | context=" . $encodedContext : '');
+			// An admin page rendered while WordPress is replacing this plugin's
+			// own files cannot resolve a class the incoming release added
+			// (production report 266). The admin still sees the render-error
+			// panel built below; only the severity changes, so a self-healing
+			// hosting event stops emailing the maintainer.
+			if (function_exists('abj404_logCallbackFailure')) {
+				abj404_logCallbackFailure($instance->logger, $renderFailureMessage, $e);
+			} else {
+				$instance->logger->errorMessage($renderFailureMessage);
+			}
 			$subpageForContext = (string)$instance->viewGetPostOrGetSanitize('subpage');
 			$triggerForRenderError = ($subpageForContext === 'abj404_captured')
 				? 'captured_404s_page' : 'redirects_page';

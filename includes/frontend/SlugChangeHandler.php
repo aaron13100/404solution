@@ -139,10 +139,7 @@ class ABJ_404_Solution_SlugChangeHandler {
             // VRMU incident: a class momentarily missing during a plugin
             // self-update racing a live request) must not crash the
             // save/request that triggered it.
-            $this->logger->errorMessage(
-                'save_postHandler failed: ' . get_class($e) . ': ' . $e->getMessage(),
-                $e instanceof \Exception ? $e : null
-            );
+            $this->logHandlerFailure('save_postHandler', $e);
         }
     }
 
@@ -274,10 +271,7 @@ class ABJ_404_Solution_SlugChangeHandler {
             // Same reasoning as save_postHandler(): this fires on every
             // post status change site-wide and must not crash the request
             // that triggered it.
-            $this->logger->errorMessage(
-                'postStatusTransitionHandler failed: ' . get_class($e) . ': ' . $e->getMessage(),
-                $e instanceof \Exception ? $e : null
-            );
+            $this->logHandlerFailure('postStatusTransitionHandler', $e);
         }
     }
 
@@ -348,11 +342,34 @@ class ABJ_404_Solution_SlugChangeHandler {
             // Same reasoning as save_postHandler(): this fires on every
             // post deletion site-wide and must not crash the request that
             // triggered it.
-            $this->logger->errorMessage(
-                'beforeDeletePostHandler failed: ' . get_class($e) . ': ' . $e->getMessage(),
-                $e instanceof \Exception ? $e : null
-            );
+            $this->logHandlerFailure('beforeDeletePostHandler', $e);
         }
+    }
+
+    /**
+     * Record a failure one of this class's three registered hook callbacks
+     * absorbed, at the severity the CAUSE deserves.
+     *
+     * The three callbacks are entry points for every post save, status change
+     * and deletion on the site, so they also absorb the seconds-long window in
+     * which WordPress is replacing this plugin's own files (production report
+     * 266: `Class "ABJ_404_Solution_TableReadinessGate" not found`, raised from
+     * save_post during a wp-cron run that had booted 4.3.2 while 4.3.3 landed
+     * on disk). Reporting that as an error emails the maintainer about a
+     * hosting event that fixes itself on the next request; a genuine failure
+     * in the redirect-creation path still reports as an error.
+     *
+     * @param string $callback Name of the hook callback that caught it.
+     * @param \Throwable $e
+     * @return void
+     */
+    private function logHandlerFailure($callback, \Throwable $e) {
+        $message = $callback . ' failed: ' . get_class($e) . ': ' . $e->getMessage();
+        if (function_exists('abj404_logCallbackFailure')) {
+            abj404_logCallbackFailure($this->logger, $message, $e);
+            return;
+        }
+        $this->logger->errorMessage($message, $e instanceof \Exception ? $e : null);
     }
 
     /**

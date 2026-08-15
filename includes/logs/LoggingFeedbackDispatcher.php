@@ -88,10 +88,7 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
             // errorMessage()'s second param only accepts Exception (not the
             // wider Throwable an \Error also matches), so the message/class
             // are folded into the log line itself rather than dropped.
-            $this->logging->errorMessage(
-                'emailErrorLogIfNecessary: report build/send failed: ' . get_class($e) . ': ' . $e->getMessage(),
-                $e instanceof \Exception ? $e : null
-            );
+            $this->logDispatchFailure('emailErrorLogIfNecessary: report build/send failed', $e);
             return false;
         }
     }
@@ -144,12 +141,33 @@ class ABJ_404_Solution_LoggingFeedbackDispatcher {
             }
             return $sent;
         } catch (\Throwable $e) {
-            $this->logging->errorMessage(
-                'sendHeartbeatIfDueWeekly: report build/send failed: ' . get_class($e) . ': ' . $e->getMessage(),
-                $e instanceof \Exception ? $e : null
-            );
+            $this->logDispatchFailure('sendHeartbeatIfDueWeekly: report build/send failed', $e);
             return false;
         }
+    }
+
+    /**
+     * Record a report build/send failure at the severity its cause deserves.
+     *
+     * These run in the async maintenance (cron) context, which is also where a
+     * plugin self-update lands on a live request: WordPress swaps the plugin
+     * directory underneath the running process, and a class the incoming
+     * release added cannot be resolved (production report 266). That is a
+     * hosting event which fixes itself on the next run, so it degrades to a
+     * warning; a real schema-contract or transport failure still reports as an
+     * error.
+     *
+     * @param string $context Already-composed prefix naming the failed step.
+     * @param \Throwable $e
+     * @return void
+     */
+    private function logDispatchFailure($context, \Throwable $e) {
+        $message = $context . ': ' . get_class($e) . ': ' . $e->getMessage();
+        if (function_exists('abj404_logCallbackFailure')) {
+            abj404_logCallbackFailure($this->logging, $message, $e);
+            return;
+        }
+        $this->logging->errorMessage($message, $e instanceof \Exception ? $e : null);
     }
 
     /**
