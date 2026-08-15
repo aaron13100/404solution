@@ -101,8 +101,27 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
             $clientTelemetry);
         $clientSessionId = self::clientField($client, 'session_id');
         $channels = self::collectChannels($clientAttempts);
+        // Ordered by what must survive bound(), which cuts from the END.
+        //
+        // The client transport buffer is placed HERE, ahead of the bulk
+        // sections, and that position is load-bearing rather than cosmetic. It
+        // used to be appended after everything else, which made it the first
+        // thing the truncation discarded -- and it is the one channel that
+        // carries attempts the server never saw at all, the exact evidence
+        // beta.1 came back without. Observed on 2026-08-15: an excerpt
+        // assembled at 1,095,170 bytes was cut to the 256 KB contract bound and
+        // arrived with the whole telemetry block gone, on a report whose
+        // storage had failed, which is precisely when that block is the only
+        // account of what the browser did.
+        //
+        // It is also the smallest of the high-value sections and the only one
+        // whose size the plugin does not choose, so spending its bytes first
+        // costs the report almost nothing. What now absorbs the cut is
+        // loggerExcerpt() and the per-channel bulk below it: large, generic,
+        // and reconstructible from the site's own debug log.
         $sections = array(
             self::collectionManifest($channels, $clientAttempts),
+            self::clientTransportTelemetrySection($clientTelemetry),
             self::detachAbVerdict($clientSessionId),
             self::canaryReceiptInterpretation($clientSessionId),
             self::failingSessionDiagnostics($clientAttempts, $clientSessionId),
@@ -112,8 +131,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         foreach ($channels as $channel) {
             $sections[] = $channel['collected'];
         }
-        return self::bound(
-            self::appendClientTransportTelemetry(self::joinSections($sections), $clientTelemetry));
+        return self::bound(self::joinSections($sections));
     }
 
     /**
@@ -374,6 +392,10 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
      * JSON -- so a busy session, which is exactly the interesting kind, used to
      * deliver its whole client-side story as "unparseable".
      */
+    private static function clientTransportTelemetrySection(string $raw): string {
+        return self::appendClientTransportTelemetry('', $raw);
+    }
+
     private static function appendClientTransportTelemetry(string $excerpt, string $raw): string {
         if ($raw === '') {
             return $excerpt;
