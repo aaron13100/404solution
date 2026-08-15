@@ -437,6 +437,21 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
         }
         $note = "\n\n[404 Solution] Support excerpt truncated from " . strlen($excerpt)
             . ' bytes to fit the report contract.';
-        return substr($excerpt, 0, self::MAX_DEBUG_LOG_EXCERPT_BYTES - strlen($note)) . $note;
+        $kept = substr($excerpt, 0, self::MAX_DEBUG_LOG_EXCERPT_BYTES - strlen($note));
+
+        // Cut on a RECORD boundary, never mid-line. Most of what this carries
+        // is JSONL, so a byte-offset cut can leave a half-written record whose
+        // trailing brace makes it look complete to a reader, and the reader
+        // then fails on the whole excerpt rather than on the one line that was
+        // damaged. Observed as "SyntaxError: Unterminated string in JSON at
+        // position 7" against a payload whose final line had been sliced
+        // mid-string. Dropping the partial line costs one record; keeping it
+        // costs the parse.
+        $lastBreak = strrpos($kept, "\n");
+        if ($lastBreak !== false) {
+            $kept = substr($kept, 0, $lastBreak);
+        }
+
+        return $kept . $note;
     }
 }
