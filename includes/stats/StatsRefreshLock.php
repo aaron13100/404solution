@@ -28,30 +28,27 @@ class ABJ_404_Solution_StatsRefreshLock {
 
     /** @param string $cacheKey @return bool */
     public function acquire(string $cacheKey): bool {
-        if (!function_exists('add_option')) {
-            return true;
-        }
-
         $lockKey = $this->getOptionName($cacheKey);
-        if (add_option($lockKey, abj_clock()->now(), '', false)) {
+        $lockRow = $this->lockRow();
+
+        if ($lockRow->claim($lockKey, (string)abj_clock()->now())) {
             return true;
         }
 
-        if (!function_exists('get_option')) {
-            return false;
-        }
-
-        $lockValue = get_option($lockKey, false);
-        if ($lockValue === false || $lockValue === '' || $lockValue === null) {
-            return (bool)add_option($lockKey, abj_clock()->now(), '', false);
+        // A row already exists. Read it from the table (not from the options
+        // cache, which answers a concurrent request with its own write) and
+        // displace it only when it has genuinely aged out. Both the removal and
+        // the retry are conditional/atomic, so several requests finding the
+        // same expired lock still produce exactly one winner.
+        $lockValue = $lockRow->valueOf($lockKey);
+        if ($lockValue === '') {
+            return $lockRow->claim($lockKey, (string)abj_clock()->now());
         }
 
         $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
         if ($lockTs > 0 && (abj_clock()->now() - $lockTs) > self::REFRESH_LOCK_COOLDOWN_SECONDS) {
-            if (function_exists('delete_option')) {
-                delete_option($lockKey);
-            }
-            return (bool)add_option($lockKey, abj_clock()->now(), '', false);
+            $lockRow->releaseIfValueIs($lockKey, $lockValue);
+            return $lockRow->claim($lockKey, (string)abj_clock()->now());
         }
 
         return false;
@@ -59,9 +56,13 @@ class ABJ_404_Solution_StatsRefreshLock {
 
     /** @param string $cacheKey @return void */
     public function release(string $cacheKey): void {
-        if (function_exists('delete_option')) {
-            delete_option($this->getOptionName($cacheKey));
-        }
+        $this->lockRow()->release($this->getOptionName($cacheKey));
+    }
+
+    /** The lock row itself. Stateless, so a fresh instance costs nothing.
+     * @return ABJ_404_Solution_ExclusiveOptionRow */
+    private function lockRow(): ABJ_404_Solution_ExclusiveOptionRow {
+        return new ABJ_404_Solution_ExclusiveOptionRow();
     }
 
     /** @param string $cacheKey @return string */

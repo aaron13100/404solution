@@ -68,14 +68,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             return;
         }
 
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY)) {
+        if (!$this->claimFetchLock()) {
             return;
         }
-        set_transient(
-            ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            '1',
-            ABJ_404_Solution_GscConfig::LOCK_TTL
-        );
 
         try {
             $urls = $this->getUrlsToQuery();
@@ -84,8 +79,91 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
             update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, abj_clock()->now(), false);
         } finally {
-            delete_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
+            $this->releaseFetchLock();
         }
+    }
+
+    /**
+     * Take the fetch lock, so exactly one request talks to Google.
+     *
+     * The lock used to be a transient tested with `if (get_transient(...))
+     * return;` followed by a set. That is a read and then a write, and
+     * WordPress answers the read from the object cache (a transient with no
+     * persistent cache installed is an option row, read through get_option),
+     * so two requests arriving together both saw no lock and both went to the
+     * API: duplicate calls against a quota'd external service, and two writers
+     * racing to cache the answer. It is the same defect that handed two
+     * requests the 'update_db_version' lock in error report 270, in a
+     * different storage.
+     *
+     * What replaces it is one INSERT that UNIQUE(option_name) can satisfy only
+     * once. The stored value is the acquisition time so a fetch that died
+     * mid-flight (a fatal, a killed cron) does not hold the lock forever: the
+     * next attempt displaces a holder older than LOCK_TTL, conditionally on
+     * the exact value it read, and then races for the row like anybody else.
+     * A plain option row does not expire on its own the way the transient did,
+     * so that displacement is what now bounds a leaked lock.
+     *
+     * @return bool true only if this request holds the lock.
+     */
+    private function claimFetchLock(): bool {
+        $lockRow = $this->fetchLockRow();
+        $now = abj_clock()->now();
+
+        if ($lockRow->claim(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, (string)$now)) {
+            return true;
+        }
+
+        $heldSince = $lockRow->valueOf(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
+        if (!$this->fetchLockHasAgedOut($heldSince, $now)) {
+            return false;
+        }
+
+        $lockRow->releaseIfValueIs(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, $heldSince);
+
+        return $lockRow->claim(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, (string)$now);
+    }
+
+    /** @return void */
+    private function releaseFetchLock(): void {
+        $this->fetchLockRow()->release(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
+    }
+
+    /** Whether a fetch is running right now.
+     *
+     * Reads the row rather than the option cache for the same reason the claim
+     * does, and applies the TTL so a leaked lock cannot suppress background
+     * refreshes forever.
+     *
+     * @return bool
+     */
+    private function isFetchLockHeld(): bool {
+        $heldSince = $this->fetchLockRow()->valueOf(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
+
+        return $heldSince !== '' && !$this->fetchLockHasAgedOut($heldSince, abj_clock()->now());
+    }
+
+    /**
+     * @param string $heldSince the value recorded when the lock was taken
+     * @param int $now
+     * @return bool true when no live fetch can still be behind this record.
+     */
+    private function fetchLockHasAgedOut(string $heldSince, int $now): bool {
+        if ($heldSince === '' || !is_numeric($heldSince)) {
+            // Nothing writes a non-numeric value, so this is a row left by an
+            // older version (which stored '1') or a partial write. Treating it
+            // as aged out clears it; treating it as a holder would wedge every
+            // future fetch, because a value with no timestamp can never expire.
+            return true;
+        }
+
+        return ($now - (int)$heldSince) > ABJ_404_Solution_GscConfig::LOCK_TTL;
+    }
+
+    /** The lock row itself. Stateless, so a fresh instance costs nothing.
+     * @return ABJ_404_Solution_ExclusiveOptionRow */
+    private function fetchLockRow(): ABJ_404_Solution_ExclusiveOptionRow {
+        return new ABJ_404_Solution_ExclusiveOptionRow();
     }
 
     /**
@@ -128,7 +206,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return void
      */
     public function scheduleBackgroundRefresh(): void {
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY)) {
+        if ($this->isFetchLockHeld()) {
             return;
         }
         abj_cron_scheduler()->scheduleSingleIfMissing(

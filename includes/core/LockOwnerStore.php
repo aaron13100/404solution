@@ -6,14 +6,26 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Where a synchronizer lock's owner record lives, and how it is read, written,
- * and deleted.
+ * Where a synchronizer lock's owner record lives, and how it is claimed, read
+ * and released.
  *
  * This is the data-access half of the lock machinery: it knows about the
  * WordPress options table, the uploads directory, and multisite network
- * options, and nothing about acquiring, waiting, breaking, or releasing a lock.
+ * options, and nothing about waiting, breaking, or bookkeeping a lock.
  * ABJ_404_Solution_SynchronizationUtils owns that protocol and talks to this
  * class for storage.
+ *
+ * Every operation here is atomic and answers from the SHARED store, never from
+ * a per-request cache. claimOwner() is a compare-and-set (an exclusive file
+ * create, or an INSERT arbitrated by UNIQUE(option_name)); deleteOwner() only
+ * removes a record whose value the caller named; and the read in options mode
+ * is direct SQL rather than get_option(). That last point is not a performance
+ * choice: WordPress serves get_option() from the object cache and primes it on
+ * write, so without a persistent object cache a request reads back its own
+ * write. A protocol built on such a read cannot detect the loser of a race, and
+ * error report 270 is what that looks like in production -- two requests
+ * running the 4.3.2 to 4.3.3 database upgrade in the same second, each holding
+ * what it believed was the exclusive 'update_db_version' lock.
  *
  * The split matters because the storage decision is genuinely independent
  * behavior with its own persistent state and its own failure modes: a host
@@ -156,6 +168,40 @@ class ABJ_404_Solution_LockOwnerStore {
 	}
 
     /**
+     * Take ownership of $key, but only if nobody owns it yet.
+     *
+     * This is the mutual-exclusion primitive itself, and it is atomic in both
+     * storage modes: an O_CREAT|O_EXCL file create, or an INSERT that the
+     * options table's UNIQUE(option_name) index can satisfy exactly once. The
+     * caller never reads first and then decides, because the gap between a read
+     * and the write that follows it is a window in which a second request reads
+     * the same "unowned" answer -- which is how error report 270 ended up with
+     * two requests holding 'update_db_version' at the same moment.
+     *
+     * @param string $key
+     * @param string $uniqueID
+     * @return bool true only if this call created the owner record.
+     */
+    function claimOwner($key, $uniqueID) {
+    	if ($this->isFileMode()) {
+    		$fileSync = ABJ_404_Solution_FileSync::getInstance();
+    		try {
+    			return $fileSync->claimOwnerFile($key, $uniqueID);
+    		} catch (Throwable $e) {
+    			// An unwritable uploads directory, a full disk, a revoked
+    			// permission. Report the claim as lost, which stops the caller
+    			// entering its critical section, and record why: a lock that can
+    			// never be taken silently disables every synchronized section in
+    			// the plugin, and that has to be diagnosable.
+    			$this->logStorageFailure('claim the lock owner record for key "' . $key . '"', $e);
+    			return false;
+    		}
+    	}
+
+    	return $this->optionRowFor($key)->claim($key, $uniqueID);
+    }
+
+    /**
      * @param string $key
      * @return string
      */
@@ -185,41 +231,81 @@ class ABJ_404_Solution_LockOwnerStore {
     		}
 
     	} else {
-    		// MULTISITE: Use network-aware option for N-gram locks
-    		$ownerRaw = $this->getNetworkAwareOption($key);
-    		$owner = is_string($ownerRaw) ? $ownerRaw : '';
+    		$owner = $this->readOwnerRow($key);
     	}
 
     	return $owner;
     }
 
     /**
-     * @param string $key
-     * @param string $owner
-     * @return void
-     */
-    function writeOwner($key, $owner) {
-    	if ($this->isFileMode()) {
-    		$fileSync = ABJ_404_Solution_FileSync::getInstance();
-    		$fileSync->writeOwnerToFile($key, $owner);
-    	} else {
-    		// MULTISITE: Use network-aware option for N-gram locks
-    		$this->updateNetworkAwareOption($key, $owner);
-    	}
-    }
-
-    /**
+     * Release ownership of $key, but only if $owner still holds it.
+     *
+     * The condition is not a nicety. Every caller decides to delete on the
+     * strength of a PRIOR read, and between that read and this call the record
+     * can have been broken as stale or taken over by another request. Making
+     * the delete itself carry the expected owner means a request can only ever
+     * remove its own record, which is what stops a request that lost a race
+     * from wiping the winner's lock.
+     *
      * @param string $owner
      * @param string $key
-     * @return void
+     * @return bool true if the record named by $owner was removed.
      */
     function deleteOwner($owner, $key) {
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
+    		$currentOwner = $this->readOwner($key);
+    		if ($currentOwner !== '' && $currentOwner !== $owner) {
+    			return false;
+    		}
     		$fileSync->releaseLock($owner, $key);
-    	} else {
-    		// MULTISITE: Use network-aware option for N-gram locks
-    		$this->deleteNetworkAwareOption($key);
+    		return true;
+    	}
+
+    	return $this->optionRowFor($key)->releaseIfValueIs($key, $owner);
+    }
+
+    /** The owner value recorded in the options table.
+     *
+     * @param string $key
+     * @return string '' when no record exists, or when the storage cannot answer.
+     */
+    private function readOwnerRow($key) {
+    	return $this->optionRowFor($key)->valueOf($key);
+    }
+
+    /** The exclusive options row that holds $key's owner record.
+     *
+     * Network-wide locks (the N-gram rebuild pair, when the plugin is network
+     * activated) contend on the network's main site rather than per blog, which
+     * is what makes them network-wide. Lock records are created and deleted
+     * within a single request, so nothing had to migrate when that storage
+     * moved off sitemeta; a record left there by an older version simply stops
+     * being consulted.
+     *
+     * @param string $key
+     * @return ABJ_404_Solution_ExclusiveOptionRow
+     */
+    private function optionRowFor($key) {
+    	return new ABJ_404_Solution_ExclusiveOptionRow($this->shouldUseNetworkStorage($key)
+    		? ABJ_404_Solution_ExclusiveOptionRow::SCOPE_NETWORK_MAIN_SITE
+    		: ABJ_404_Solution_ExclusiveOptionRow::SCOPE_CURRENT_BLOG);
+    }
+
+    /** Record a storage failure that cost the caller a lock.
+     *
+     * @param string $attempted what the store was trying to do
+     * @param Throwable $e
+     * @return void
+     */
+    private function logStorageFailure($attempted, Throwable $e) {
+    	if (!function_exists('abj_service')) {
+    		return;
+    	}
+    	$logger = abj_service('logging');
+    	if (is_object($logger) && method_exists($logger, 'warn')) {
+    		$logger->warn('Could not ' . $attempted . '; treating the lock as unavailable. '
+    			. get_class($e) . ' (code ' . (string)$e->getCode() . '): ' . $e->getMessage());
     	}
     }
 
@@ -257,46 +343,5 @@ class ABJ_404_Solution_LockOwnerStore {
         $networkWideLocks = ['ngram_rebuild', 'ngram_schedule'];
 
         return $this->isNetworkActivated() && in_array($userKey, $networkWideLocks);
-    }
-
-    /**
-     * Get an option value, using network-wide storage for N-gram locks.
-     *
-     * @param string $key The option key
-     * @param mixed $default Default value if option doesn't exist
-     * @return mixed The option value
-     */
-    private function getNetworkAwareOption($key, $default = false) {
-        if ($this->shouldUseNetworkStorage($key)) {
-            return get_site_option($key, $default);
-        }
-        return get_option($key, $default);
-    }
-
-    /**
-     * Update an option value, using network-wide storage for N-gram locks.
-     *
-     * @param string $key The option key
-     * @param mixed $value The value to store
-     * @return bool True if updated successfully
-     */
-    private function updateNetworkAwareOption($key, $value) {
-        if ($this->shouldUseNetworkStorage($key)) {
-            return update_site_option($key, $value);
-        }
-        return update_option($key, $value);
-    }
-
-    /**
-     * Delete an option, using network-wide storage for N-gram locks.
-     *
-     * @param string $key The option key
-     * @return bool True if deleted successfully
-     */
-    private function deleteNetworkAwareOption($key) {
-        if ($this->shouldUseNetworkStorage($key)) {
-            return delete_site_option($key);
-        }
-        return delete_option($key);
     }
 }

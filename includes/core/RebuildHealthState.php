@@ -106,14 +106,32 @@ class ABJ_404_Solution_RebuildHealthState {
         return true;
     }
 
+    /** Give up the trial lock row.
+     *
+     * Goes through the same exclusive-row primitive the claim uses rather than
+     * delete_option(), so there is one write path to this row instead of two
+     * that have to be kept consistent with each other.
+     *
+     * @return void
+     */
+    private function releaseTrialLock(): void {
+        (new ABJ_404_Solution_ExclusiveOptionRow())->release(self::TRIAL_LOCK_OPTION);
+    }
+
     /** @return string|null */
     public function acquireTrialToken(): ?string {
-        if (!function_exists('add_option') || !function_exists('get_option')) { return null; }
         $now = $this->clock->now();
-        $existing = get_option(self::TRIAL_LOCK_OPTION, 0);
-        $existingExpires = is_scalar($existing) ? intval($existing) : 0;
-        if ($existingExpires > 0 && $existingExpires <= $now && function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
-        $added = add_option(self::TRIAL_LOCK_OPTION, (string)($now + self::TRIAL_TTL_SECONDS), '', false);
+        // Read the row from the table rather than through get_option(), whose
+        // per-request cache answers a racing request with its own write, and
+        // clear an expired holder conditionally on the exact value read so a
+        // fresh holder is never displaced. The claim underneath is a single
+        // atomic INSERT: several requests that all saw the same expired trial
+        // lock still produce exactly one token.
+        $lockRow = new ABJ_404_Solution_ExclusiveOptionRow();
+        $existing = $lockRow->valueOf(self::TRIAL_LOCK_OPTION);
+        $existingExpires = is_numeric($existing) ? intval($existing) : 0;
+        if ($existingExpires > 0 && $existingExpires <= $now) { $lockRow->releaseIfValueIs(self::TRIAL_LOCK_OPTION, $existing); }
+        $added = $lockRow->claim(self::TRIAL_LOCK_OPTION, (string)($now + self::TRIAL_TTL_SECONDS));
         if (!$added) { return null; }
         try {
             $token = bin2hex(random_bytes(8));
@@ -151,7 +169,7 @@ class ABJ_404_Solution_RebuildHealthState {
             $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS, 'daily_recovery_until' => 0);
             return $state;
         });
-        if (function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
+        $this->releaseTrialLock();
         $this->log('warn', sprintf('Rebuild health: failure (class=%s). Message: %s', $class, substr($msg, 0, 200)));
     }
 
@@ -163,13 +181,13 @@ class ABJ_404_Solution_RebuildHealthState {
             $state['trial'] = array('token' => '', 'started_at' => 0, 'ttl' => self::TRIAL_TTL_SECONDS, 'daily_recovery_until' => 0);
             return $state;
         });
-        if (function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
+        $this->releaseTrialLock();
     }
 
     /** @return void */
     public function reset(): void {
         if (function_exists('update_option')) { update_option(self::OPTION_NAME, $this->defaultState(), false); }
-        if (function_exists('delete_option')) { delete_option(self::TRIAL_LOCK_OPTION); }
+        $this->releaseTrialLock();
     }
 
     /** @return array{failure_count: int, last_failure_msg: string, last_failure_class: string, cooldown_seconds: int, next_allowed_at: int}|null */

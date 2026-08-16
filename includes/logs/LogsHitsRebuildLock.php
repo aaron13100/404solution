@@ -1,0 +1,131 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * The cross-request lock that lets only one hits-table rebuild run at a time.
+ *
+ * Rebuilding wp_abj404_logs_hits reads the whole logs table and swaps the
+ * result in. Two of them at once is wasted work at best, and at worst one
+ * rebuild's swap lands under the other's read. Cron, the shutdown listener and
+ * an admin page view can all reach the rebuild in the same second, so the lock
+ * is what keeps that to one.
+ *
+ * Occupancy is decided by ABJ_404_Solution_ExclusiveOptionRow, which claims the
+ * row with an INSERT that UNIQUE(option_name) satisfies exactly once. This used
+ * to be add_option(), on the understanding that it returns false for a name
+ * that already exists; WordPress guards add_option() with a cache-served
+ * get_option() and, since 6.4, writes with INSERT ... ON DUPLICATE KEY UPDATE,
+ * so two concurrent callers could both be told they had added it.
+ *
+ * What lives HERE rather than in that primitive is the policy: how long a
+ * holder may hold, when one may be displaced, and what an unreadable value
+ * means. Those differ per lock (the synchronizer breaks on age and releases by
+ * owner id; this one expires on a TTL), which is why the primitive deliberately
+ * knows none of them.
+ */
+class ABJ_404_Solution_LogsHitsRebuildLock {
+
+    /** How long a holder may hold before a later request may displace it.
+     *
+     * This is the leak bound, not a budget: nothing expires an option row, so
+     * a rebuild killed mid-flight (a fatal, a reaped cron worker) would hold
+     * the lock forever without it. It must comfortably exceed a healthy
+     * rebuild, or a live rebuild gets displaced by the next request and both
+     * then run, which is the thing the lock exists to prevent.
+     *
+     * @var int
+     */
+    const TTL_SECONDS = 180;
+
+    /** @var ABJ_404_Solution_DatabaseCoreInterface */
+    private $dbCore;
+
+    /** @param ABJ_404_Solution_DatabaseCoreInterface $dbCore */
+    public function __construct($dbCore) {
+        $this->dbCore = $dbCore;
+    }
+
+    /** Take the lock, so exactly one rebuild runs.
+     *
+     * The claim comes FIRST, before anything is read. Reading the row and then
+     * deciding whether to write it is the protocol two concurrent requests both
+     * pass, because WordPress answers that read from a per-request cache. The
+     * read below happens only after a claim has already been attempted and
+     * lost, purely to decide whether the holder it lost to has aged out.
+     *
+     * @return bool true only if this request holds the lock.
+     */
+    public function acquire(): bool {
+        $lockName = $this->optionName();
+        $lockRow = $this->lockRow();
+        if ($lockRow->claim($lockName, (string)abj_clock()->now())) {
+            return true;
+        }
+
+        // A row already exists. Only a genuinely expired holder may be
+        // displaced, and the retry is another atomic claim, so at most one of
+        // several requests that all found the same expired lock takes it.
+        if ($this->isHeld()) {
+            return false;
+        }
+
+        return $lockRow->claim($lockName, (string)abj_clock()->now());
+    }
+
+    /** @return void */
+    public function release(): void {
+        $this->lockRow()->release($this->optionName());
+    }
+
+    /** Whether a live (non-expired) holder currently has the lock.
+     *
+     * Clears the row as a side effect when what it holds is unusable or has
+     * aged out, always conditionally on the exact value just read, so a holder
+     * that took the lock in between keeps it.
+     *
+     * @return bool
+     */
+    public function isHeld(): bool {
+        $lockName = $this->optionName();
+        $lockRow = $this->lockRow();
+        $lockValue = $lockRow->valueOf($lockName);
+        if ($lockValue === '') {
+            return false;
+        }
+
+        if (!is_numeric($lockValue)) {
+            // Nothing writes a non-numeric value, so this is a row left by an
+            // older version or a partial write. Clearing it is the only safe
+            // reading: a value with no timestamp in it can never age out, so
+            // treating it as a holder would wedge rebuilding permanently.
+            $lockRow->releaseIfValueIs($lockName, $lockValue);
+            return false;
+        }
+
+        $lockTimestamp = (int)$lockValue;
+        if ($lockTimestamp > 0 && (abj_clock()->now() - $lockTimestamp) > self::TTL_SECONDS) {
+            $lockRow->releaseIfValueIs($lockName, $lockValue);
+            return false;
+        }
+
+        return true;
+    }
+
+    /** The option row that holds the lock. Stateless, so a fresh instance
+     * costs nothing.
+     *
+     * @return ABJ_404_Solution_ExclusiveOptionRow
+     */
+    private function lockRow(): ABJ_404_Solution_ExclusiveOptionRow {
+        return new ABJ_404_Solution_ExclusiveOptionRow();
+    }
+
+    /** @return string */
+    private function optionName(): string {
+        return $this->dbCore->tableNameResolver()->getLowercasePrefix()
+            . 'abj404_logs_hits_rebuild_lock';
+    }
+}

@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/LogsHitsRollupServiceInterface.php';
 require_once __DIR__ . '/LogsHitsCanonicalUrlJoinHelper.php';
 require_once __DIR__ . '/LogsHitsTableRebuilder.php';
+require_once __DIR__ . '/LogsHitsRebuildLock.php';
 
 /**
  * wp_abj404_logs_hits rollup lifecycle (existence checks, scheduling,
@@ -25,8 +26,8 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     const HITS_TABLE_MAX_AGE_SECONDS = 300;
     /** @var int Minimum interval between hits-table rebuild schedules (server-side dedupe). */
     const HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS = 30;
-    /** @var int Cross-request lock timeout for logs-hits rebuild jobs. */
-    const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = 180;
+    /** @var int Cross-request lock timeout for logs-hits rebuild jobs. Canonical home is the rebuild lock; aliased here for backward-compatible forwarding via LogsRepository. */
+    const HITS_TABLE_REBUILD_LOCK_TTL_SECONDS = ABJ_404_Solution_LogsHitsRebuildLock::TTL_SECONDS;
     /** @var int Number of logsv2 IDs to process per chunk during pre-aggregation. Canonical home is the rebuild engine; aliased here for backward-compatible forwarding via LogsRepository. */
     const HITS_TABLE_PREAGG_CHUNK_SIZE = ABJ_404_Solution_LogsHitsTableRebuilder::HITS_TABLE_PREAGG_CHUNK_SIZE;
     /** @var int Direct-path threshold for hits-table rebuild. Canonical home is the rebuild engine; aliased here for backward-compatible forwarding via LogsRepository. */
@@ -72,6 +73,9 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     /** @var ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper */
     private $joinHelper;
 
+    /** @var ABJ_404_Solution_LogsHitsRebuildLock */
+    private $rebuildLock;
+
     /** @var ABJ_404_Solution_LogsHitsTableRebuilder */
     private $rebuilder;
 
@@ -93,6 +97,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             ? $rebuildHealth
             : $this->resolveRebuildHealthState();
         $this->noticeState = $noticeState !== null ? $noticeState : $dbCore->noticeState();
+        $this->rebuildLock = new ABJ_404_Solution_LogsHitsRebuildLock($dbCore);
         $this->joinHelper = new ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper($dbCore);
         $this->rebuilder = new ABJ_404_Solution_LogsHitsTableRebuilder(
             $this->dbCore,
@@ -308,7 +313,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             return false;
         }
         if ($this->noticeState->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); return false; }
-        if (!$this->acquireHitsTableRebuildLock()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held."); return false; }
+        if (!$this->rebuildLock->acquire()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild lock is already held."); return false; }
         try {
             $maxLogIdSnapshot = $this->getMaxLogId();
             $minLogId = $this->getMinLogId();
@@ -329,7 +334,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $this->logger->errorMessage(__FUNCTION__ . " post-rebuild step failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
             return false;
         } finally {
-            $this->releaseHitsTableRebuildLock();
+            $this->rebuildLock->release();
         }
     }
 
@@ -353,7 +358,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
     }
 
     // =========================================================================
-    // Table existence + scheduling + locking
+    // Table existence + scheduling
     // =========================================================================
 
     /** @inheritDoc */
@@ -387,7 +392,7 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         if ($this->rebuildHealth !== null && !$this->rebuildHealth->mayStartExpensiveRebuild()) { $this->logger->debugMessage(__FUNCTION__ . " skipped because rebuild health gate is closed."); return; }
         if ($this->noticeState->shouldSkipNonEssentialDbWrites()) { $this->logger->debugMessage(__FUNCTION__ . " skipped due to temporary DB write cooldown."); return; }
         if (!self::$hitsTableRebuildScheduled) {
-            if ($this->isHitsTableRebuildLocked()) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running."); return; }
+            if ($this->rebuildLock->isHeld()) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling because another rebuild is already running."); return; }
             $rawScheduledFlag = $this->noticeState->getRuntimeFlag(self::HITS_TABLE_LAST_SCHEDULED_FLAG);
             $lastScheduled = is_scalar($rawScheduledFlag) ? (int)$rawScheduledFlag : 0;
             if ($lastScheduled > 0 && (abj_clock()->now() - $lastScheduled) < self::HITS_TABLE_SCHEDULE_COOLDOWN_SECONDS) { $this->logger->debugMessage(__FUNCTION__ . " skipping scheduling due to cooldown."); return; }
@@ -407,30 +412,6 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
         }
     }
 
-    private function getHitsTableRebuildLockOptionName(): string { return $this->dbCore->tableNameResolver()->getLowercasePrefix() . 'abj404_logs_hits_rebuild_lock'; }
-
-    /** @return bool */
-    private function isHitsTableRebuildLocked(): bool {
-        if (!function_exists('get_option')) { return false; }
-        $lockValue = get_option($this->getHitsTableRebuildLockOptionName(), false);
-        if ($lockValue === false || $lockValue === null || $lockValue === '') { return false; }
-        if (!is_numeric($lockValue)) { if (function_exists('delete_option')) { delete_option($this->getHitsTableRebuildLockOptionName()); } return false; }
-        $lockTimestamp = (int)$lockValue;
-        if ($lockTimestamp > 0 && (abj_clock()->now() - $lockTimestamp) > self::HITS_TABLE_REBUILD_LOCK_TTL_SECONDS) { if (function_exists('delete_option')) { delete_option($this->getHitsTableRebuildLockOptionName()); } return false; }
-        return true;
-    }
-
-    /** @return bool */
-    private function acquireHitsTableRebuildLock(): bool {
-        if (!function_exists('add_option')) { return true; }
-        $lockName = $this->getHitsTableRebuildLockOptionName();
-        if (add_option($lockName, (string)abj_clock()->now(), '', false)) { return true; }
-        if ($this->isHitsTableRebuildLocked()) { return false; }
-        return (bool)add_option($lockName, (string)abj_clock()->now(), '', false);
-    }
-
-    /** @return void */
-    private function releaseHitsTableRebuildLock(): void { if (function_exists('delete_option')) { delete_option($this->getHitsTableRebuildLockOptionName()); } }
 
     // =========================================================================
     // logsv2 / logs_hits id queries

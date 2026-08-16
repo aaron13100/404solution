@@ -73,7 +73,7 @@ $abj404ClassesByDirectory = array(
     'core' => array(
         'PluginLogicAdminActions', 'PluginLogicImportExport', 'PluginLogicLifecycle',
         'PluginLogicPageOrdering', 'PluginLogicSettingsUpdate', 'PluginLogicUrlNormalization',
-        'PluginLogicDefaults', 'InternalLinkScanner', 'LockOwnerStore',
+        'PluginLogicDefaults', 'InternalLinkScanner', 'LockOwnerStore', 'ExclusiveOptionRow',
         'PluginLogicVersionUpgrader', 'PluginLogicOptionsResolver', 'ErrorHandler',
         'FileSystemService', 'Functions', 'RegexHelper', 'RegexHelperMb', 'RegexHelperPreg',
         'PermalinkResolver', 'UrlEncoder', 'Sanitizer', 'QueryStringHelper', 'PostRef', 'UserRef',
@@ -202,7 +202,7 @@ $abj404ClassesByDirectory = array(
         'LoggingMessageWriter', 'RoutineLoggingBridge', 'LogTimestampFormatter', 'LogDebugModeResolver',
         'LogsMetricsReader', 'LogReadQueryInterface', 'LogPrivacyInterface', 'LogWriteInterface',
         'LogHitsRebuildInterface', 'LogHitsLifecycleInterface', 'LogsHitsRollupServiceInterface',
-        'LogsHitsRollupService', 'LogsHitsTableRebuilder', 'LogsLookupRepository',
+        'LogsHitsRollupService', 'LogsHitsTableRebuilder', 'LogsHitsRebuildLock', 'LogsLookupRepository',
         'LogsPrivacyService', 'LogsReadQueries', 'LogsHitsDataPopulator',
         'LogsWriteRecoveryPolicy', 'LogsWriter', 'RedirectHitLogEntry', 'LogsRepositoryInterface',
         'LogsRepository', 'EmailDigest', 'Logging', 'TrackingLogsRepository',
