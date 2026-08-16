@@ -320,6 +320,17 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
             $this->logger->infoMessage("Added canonical_url to {$logsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
             return;
         }
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error'] : '';
+        if ($this->schemaChangeWasAlreadyApplied($lastError)) {
+            // Another request added it between the columnExists() probe above
+            // and this ALTER. The bare fallback would meet the same column and
+            // the same answer, so the column is there and there is nothing to
+            // fall back to.
+            $this->logger->infoMessage("canonical_url on {$logsTable} was added by another process " .
+                "while this one was adding it.");
+            return;
+        }
         // Engine didn't support online DDL for ADD COLUMN, so the bare ALTER
         // falls back to whatever algorithm the engine picks (COPY on MyISAM / very
         // old InnoDB). On modern InnoDB the bare ALTER is itself implicitly
@@ -364,6 +375,17 @@ class ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill extends ABJ_404_Solut
             array('log_too_slow' => false, 'log_errors' => false));
         if (empty($result['last_error'])) {
             $this->logger->infoMessage("Added canonical_url to {$redirectsTable} (ALGORITHM=INPLACE, LOCK=NONE).");
+            return;
+        }
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error'] : '';
+        if ($this->schemaChangeWasAlreadyApplied($lastError)) {
+            // Another request added it between the columnExists() probe above
+            // and this ALTER. The bare fallback would meet the same column and
+            // the same answer, so the column is there and there is nothing to
+            // fall back to.
+            $this->logger->infoMessage("canonical_url on {$redirectsTable} was added by another process " .
+                "while this one was adding it.");
             return;
         }
         $bareQuery = "ALTER TABLE " . $redirectsTable .

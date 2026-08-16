@@ -101,6 +101,36 @@ abstract class ABJ_404_Solution_DatabaseUpgradeComponent {
     }
 
     /**
+     * Whether a failed schema statement failed only because the schema already
+     * reflects the change it asked for.
+     *
+     * Every "ensure it exists" helper in this package is a SHOW COLUMNS or
+     * SHOW INDEX followed by an ALTER, and MySQL has no way to make those two
+     * one statement. On a plugin update that arrives on several concurrent
+     * requests at once, more than one of them decides the same column or index
+     * is missing and issues the same ALTER; all but one are then told the work
+     * is already done. That is the state the helper wanted, so the answer is to
+     * stop -- not to retry a statement whose only obstacle is its own goal
+     * having been met.
+     *
+     * Lives here rather than in each helper so the several fallback ladders ask
+     * the classifier one way. The classification itself belongs to
+     * {@see ABJ_404_Solution_DatabaseSchemaErrorTaxonomy::isRedundantSchemaChangeError()},
+     * which is also what stops the shared DAO reporter mailing these to the
+     * developer.
+     *
+     * @param string $lastError What the engine said, or '' when it said nothing.
+     * @return bool
+     */
+    protected function schemaChangeWasAlreadyApplied(string $lastError): bool {
+        if ($lastError === '') {
+            return false;
+        }
+        return $this->dbCore->errorClassifier()->taxonomy()->schema()
+            ->isRedundantSchemaChangeError($lastError);
+    }
+
+    /**
      * Read a resumable id cursor from a WordPress option, clamped to a
      * non-negative int. Shared by the chunked backfill drains so the cursor I/O
      * has one definition.

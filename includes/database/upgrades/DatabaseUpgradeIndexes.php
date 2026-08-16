@@ -117,7 +117,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 				continue;
 			}
 			$this->deleteSpellingCacheBeforeUniqueIndex($tableName, $spec);
-			$this->addIndexWithOnlineFallback($tableName, $spec['name'], $spec['columns'], $spec['unique']);
+			$this->indexWriter()->addIndex($tableName, $spec);
 		}
 
 		foreach ($driftedIndexNames as $indexName) {
@@ -184,7 +184,7 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	            ") but the schema defines " . trim((string)$spec['columns']) . ".");
 
 	        $this->deleteSpellingCacheBeforeUniqueIndex($tableName, $spec);
-	        $this->addIndexWithOnlineFallback($tableName, $spec['name'], $spec['columns'], $spec['unique'], true);
+	        $this->indexWriter()->addIndex($tableName, $spec, array('replace_existing' => true));
 
 	        $after = (new ABJ_404_Solution_TableIndexDefinitions($this->dbCore))->readLive($tableName);
 	        $rebuilt = is_array($after) ? ($after[strtolower((string)$spec['name'])] ?? null) : null;
@@ -292,38 +292,6 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	    }
 
 	    /**
-	     * Add one missing index, or replace one whose definition drifted. Try
-	     * online/no-lock DDL first; if the server or storage engine rejects
-	     * those hints, retry the legacy plain ALTER.
-	     *
-	     * @param string $tableName
-	     * @param string $indexName
-	     * @param string $columnsSql
-	     * @param bool $unique
-	     * @param bool $replaceExisting Drop the same-named index in the same ALTER first.
-	     * @return void
-	     */
-	    private function addIndexWithOnlineFallback($tableName, $indexName, $columnsSql, $unique,
-	            $replaceExisting = false): void {
-	        $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, true, $replaceExisting);
-	        $result = $this->dbCore->queryAndGetResults($addStatement);
-	        $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-	        if ($lastError !== '') {
-	            $this->logger->warn("Online index add for {$indexName} on {$tableName} failed; retrying without online DDL hints: " .
-	                $lastError . " (query: {$addStatement})");
-	            $addStatement = $this->buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique, false, $replaceExisting);
-	            $result = $this->dbCore->queryAndGetResults($addStatement);
-	            $lastError = isset($result['last_error']) && is_scalar($result['last_error']) ? (string)$result['last_error'] : '';
-	            if ($lastError !== '') {
-	                $this->logger->errorMessage("Failed to add index {$indexName} to {$tableName}: " .
-	                    $lastError . " (query: {$addStatement})");
-	                return;
-	            }
-	        }
-	        $this->logger->infoMessage("I added an index: " . $addStatement);
-	    }
-
-	    /**
 	     * Put redirect admin-view performance indexes before lower-impact recovery
 	     * indexes. Each index is still added by its own ALTER TABLE statement; this
 	     * only controls which missing index is attempted first on weak hosts.
@@ -365,39 +333,6 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	            return $pa <=> $pb;
 	        });
 	        return $missingIndexNames;
-	    }
-
-	    /**
-	     * Build a valid ALTER TABLE ... ADD INDEX statement from structured parts.
-	     *
-	     * @param string $tableName
-	     * @param string $indexName
-	     * @param string $columnsSql Must include surrounding parentheses, e.g. "(`a`, `b`(190))"
-	     * @param bool $unique
-	     * @param bool $online Whether to append ALGORITHM=INPLACE, LOCK=NONE.
-	     * @param bool $replaceExisting Emit "drop index `n`, add ..." so a drifted index is
-	     *        swapped in ONE statement: the table is never left without it, and the engine
-	     *        makes a single pass. IF NOT EXISTS is suppressed here -- the index provably
-	     *        exists, and pairing it with the drop in one ALTER is ambiguous across engines.
-	     * @return string
-	     */
-	    private function buildAddIndexStatementFromParts($tableName, $indexName, $columnsSql, $unique,
-	            $online = false, $replaceExisting = false) {
-	        global $wpdb;
-	        /** @var \wpdb $wpdb */
-	        $serverVersion = is_object($wpdb) && method_exists($wpdb, 'db_version') ? ($wpdb->db_version() ?: '') : '';
-	        $serverInfo = is_object($wpdb) && property_exists($wpdb, 'db_server_info') ? ($wpdb->db_server_info ?? '') : '';
-
-	        $isMaria = stripos($serverInfo, 'mariadb') !== false || stripos($serverVersion, 'maria') !== false;
-	        $cleanedVersion = preg_replace('/[^\d\.]/', '', $serverVersion) ?? '';
-	        $supportsIfNotExists = $isMaria && version_compare($cleanedVersion, '10.5', '>=');
-
-	        $indexType = $unique ? 'unique index' : 'index';
-	        $ifNotExists = ($supportsIfNotExists && !$replaceExisting) ? ' if not exists' : '';
-	        $onlineClause = $online ? ', ALGORITHM=INPLACE, LOCK=NONE' : '';
-	        $dropClause = $replaceExisting ? " drop index `" . $indexName . "`," : '';
-
-	        return "alter table " . $tableName . $dropClause . " add " . $indexType . $ifNotExists . " `" . $indexName . "` " . trim($columnsSql) . $onlineClause;
 	    }
 
 	    /**
@@ -458,17 +393,26 @@ class ABJ_404_Solution_DatabaseUpgradeIndexes extends ABJ_404_Solution_DatabaseU
 	            return;
 	        }
 
-	        $query = $this->buildAddIndexStatementFromParts($logsTable, $spec['name'], $spec['columns'],
-	            $spec['unique'], false, is_array($live));
-	        $results = $this->dbCore->queryAndGetResults($query);
-        $lastError = isset($results['last_error']) && is_scalar($results['last_error'])
-            ? (string)$results['last_error']
-            : '';
-	        if ($lastError !== '') {
-	            $this->logger->errorMessage("Failed to add {$indexName} to {$logsTable}: " . $lastError . " (query: {$query})");
-        } else {
-            $this->logger->infoMessage("Added {$indexName} to {$logsTable} using query: {$query}");
-        }
-    }
+	        // try_online_first is off because this repair has always been issued
+	        // plainly: it is a DROP and an ADD in one statement over a table that
+	        // is multi-GB on busy sites, and which algorithm an engine picks for
+	        // that is not something to change while fixing how its answer is read.
+	        $this->indexWriter()->addIndex($logsTable, $spec, array(
+	            'replace_existing' => is_array($live),
+	            'try_online_first' => false,
+	        ));
+	    }
+
+	    /**
+	     * The engine-facing half of index repair: what statement this server
+	     * takes, and what its answer means. Built per call from the two
+	     * collaborators this component already holds, the same way it builds
+	     * ABJ_404_Solution_TableIndexDefinitions.
+	     *
+	     * @return ABJ_404_Solution_TableIndexWriter
+	     */
+	    private function indexWriter(): ABJ_404_Solution_TableIndexWriter {
+	        return new ABJ_404_Solution_TableIndexWriter($this->dbCore, $this->logger);
+	    }
 
 }

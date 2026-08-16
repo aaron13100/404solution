@@ -37,6 +37,27 @@ class ABJ_404_Solution_DatabaseSchemaErrorTaxonomy {
         'no such table',
     );
 
+    /**
+     * The engines' several ways of saying that a schema change is one the
+     * schema already reflects. Every entry is an end state the caller asked
+     * for, reported through an error channel because the caller was not the one
+     * who brought it about. See {@see isRedundantSchemaChangeError()}.
+     *
+     * The DROP wording is listed three times on purpose: MySQL 5.7 says
+     * "check that column/key exists", MySQL 8.0.29 shortened it to "check that
+     * it exists", and MariaDB names the object type ("Can't DROP INDEX `x`").
+     * One marker cannot cover an estate running 5.6 through 11.x.
+     *
+     * @var array<int, string>
+     */
+    private const REDUNDANT_SCHEMA_CHANGE_MARKERS = array(
+        'duplicate key name',           // ER_DUP_KEYNAME 1061: ADD INDEX, that index is already there.
+        'duplicate column name',        // ER_DUP_FIELDNAME 1060: ADD COLUMN, that column is already there.
+        'already exists',               // ER_TABLE_EXISTS_ERROR 1050: CREATE/RENAME onto a name in use.
+        'check that column/key exists', // ER_CANT_DROP_FIELD_OR_KEY 1091: the drop target is already gone.
+        'check that it exists',         // Same, as MySQL 8.0.29+ and MariaDB word it.
+    );
+
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -136,6 +157,51 @@ class ABJ_404_Solution_DatabaseSchemaErrorTaxonomy {
         }
         $lower = strtolower($errorText);
         foreach (self::MALFORMED_STATEMENT_MARKERS as $marker) {
+            if ($this->f->strpos($lower, $marker) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The statement asked for a schema change the schema already reflects: the
+     * index, column or table it wanted to add is there, or the one it wanted to
+     * drop is gone. The goal state was reached -- by somebody else.
+     *
+     * This exists because "ensure it exists" cannot be written any other way.
+     * MySQL has no transactional DDL, so SHOW INDEX / SHOW COLUMNS and the
+     * ALTER they authorize are two statements with a gap between them, and a
+     * plugin update arrives on every concurrent request at once. Report 270
+     * (dianthus.zuidplas.net, 2026-08-16 07:10:52) caught two front-end
+     * requests inside that gap: both read the redirects table before either
+     * wrote, both decided idx_status_disabled_timestamp_id was missing, one
+     * won, and the loser reported the winner's success to the developer as
+     * five ERROR lines. Closing the gap is not available; classifying its
+     * outcome correctly is.
+     *
+     * NOT part of {@see ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy::isInfrastructureSqlError()}:
+     * that union arms write-block cooldowns, notice state and repair passes for
+     * a host in trouble, and a host that answered "already done" is not in
+     * trouble. The only thing this class changes is which channel the answer is
+     * recorded on.
+     *
+     * The matching is deliberately narrow. ER_DUP_ENTRY ("Duplicate entry '17'
+     * for key 'PRIMARY'") is a row the write LOST, not a schema state it
+     * reached, and it shares its first word with ER_DUP_KEYNAME; a marker loose
+     * enough to cover both would silence real data failures. Anything not
+     * listed keeps today's error channel, which is the safe direction to miss
+     * in.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    public function isRedundantSchemaChangeError(string $errorText): bool {
+        if ($errorText === '') {
+            return false;
+        }
+        $lower = strtolower($errorText);
+        foreach (self::REDUNDANT_SCHEMA_CHANGE_MARKERS as $marker) {
             if ($this->f->strpos($lower, $marker) !== false) {
                 return true;
             }

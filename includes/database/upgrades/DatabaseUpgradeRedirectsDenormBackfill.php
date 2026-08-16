@@ -301,6 +301,18 @@ class ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill extends ABJ_404_So
                 "(ALGORITHM=INPLACE, LOCK=NONE): " . $addClause);
             return;
         }
+        $lastError = isset($result['last_error']) && is_scalar($result['last_error'])
+            ? (string)$result['last_error'] : '';
+        if ($this->schemaChangeWasAlreadyApplied($lastError)) {
+            // Another request added at least one of these between the
+            // columnExists() probes above and this ALTER, which rejects the
+            // whole statement. The bare fallback carries the same clause list
+            // and meets the same answer; the next tick re-probes and asks for
+            // only whatever is still genuinely missing.
+            $this->logger->infoMessage("Denorm columns on {$redirectsTable} were added by another " .
+                "process while this one was adding them: " . $addClause);
+            return;
+        }
         // Engine didn't support online DDL for ADD COLUMN, fall back to a
         // bare ALTER, same as verifyColumns() would run. On modern InnoDB the
         // bare ALTER is itself implicitly INSTANT/INPLACE for ADD COLUMN with
