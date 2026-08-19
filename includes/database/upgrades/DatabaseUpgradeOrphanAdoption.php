@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../DatabaseCollationHelper.php';
+
 class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_DatabaseUpgradeComponent {
 
 	/**
@@ -194,6 +196,23 @@ class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_Da
 		// NOT our lowercased prefix. Only plugin tables were renamed to lowercase.
 		$postsTable = ($wpdb->prefix ?? 'wp_') . 'posts';
 
+		// p.post_name belongs to a WordPress CORE table and dest_url to a PLUGIN
+		// table, so each carries whatever collation its own table was created
+		// with. When those differ MySQL refuses the comparison outright
+		// ("Illegal mix of collations ... for operation 'locate'", errno 1267),
+		// the query returns nothing, ownership is never verified, and the
+		// site's orphaned tables stay stranded under the old prefix. Converting
+		// BOTH operands to one charset and one collation is the same treatment
+		// updatePermalinkCache.sql and getPublishedPagesAndPostsIDs.sql already
+		// give their wp_posts / wp_terms comparisons; this query is built
+		// inline, which is how it missed out. The collation comes from the one
+		// derivation that guarantees it is valid for the charset beside it.
+		$collation = ABJ_404_Solution_DatabaseCollationHelper::utf8mb4CollationOrFallback(
+			isset($wpdb->collate) && is_scalar($wpdb->collate) ? (string)$wpdb->collate : ''
+		);
+		$postNameOperand = "CONVERT(p.post_name USING utf8mb4) COLLATE " . $collation;
+		$destUrlOperand = "CONVERT(dest_url USING utf8mb4) COLLATE " . $collation;
+
 		// Check distinct internal dest_urls against published post slugs.
 		$query = "SELECT COUNT(*) AS total,
 				SUM(CASE WHEN matched = 1 THEN 1 ELSE 0 END) AS matches
@@ -202,7 +221,7 @@ class ABJ_404_Solution_DatabaseUpgradeOrphanAdoption extends ABJ_404_Solution_Da
 					EXISTS(SELECT 1 FROM `{$postsTable}` p
 						WHERE p.post_status = 'publish'
 						AND LENGTH(p.post_name) >= 3
-						AND LOCATE(p.post_name, dest_url) > 0) AS matched
+						AND LOCATE({$postNameOperand}, {$destUrlOperand}) > 0) AS matched
 				FROM `{$logsTable}` l
 				WHERE dest_url IS NOT NULL
 					AND dest_url != ''
