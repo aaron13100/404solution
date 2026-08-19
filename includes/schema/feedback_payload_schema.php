@@ -42,6 +42,20 @@ if (!defined('ABSPATH')) {
  *     Listing every flat field as required + `unexpected_field` rejects
  *     the nested re-introduction.
  *
+ * Automatic vs manual submission is DERIVED from this file, never listed
+ * separately. A field a person typed into a form carries
+ * `'human_typed' => 'message'` (prose they wrote) or
+ * `'human_typed' => 'contact'` (a reply address they gave); a report type
+ * with at least one such field is one a human filled in and clicked to
+ * send, and is therefore worth telling a human about. `error` and
+ * `heartbeat` have none and stay silent. Deriving it here rather than
+ * hardcoding a type list elsewhere is what makes a future fifth type with
+ * a textarea notify without anyone remembering to update the triage side:
+ * declaring the field is the only step. Read by
+ * scripts/feedback-submission-modes.php (consumed in turn by
+ * scripts/error-report-sweep.sh) and locked by
+ * FeedbackSubmissionModeClassificationTest.
+ *
  * Returns array<string, array<string, array<string, mixed>>> keyed by
  * report type. Each value is a flat FieldSpec map ready to feed to
  * ABJ_404_Solution_PayloadSchema::validate().
@@ -211,13 +225,18 @@ return (function (): array {
         'previously_sent_line' => ['type' => 'int'],
     ];
 
+    // `human_typed` marks the fields a PERSON filled in by hand. Only the
+    // three free-text inputs and the reply address qualify: uninstall_reason
+    // is a radio choice, selected_issues is a checkbox join, and
+    // include_diagnostics is a checkbox, none of which is typed prose.
+    // See the note above $supportRequestExtras for what reads this marker.
     $uninstallExtras = [
         'uninstall_reason'    => ['type' => 'string'],
         'selected_issues'     => ['type' => 'string', 'description' => 'Comma-joined checkbox values from the modal (sanitized server-side).'],
-        'followup_details'    => ['type' => 'string'],
-        'better_plugin_name'  => ['type' => 'string', 'required' => false],
-        'other_reason_text'   => ['type' => 'string', 'required' => false],
-        'contact_email'       => ['type' => 'string'],
+        'followup_details'    => ['type' => 'string', 'human_typed' => 'message'],
+        'better_plugin_name'  => ['type' => 'string', 'required' => false, 'human_typed' => 'message'],
+        'other_reason_text'   => ['type' => 'string', 'required' => false, 'human_typed' => 'message'],
+        'contact_email'       => ['type' => 'string', 'human_typed' => 'contact'],
         'include_diagnostics' => ['type' => 'bool'],
         'debug_log'           => ['type' => 'string'],
     ];
@@ -234,8 +253,8 @@ return (function (): array {
     // validator before the server endpoint sees it. Keep this list in
     // sync with ABJ_404_Solution_Ajax_SupportRequest::ALLOWED_TRIGGER_SOURCES.
     $supportRequestExtras = [
-        'user_message'      => ['type' => 'string', 'description' => 'Free-text message from the requester (sanitize_textarea_field, capped at MAX_USER_MESSAGE_LENGTH source-side). Empty string allowed.'],
-        'reply_email'       => ['type' => 'string', 'description' => 'Optional reply address (sanitize_email). Empty string = anonymous request.'],
+        'user_message'      => ['type' => 'string', 'human_typed' => 'message', 'description' => 'Free-text message from the requester (sanitize_textarea_field, capped at MAX_USER_MESSAGE_LENGTH source-side). Empty string allowed.'],
+        'reply_email'       => ['type' => 'string', 'human_typed' => 'contact', 'description' => 'Optional reply address (sanitize_email). Empty string = anonymous request.'],
         'triggered_from'    => [
             'type' => 'string',
             'enum' => [

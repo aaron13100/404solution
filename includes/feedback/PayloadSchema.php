@@ -51,6 +51,12 @@ if (!defined('ABSPATH')) {
  *     alone.
  *   - `description` (string, optional): human-readable note. Ignored at
  *     runtime; used by docs / future codegen.
+ *   - `human_typed` (string, optional): `message` or `contact`, marking a
+ *     field a PERSON typed into a form rather than one the plugin filled
+ *     in by itself. Ignored at runtime by this validator; read by
+ *     scripts/feedback-submission-modes.php, which derives from it which
+ *     report types are manually submitted (and therefore worth notifying
+ *     a human about) and which values to lead the notification with.
  *
  * Unknown fields on the payload are reported as `unexpected_field`
  * violations. The schema is the closed contract: any new field on the
