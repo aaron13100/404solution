@@ -46,12 +46,19 @@ final class ABJ_404_Solution_CheckpointJournalReader {
      * (ABJ_404_Solution_StrandedRequestSupportSection::MAX_STRANDED_DIAG_BYTES),
      * which is the one section that CANNOT be funded from a journal: it is a
      * reading of live registry state, so unlike every byte spent here it cannot
-     * be rotated or elided away before the admin clicks send. The remaining
+     * be rotated or elided away before the admin clicks send. A further 3 KB
+     * then funded the canonical hook census
+     * (ABJ_404_Solution_CanonicalSuppressionSupportSection::MAX_CANONICAL_SUPPRESSION_BYTES),
+     * funded here for the same reason: it is a front-end reading of live hook
+     * state, recorded once and never re-derivable from any journal, and it is
+     * the difference between answering "what suppressed canonicalization on
+     * your site" out of the report and writing to the site owner to ask them to
+     * go run a command. The remaining
      * budget is still far above the whole-failing-session floor
      * SupportExcerptBudgetContractTest pins, and the per-section budgets are
      * proven to sum inside the report contract by that same test.
      */
-    const MAX_SUPPORT_EXCERPT_BYTES = 142336;
+    const MAX_SUPPORT_EXCERPT_BYTES = 139264;
 
     /**
      * Bounded recent checkpoint lines for the support-request payload.

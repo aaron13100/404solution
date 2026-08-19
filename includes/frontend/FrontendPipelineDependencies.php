@@ -66,6 +66,9 @@ class ABJ_404_Solution_FrontendPipelineDependencies {
     /** @var ABJ_404_Solution_AutoRedirectHandler */
     private $autoRedirectHandler;
 
+    /** @var ABJ_404_Solution_CanonicalPaginationRedirect */
+    private $canonicalPaginationRedirect;
+
     /**
      * @param ABJ_404_Solution_PluginLogic $pluginLogic
      * @param ABJ_404_Solution_RedirectsRepository $redirectsRepository
@@ -153,6 +156,11 @@ class ABJ_404_Solution_FrontendPipelineDependencies {
             $this->notFoundResponse,
             $this->hitRecorder
         );
+        $this->canonicalPaginationRedirect = new ABJ_404_Solution_CanonicalPaginationRedirect(
+            $redirectsRepository,
+            $logging,
+            $this->hitRecorder
+        );
         $this->dbVersionRecovery = new ABJ_404_Solution_FrontendDbVersionRecovery($pluginLogic, $logging);
     }
 
@@ -229,5 +237,10 @@ class ABJ_404_Solution_FrontendPipelineDependencies {
     /** @return ABJ_404_Solution_AutoRedirectHandler */
     function autoRedirectHandler(): ABJ_404_Solution_AutoRedirectHandler {
         return $this->autoRedirectHandler;
+    }
+
+    /** @return ABJ_404_Solution_CanonicalPaginationRedirect */
+    function canonicalPaginationRedirect(): ABJ_404_Solution_CanonicalPaginationRedirect {
+        return $this->canonicalPaginationRedirect;
     }
 }

@@ -68,6 +68,9 @@ class ABJ_404_Solution_FrontendRequestPipeline {
     /** @var ABJ_404_Solution_AutoRedirectHandler */
     private $autoRedirectHandler;
 
+    /** @var ABJ_404_Solution_CanonicalPaginationRedirect */
+    private $canonicalPaginationRedirect;
+
     /**
      * @param ABJ_404_Solution_FrontendPipelineDependencies $dependencies
      */
@@ -87,6 +90,7 @@ class ABJ_404_Solution_FrontendRequestPipeline {
         $this->runtimeOptions = $dependencies->runtimeOptions();
         $this->existingRedirectLookup = $dependencies->existingRedirectLookup();
         $this->autoRedirectHandler = $dependencies->autoRedirectHandler();
+        $this->canonicalPaginationRedirect = $dependencies->canonicalPaginationRedirect();
     }
 
     /**
@@ -130,6 +134,17 @@ class ABJ_404_Solution_FrontendRequestPipeline {
             // SAFE_BAIL: not a 404 or in wp-admin - nothing for us to do.
             return;
         }
+
+        // Read whether core's canonical redirect was still going to run, HERE,
+        // because here is the only place the answer is true: this is inside
+        // template_redirect, on a real front-end 404, ahead of core's priority
+        // 10. Taking the same reading when the support report is assembled
+        // would read an admin-ajax request, and a suppressor guarded by
+        // `if (!is_admin())` is invisible from there. Bounded by construction:
+        // the hot path computes a fingerprint and returns, and only a changed
+        // (or day-old) hook set costs a write. See
+        // ABJ_404_Solution_CanonicalRedirectHookCensus.
+        ABJ_404_Solution_CanonicalRedirectHookCensus::recordFromFrontend404();
 
         // Self-heal a stale DB_VERSION on the frontend so end users get redirects
         // without needing an admin visit (task 233). If recovery cannot close the
@@ -191,6 +206,18 @@ class ABJ_404_Solution_FrontendRequestPipeline {
 
             $sentTo404Page = $this->dispatcher->tryRegexRedirect($options, $requestedURL, $this->trace);
             if ($sentTo404Page) {
+                $this->telemetry->emitBenchmarkHeadersIfEnabled();
+                return;
+            }
+
+            // Ranked between the admin's own rules and the plugin's guesses.
+            // Manual and regex rules above have already dispatched and exited,
+            // so admin intent still wins; below this line every candidate is
+            // something the plugin inferred, and WordPress's own canonical
+            // answer beats an inference. Running here also means a stale AUTO
+            // row invented for one of these URLs before the class was
+            // recognized stops being served, without the admin deleting it.
+            if ($this->canonicalPaginationRedirect->redirectIfCanonicalizable($requestedURL, $options, $this->trace)) {
                 $this->telemetry->emitBenchmarkHeadersIfEnabled();
                 return;
             }

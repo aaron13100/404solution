@@ -123,6 +123,7 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
             self::collectionManifest($channels, $clientAttempts),
             self::clientTransportTelemetrySection($clientTelemetry),
             self::detachAbVerdict($clientSessionId),
+            self::canonicalSuppression(),
             self::canaryReceiptInterpretation($clientSessionId),
             self::failingSessionDiagnostics($clientAttempts, $clientSessionId),
             self::strandedRequestDiagnostics(),
@@ -273,6 +274,34 @@ final class ABJ_404_Solution_SupportEvidenceExcerpt {
                 . ' could not be loaded on this install, so the experiment was not decided here.';
         }
         return ABJ_404_Solution_DetachAbVerdictSupportSection::compose($sessionId);
+    }
+
+    /**
+     * Whether WordPress core would still have canonicalized the URLs this site
+     * is capturing, as observed on the site's own front end.
+     *
+     * Placed with the conclusions rather than the evidence, and ahead of every
+     * bulk section, because it is small, it is the answer to a question that
+     * otherwise requires writing to the site owner and asking them to run a
+     * command, and a conclusion cut off the end of a busy session's payload is
+     * exactly the round trip it exists to replace.
+     *
+     * Deciding it belongs to ABJ_404_Solution_CanonicalRedirectHookCensus and
+     * rendering it inside a byte budget belongs to
+     * ABJ_404_Solution_CanonicalSuppressionSupportSection, so this composer
+     * stays a section list rather than a grab bag of section bodies.
+     *
+     * Guarded here the same way every other section is: a support request is the
+     * last thing that may be blocked by its own diagnostics, and a corrupt
+     * install can be missing any plugin file (safe-autoloader work for error 18).
+     */
+    private static function canonicalSuppression(): string {
+        if (!class_exists('ABJ_404_Solution_CanonicalSuppressionSupportSection')) {
+            return 'Canonical hook census unavailable:'
+                . ' ABJ_404_Solution_CanonicalSuppressionSupportSection could not be loaded on this'
+                . ' install, so the census was not rendered here.';
+        }
+        return ABJ_404_Solution_CanonicalSuppressionSupportSection::compose();
     }
 
     /**
