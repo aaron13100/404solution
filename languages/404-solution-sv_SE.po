@@ -2091,7 +2091,7 @@ msgstr "Uppdatering schemalagd"
 
 #: includes/View.php
 msgid "Refresh running"
-msgstr "Uppdatering paagar"
+msgstr "Uppdatering pågår"
 
 #: includes/View.php
 msgid "Refresh paused"
@@ -2255,10 +2255,10 @@ msgid "404 Solution Logs"
 msgstr "404 Solution-loggar"
 
 msgid "Timestamp"
-msgstr "Tidsstampel"
+msgstr "Tidsstämpel"
 
 msgid "Requested URL"
-msgstr "Begard URL"
+msgstr "Begärd URL"
 
 msgid "Destination URL"
 msgstr "Destinations-URL"
@@ -2267,7 +2267,7 @@ msgid "Some items could not be anonymized."
 msgstr "Vissa objekt kunde inte anonymiseras."
 
 msgid "Rate limit exceeded. Please try again later."
-msgstr "Hastighetsgransen har uppnatts. Forsok igen senare."
+msgstr "Hastighetsgränsen har uppnåtts. Försök igen senare."
 
 msgid "Invalid nonce. Please reload the page."
 msgstr "Ogiltig nonce. Ladda om sidan."
