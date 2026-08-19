@@ -15,11 +15,18 @@ if (!defined('ABSPATH')) {
  *      keep only [ERROR]/[WARN] entries within the last 7 days, group
  *      by coarse signature, return the top 5 by count.
  *   2. normalizeErrorSignature(): the PII-stripping transform that
- *      makes the grouping correct. Strips absolute paths to basenames,
- *      collapses memory addresses, hex literals, multi-digit numbers,
- *      and whitespace runs so different incident timestamps and
- *      addresses fold into the same signature key. This is the unit
- *      pinned by tests/F6UrlFragmentLeakIntoErrorSignatureTest.
+ *      makes the grouping correct. Cuts the per-request/environment
+ *      envelope the plugin's own writer appends (referrer, requested
+ *      URL, versions, query duration), folds body-embedded wall-clock
+ *      stamps, strips absolute paths to basenames, collapses memory
+ *      addresses, hex literals, multi-digit numbers, and whitespace runs
+ *      so different incident timestamps and addresses fold into the same
+ *      signature key. This is the unit pinned by
+ *      tests/F6UrlFragmentLeakIntoErrorSignatureTest, and the grouping
+ *      POLICY it implements is pinned against the shared corpus in
+ *      tests/ErrorSignatureGroupingCorpusTest -- shared because the
+ *      report server implements the same policy a second time, in JS
+ *      (404-solution-server src/lib/fingerprint.js).
  *
  * Owned by ABJ_404_Solution_FeedbackEnvironmentExtras via composition;
  * see that class's collect() method for the recordProbe() wrapper that
@@ -27,6 +34,55 @@ if (!defined('ABSPATH')) {
  * marker slug.
  */
 class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
+
+    /**
+     * Severity words that must never be consumed as a timezone abbreviation
+     * while folding an embedded wall-clock stamp.
+     */
+    const LOG_LEVEL_WORDS = 'ERROR|FATAL|WARN|WARNING|INFO|DEBUG|NOTICE|TRACE';
+
+    /**
+     * The per-request/environment tail the plugin's own writer appends, which
+     * is not part of the defect. Two anchors, both requiring the ", <field>:"
+     * shape so prose that merely mentions the words cannot trigger a cut:
+     *
+     *   ", PHP version: X, WP ver: ..." -- ABJ_404_Solution_LoggingMessageWriter
+     *   ::writeErrorMessage() appends this to EVERY error line, and the
+     *   "Referrer:" / "Requested URL:" fields inside it change on every hit.
+     *   The anchor spans two adjacent fields, so a message whose own body says
+     *   "PHP version: 8.3.33 is below the minimum" keeps it.
+     *
+     *   ", Execution time: ..." / ", execution_time: ..." --
+     *   ABJ_404_Solution_DatabaseSqlErrorReporter puts the query duration
+     *   there, followed only by DB ver, the server-variable dump and the
+     *   stripped query. Everything identifying the failure (the driver error,
+     *   the SQL file, the route) sits before it.
+     *
+     * Every value cut here already travels in its own payload field, so no
+     * triage information is lost -- and the referrer/requested URL leave the
+     * telemetry payload entirely, which shrinks its PII surface.
+     */
+    const REQUEST_ENVELOPE_PATTERN =
+        '/,\s*(?:execution[ _]time\s*:|PHP version\s*:\s*\S+\s*,\s*WP ver\s*:).*$/is';
+
+    /**
+     * A wall-clock stamp embedded in the message BODY, in any zone form the
+     * plugin or the host can emit (named abbreviation, abbreviation plus
+     * offset, bare offset, ISO "Z", or none). At most ONE zone token is
+     * consumed and it may not be a severity word, so
+     * "... 03:20:01 ERROR ..." cannot lose its level.
+     *
+     * The leading log stamp never reaches here (probeRecentErrorSignatures()
+     * consumes it as capture group 1), but a body can carry its own: see
+     * ABJ_404_Solution_OldPermalinkPostResolver, which warns with the offending
+     * post_date interpolated. The pre-existing "\d{4,}" fold only collapsed
+     * such a value's YEAR ("2026-08-17 03:22:41" -> "N-08-17 03:22:41"), which
+     * left a per-occurrence splitter behind.
+     */
+    const EMBEDDED_DATETIME_PATTERN =
+        '/\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?'
+        . '(?:Z\b|\s+(?:(?!(?:' . self::LOG_LEVEL_WORDS . ')\b)[A-Z]{2,5}(?:[+-]\d{2}:?\d{2})?'
+        . '|[+-]\d{2}(?::?\d{2})?))?/';
 
     /**
      * Top distinct recurring error signatures from the plugin's debug
@@ -195,11 +251,29 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures {
      * stable per site (memory_limit does not change between requests), so
      * exempting it does not hurt the grouping this function exists for.
      *
+     * DELIBERATELY not normalized, and each one is a divergence from the
+     * server-side twin (404-solution-server src/lib/fingerprint.js) that the
+     * shared corpus records rather than tries to reconcile:
+     *   - Runs of 4 or 5 digits stay folded to "N" (the server keeps them and
+     *     folds only 6+). This output ships as readable text in the telemetry
+     *     payload, so folding post / redirect / user ids is a PII control, not
+     *     a grouping choice, and loosening it would make previously redacted
+     *     values visible.
+     *   - Source line numbers. The only carrier here is the crash beacon,
+     *     which already reports file and line as their own fields.
+     *
      * @param string $msg
      * @return string
      */
     public function normalizeErrorSignature(string $msg): string {
         $s = $msg;
+        // Cut the per-request/environment envelope first: it is the largest
+        // and most variable part, and removing it also keeps the caller's
+        // 200-char signature window for message text that discriminates.
+        $s = preg_replace(self::REQUEST_ENVELOPE_PATTERN, '', $s) ?? $s;
+        // Fold body-embedded wall-clock stamps before the digit fold below,
+        // which would otherwise eat the year and leave the rest standing.
+        $s = preg_replace(self::EMBEDDED_DATETIME_PATTERN, '[TS]', $s) ?? $s;
         // Strip absolute paths to just the basename.
         $s = preg_replace('#/[A-Za-z0-9_\-\./]+/([A-Za-z0-9_\-]+\.php)#', '$1', $s) ?? $s;
         // Collapse memory addresses, hex, and digit sequences.
