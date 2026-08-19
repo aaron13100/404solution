@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DatabaseCollationHelper.php';
+
 /**
  * Resolves plugin table names and reads table schema metadata.
  *
@@ -149,14 +151,15 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
         $replacements['{wp_prefix}'] = $prefix;
         $replacements['{wp_prefix_lower}'] = $this->getLowercasePrefix();
 
-        $wpdbCollate = 'utf8mb4_unicode_ci';
-        if (isset($wpdb->collate) && !empty($wpdb->collate)) {
-            $sanitized = preg_replace('/[^A-Za-z0-9_]/', '', $wpdb->collate);
-            if ($sanitized !== '' && $sanitized !== null) {
-                $wpdbCollate = $sanitized;
-            }
-        }
-        $replacements['{wpdb_collate}'] = $wpdbCollate;
+        // Every template that uses this token pins it on an expression already
+        // CONVERTed to utf8mb4, so the collation has to belong to that charset.
+        // Handing back $wpdb->collate raw is what made a latin1-configured site
+        // fail every one of those statements with errno 1253; the token is named
+        // for the charset it is valid under so no future template can read it as
+        // "whatever the site collation happens to be".
+        $rawCollate = (isset($wpdb->collate) && is_scalar($wpdb->collate)) ? (string)$wpdb->collate : '';
+        $replacements['{utf8mb4_collate}'] =
+            ABJ_404_Solution_DatabaseCollationHelper::utf8mb4CollationOrFallback($rawCollate);
 
         $query = $this->f->str_replace(array_keys($replacements), array_values($replacements), $query);
 

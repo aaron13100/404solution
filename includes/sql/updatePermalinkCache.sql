@@ -30,9 +30,9 @@ select  wpp.id as id,
           /* pages don't use the permalink structure. */
           else concat(concat('/', BINARY wpp.post_name), '/')
 
-        end USING utf8mb4) COLLATE {wpdb_collate} as url,
+        end USING utf8mb4) COLLATE {utf8mb4_collate} as url,
 
-        CONVERT(concat(concat(concat(concat('s:', BINARY wpp.post_status), ',t:'), BINARY wpp.post_type), ',') USING utf8mb4) COLLATE {wpdb_collate} as meta,
+        CONVERT(concat(concat(concat(concat('s:', BINARY wpp.post_status), ',t:'), BINARY wpp.post_type), ',') USING utf8mb4) COLLATE {utf8mb4_collate} as meta,
 
         wpp.post_parent as post_parent
 

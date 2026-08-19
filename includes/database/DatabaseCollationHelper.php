@@ -38,6 +38,12 @@ class ABJ_404_Solution_DatabaseCollationHelper {
     /** @var int Cooldown after a collation-recovery attempt (seconds). */
     const COLLATION_RECOVERY_COOLDOWN_SECONDS = 3600;
 
+    /**
+     * @var string Collation used whenever the site's own cannot be honoured.
+     * Present on every MySQL 5.5.3+ and MariaDB build the plugin supports.
+     */
+    const DEFAULT_UTF8MB4_COLLATION = 'utf8mb4_unicode_ci';
+
     /** @var bool Prevent recursive collation-repair scheduling within one request. */
     private static $collationSchedulingInProgress = false;
 
@@ -106,11 +112,98 @@ class ABJ_404_Solution_DatabaseCollationHelper {
      * @return string
      */
     public function sanitizeCollationIdentifier($collation): string {
+        return self::sanitizeCollationName($collation);
+    }
+
+    /**
+     * Sanitize a raw collation identifier (pure; no connection required).
+     *
+     * The instance method above delegates here so producers that own no
+     * DatabaseCollationHelper -- the SQL template resolver and the admin table
+     * query policy -- reach the same sanitizer instead of copying the regex.
+     *
+     * @param mixed $collation Raw identifier from wpdb, information_schema or DDL.
+     * @return string Sanitized identifier, or '' when nothing survives.
+     */
+    public static function sanitizeCollationName($collation): string {
         if (!is_string($collation) || $collation === '') {
             return '';
         }
         $sanitized = preg_replace('/[^A-Za-z0-9_]/', '', $collation);
         return $sanitized !== null ? $sanitized : '';
+    }
+
+    /**
+     * A collation guaranteed valid for CHARACTER SET utf8mb4.
+     *
+     * The one derivation every caller that CONVERTs (or CASTs) an expression to
+     * a hard-coded utf8mb4 must use. MySQL rejects the statement outright --
+     * "COLLATION 'x' is not valid for CHARACTER SET 'utf8mb4'", errno 1253 --
+     * when the two halves name different families, and $wpdb->collate carries
+     * whatever DB_COLLATE says, which on installs whose wp-config predates
+     * utf8mb4 is routinely a latin1 or utf8mb3 collation.
+     *
+     * A site collation already in the utf8mb4 family is kept, so ordering and
+     * comparison semantics stay the site's own; anything else is replaced,
+     * because there is no way to honour it under a utf8mb4 expression at all.
+     *
+     * @param mixed $rawCollation Typically $wpdb->collate.
+     * @return string A utf8mb4_* collation name, safe to interpolate.
+     */
+    public static function utf8mb4CollationOrFallback($rawCollation): string {
+        $sanitized = self::sanitizeCollationName($rawCollation);
+        if (self::isUtf8mb4Collation($sanitized)) {
+            return $sanitized;
+        }
+        return self::DEFAULT_UTF8MB4_COLLATION;
+    }
+
+    /**
+     * Whether a collation belongs to the utf8mb4 family.
+     *
+     * The sole owner of that rule. Callers that need the question answered but
+     * keep their own control flow around the answer (pick this collation, or
+     * fall back to a different source; emit this clause, or a simpler one) ask
+     * here instead of re-testing the name, because a second copy of the rule is
+     * how errno 1253 reached production in the first place.
+     *
+     * MySQL collation names are `<charset>_<...>`, so family membership is a
+     * PREFIX test. A substring test also accepts a name that merely contains
+     * "utf8mb4", which would pair a foreign collation with a hard-coded
+     * `CHARACTER SET utf8mb4` -- the precise statement the engine rejects.
+     *
+     * @param mixed $collation Raw identifier from wpdb, information_schema or DDL.
+     * @return bool
+     */
+    public static function isUtf8mb4Collation($collation): bool {
+        $sanitized = self::sanitizeCollationName($collation);
+        return $sanitized !== '' && stripos($sanitized, 'utf8mb4') === 0;
+    }
+
+    /**
+     * The charset a collation belongs to, returned together with it.
+     *
+     * The mirror of {@see utf8mb4CollationOrFallback} for callers that must
+     * honour a specific collation (a column's own, so a JOIN against it stays
+     * sargable) and therefore cannot choose the charset independently. Returning
+     * the pair rather than the charset alone is the point: a caller physically
+     * cannot take one half from here and the other from somewhere else.
+     *
+     * MySQL collation names are `<charset>_<...>`, so the charset is the segment
+     * before the first underscore; `binary` names both and has no underscore,
+     * which the same rule handles. An unusable input falls back to the utf8mb4
+     * pair rather than to a half-formed one.
+     *
+     * @param mixed $rawCollation Collation to honour (column, table or wpdb).
+     * @return array{charset: string, collation: string} Consistent pair.
+     */
+    public static function charsetCollationPair($rawCollation): array {
+        $collation = self::sanitizeCollationName($rawCollation);
+        $charset = $collation === '' ? '' : self::sanitizeCollationName(explode('_', $collation, 2)[0]);
+        if ($charset === '') {
+            return array('charset' => 'utf8mb4', 'collation' => self::DEFAULT_UTF8MB4_COLLATION);
+        }
+        return array('charset' => $charset, 'collation' => $collation);
     }
 
     /**
@@ -222,14 +315,13 @@ class ABJ_404_Solution_DatabaseCollationHelper {
             throw new InvalidArgumentException('Target table and column are required for a collation-safe SQL comparison.');
         }
 
-        $collation = $this->getColumnCollationString($tableName, $columnName);
-        $charsetParts = explode('_', $collation, 2);
-        $charset = $this->sanitizeCollationIdentifier($charsetParts[0] ?? '');
-        if ($charset === '' || $collation === '') {
+        $rawCollation = $this->getColumnCollationString($tableName, $columnName);
+        if (self::sanitizeCollationName($rawCollation) === '') {
             throw new InvalidArgumentException('Target column collation could not be converted to a safe SQL identifier.');
         }
+        $pair = self::charsetCollationPair($rawCollation);
 
-        return 'CONVERT(' . $expression . ' USING ' . $charset . ') COLLATE ' . $collation;
+        return 'CONVERT(' . $expression . ' USING ' . $pair['charset'] . ') COLLATE ' . $pair['collation'];
     }
 
     /**
@@ -242,13 +334,9 @@ class ABJ_404_Solution_DatabaseCollationHelper {
      */
     public function getPreferredUtf8mb4Collation(): string {
         global $wpdb;
-        if (isset($wpdb) && isset($wpdb->collate) && !empty($wpdb->collate)) {
-            $wpdbCollation = $this->sanitizeCollationIdentifier((string)$wpdb->collate);
-            if ($wpdbCollation !== '' && stripos($wpdbCollation, 'utf8mb4') !== false) {
-                return $wpdbCollation;
-            }
-        }
-        return 'utf8mb4_unicode_ci';
+        $rawCollation = (isset($wpdb) && isset($wpdb->collate) && is_scalar($wpdb->collate))
+            ? (string)$wpdb->collate : '';
+        return self::utf8mb4CollationOrFallback($rawCollation);
     }
 
     /**

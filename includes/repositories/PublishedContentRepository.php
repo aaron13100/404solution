@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 // allow-no-test-found: covered by tests/ContentRepositoryDecompositionTest.php through ContentRepository facade entry points.
 
+require_once __DIR__ . '/../database/DatabaseCollationHelper.php';
 require_once __DIR__ . '/TermUrlEnricher.php';
 
 /**
@@ -146,14 +147,20 @@ class ABJ_404_Solution_PublishedContentRepository {
 
         $cleanSlug = $this->f->sanitizeInvalidUTF8($slug);
         $columnCollation = $this->getPostNameColumnCollation($postsTableName);
-        if ($columnCollation !== null && strpos(strtolower($columnCollation), 'utf8mb4') !== false) {
+        // The clause below pins CHARACTER SET utf8mb4, so it may only be emitted
+        // when the column's collation belongs to that family; otherwise the two
+        // halves disagree and the engine rejects the read with errno 1253.
+        if ($columnCollation !== null
+                && ABJ_404_Solution_DatabaseCollationHelper::isUtf8mb4Collation($columnCollation)) {
+            // Interpolated directly rather than substituted into a placeholder
+            // collation afterwards: the slug is already embedded by then, so a
+            // slug containing the placeholder's text would be rewritten too.
+            // isUtf8mb4Collation() has already established this sanitizes to a
+            // non-empty utf8mb4 name, so there is no empty case left to handle.
             $resolvedCollation = $this->collationHelper->sanitizeCollationIdentifier($columnCollation);
-            if ($resolvedCollation === '') {
-                $resolvedCollation = $this->collationHelper->getPreferredUtf8mb4Collation();
-            }
-            $clause = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci = "
+            $clause = " */\n and CAST(wp_posts.post_name AS CHAR CHARACTER SET utf8mb4) COLLATE " . $resolvedCollation . " = "
                 . "'" . esc_sql($cleanSlug) . "' \n ";
-            return array('slug' => $cleanSlug, 'clause' => str_replace('utf8mb4_unicode_ci', $resolvedCollation, $clause));
+            return array('slug' => $cleanSlug, 'clause' => $clause);
         }
 
         if (abj_service('sanitizer')->containsUtf8mb4Characters($cleanSlug)) {

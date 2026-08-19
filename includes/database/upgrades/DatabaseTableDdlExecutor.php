@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../DatabaseCollationHelper.php';
+
 /**
  * Permanent-DDL discovery, execution, and post-creation reaction for plugin
  * tables.
@@ -396,12 +398,17 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
         }
 
         // Always prefer utf8mb4 for plugin tables, regardless of site defaults.
-        $collate = 'utf8mb4_unicode_ci';
-        if (!empty($wpdb->collate) && stripos($wpdb->collate, 'utf8mb4') !== false) {
-            $collate = $wpdb->collate;
-        }
+        // The collation is normalized into the utf8mb4 family by the same
+        // derivation every other producer uses, so the charset written below and
+        // the collation written beside it can never name different families.
+        $rawCollate = isset($wpdb->collate) && is_scalar($wpdb->collate) ? (string)$wpdb->collate : '';
+        $collate = ABJ_404_Solution_DatabaseCollationHelper::utf8mb4CollationOrFallback($rawCollate);
 
-        $createTableSql = str_replace('{COLLATION}', $collate, $createTableSql);
+        $createTableSql = str_replace(
+            array('{CHARSET}', '{COLLATION}'),
+            array('utf8mb4', $collate),
+            $createTableSql
+        );
         // If the statement already specifies charset/collation, don't override.
         if (preg_match('/\b(?:default\s+)?(?:character\s+set|charset|collate)\b/i', $createTableSql)) {
             return $createTableSql;

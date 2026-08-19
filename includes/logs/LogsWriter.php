@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../database/DatabaseCollationHelper.php';
 require_once __DIR__ . '/LogsEntrySanitizer.php';
 require_once __DIR__ . '/LogsRequestedUrlColumnMetadata.php';
 require_once __DIR__ . '/LogsQueueFlusher.php';
@@ -167,10 +168,9 @@ class ABJ_404_Solution_LogsWriter {
         // the lookup case-sensitive even on a ci-collated column; the raw
         // equality fallback handles non-utf8 columns and strict-mode CAST errors.
         $minLogID = false;
-        $comparisonCollation = $this->collationHelper->sanitizeCollationIdentifier(isset($requestedUrlCollation) ? (string)$requestedUrlCollation : '');
-        if ($comparisonCollation === '' || stripos($comparisonCollation, 'utf8mb4') === false) {
-            $comparisonCollation = $this->collationHelper->getPreferredUtf8mb4Collation();
-        }
+        $comparisonCollation = $this->resolveUtf8mb4ComparisonCollation(
+            isset($requestedUrlCollation) ? $requestedUrlCollation : null
+        );
         $requestedUrlCharsetLower = isset($requestedUrlCharset) ? strtolower((string)$requestedUrlCharset) : '';
         $canUseUtf8Cast = ($requestedUrlCharsetLower === '' || strpos($requestedUrlCharsetLower, 'utf8') !== false);
         if ($canUseUtf8Cast) {
@@ -230,6 +230,27 @@ class ABJ_404_Solution_LogsWriter {
             'pipeline_trace' => $this->entrySanitizer->serializePipelineTrace($pipelineTrace),
             'canonical_url' => '/' . trim($reqUrlForLogStr, '/'),
         ]);
+    }
+
+    /**
+     * The collation for a comparison whose charset is pinned to utf8mb4.
+     *
+     * The lookup CASTs requested_url to a hard-coded `CHARACTER SET utf8mb4`,
+     * so the collation beside it must belong to that family or the engine
+     * refuses the statement outright ("COLLATION 'x' is not valid for CHARACTER
+     * SET 'utf8mb4'", errno 1253). Preference order is the column's own
+     * collation, so the comparison keeps the column's semantics, then the
+     * site's, then the guaranteed-present default.
+     *
+     * @param mixed $requestedUrlCollation The requested_url column's collation,
+     *   or null when it could not be read.
+     * @return string A collation valid for CHARACTER SET utf8mb4.
+     */
+    private function resolveUtf8mb4ComparisonCollation($requestedUrlCollation): string {
+        if (ABJ_404_Solution_DatabaseCollationHelper::isUtf8mb4Collation($requestedUrlCollation)) {
+            return ABJ_404_Solution_DatabaseCollationHelper::utf8mb4CollationOrFallback($requestedUrlCollation);
+        }
+        return $this->collationHelper->getPreferredUtf8mb4Collation();
     }
 
     /**

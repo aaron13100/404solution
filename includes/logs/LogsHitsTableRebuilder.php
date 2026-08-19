@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 // allow-no-test-found: exercised by RedirectsCanonicalUrlBackfillCompleteTest
 
 require_once __DIR__ . '/LogsHitsCanonicalUrlJoinHelper.php';
+require_once __DIR__ . '/../database/DatabaseCollationHelper.php';
 
 /**
  * Two-phase SQL execution engine for the wp_abj404_logs_hits rollup.
@@ -96,7 +97,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             $resolvedCollation = $this->joinHelper->resolveHitsJoinCollation();
             $createTempTableQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsTempTable.sql");
             $createTempTableQuery = $this->dbCore->doTableNameReplacements($createTempTableQuery);
-            $createTempTableQuery = str_replace('{COLLATION}', $resolvedCollation, $createTempTableQuery);
+            $createTempTableQuery = $this->applyJoinCharsetCollation($createTempTableQuery, $resolvedCollation);
             $this->dbCore->queryAndGetResults($createTempTableQuery);
             // @cache-write-audit: opt-out - truncates an unpublished temp table before rebuilding it.
             $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
@@ -134,6 +135,32 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
     }
 
     /**
+     * Fill the {CHARSET} / {COLLATION} pair in a staging-table DDL from the one
+     * collation the staging table must honour.
+     *
+     * The rollup's phase-2 JOIN probes redirects.canonical_url, so requested_url
+     * has to carry that column's collation or the index cannot serve the probe.
+     * The charset therefore cannot be chosen independently: the DDL used to
+     * hard-code CHARACTER SET utf8mb4 next to a column collation read from
+     * information_schema, and on an install whose redirects table is still
+     * latin1 the engine rejects the CREATE outright ("COLLATION
+     * 'latin1_swedish_ci' is not valid for CHARACTER SET 'utf8mb4'"), taking the
+     * whole rollup rebuild with it. Both halves now come from one pair.
+     *
+     * @param string $ddl Staging-table DDL with the placeholder pair.
+     * @param string $rawCollation Collation the staging table must match.
+     * @return string DDL with a self-consistent charset/collation pair.
+     */
+    private function applyJoinCharsetCollation(string $ddl, string $rawCollation): string {
+        $pair = ABJ_404_Solution_DatabaseCollationHelper::charsetCollationPair($rawCollation);
+        return str_replace(
+            array('{CHARSET}', '{COLLATION}'),
+            array($pair['charset'], $pair['collation']),
+            $ddl
+        );
+    }
+
+    /**
      * @param string $tempDestTable
      * @return array<string, mixed>
      */
@@ -155,7 +182,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         $createPreAggQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsPreAggTempTable.sql");
         $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
-        $createPreAggQuery = str_replace('{COLLATION}', $resolvedCollation, $createPreAggQuery);
+        $createPreAggQuery = $this->applyJoinCharsetCollation($createPreAggQuery, $resolvedCollation);
         $this->dbCore->queryAndGetResults($createPreAggQuery);
         $logsv2CanonicalExpr = $this->joinHelper->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {

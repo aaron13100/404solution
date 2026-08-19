@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../database/DatabaseCollationHelper.php';
+
 /**
  * Query policy for admin redirect and captured-url table reads.
  *
@@ -197,21 +199,21 @@ class ABJ_404_Solution_ViewQueryPolicy {
      */
     public function resolveCollation(array $tableOptions): string {
         global $wpdb;
-        $wpdbCollate = 'utf8mb4_unicode_ci';
-        $hasForcedCollate = false;
+        $rawCollate = '';
         if (array_key_exists('forceCollate', $tableOptions) && !empty($tableOptions['forceCollate'])) {
             $rawForceCollateVal = $tableOptions['forceCollate'];
-            $rawForceCollate = is_string($rawForceCollateVal) ? $rawForceCollateVal : '';
-            $forced = preg_replace('/[^A-Za-z0-9_]/', '', $rawForceCollate);
-            if ($forced !== '') {
-                $wpdbCollate = $forced;
-                $hasForcedCollate = true;
-            }
+            $rawCollate = is_string($rawForceCollateVal) ? $rawForceCollateVal : '';
         }
-        if (!$hasForcedCollate && isset($wpdb) && isset($wpdb->collate) && !empty($wpdb->collate)) {
-            $wpdbCollate = preg_replace('/[^A-Za-z0-9_]/', '', $wpdb->collate);
+        if ($rawCollate === '' && isset($wpdb) && isset($wpdb->collate) && is_scalar($wpdb->collate)) {
+            $rawCollate = (string)$wpdb->collate;
         }
-        return $wpdbCollate === '' ? 'utf8mb4_unicode_ci' : $wpdbCollate;
+
+        // normalizedSearchExpression() CONVERTs to a hard-coded utf8mb4, so the
+        // collation it pairs with must belong to that charset whatever the site
+        // (or an explicit forceCollate) asked for. A latin1 site collation reached
+        // the engine verbatim here and every filtered admin table read died with
+        // "COLLATION 'latin1_swedish_ci' is not valid for CHARACTER SET 'utf8mb4'".
+        return ABJ_404_Solution_DatabaseCollationHelper::utf8mb4CollationOrFallback($rawCollate);
     }
 
     /**

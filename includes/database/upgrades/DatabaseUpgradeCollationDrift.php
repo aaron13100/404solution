@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../DatabaseCollationHelper.php';
+
 /**
  * Plugin-table collation/charset drift correction.
  *
@@ -205,7 +207,7 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
 
         if (!empty($wpdb->collate)) {
             $wpdbCollation = $this->sanitizeCollationIdentifier((string)$wpdb->collate);
-            if ($wpdbCollation !== '' && stripos($wpdbCollation, 'utf8mb4') !== false) {
+            if (ABJ_404_Solution_DatabaseCollationHelper::isUtf8mb4Collation($wpdbCollation)) {
                 return $wpdbCollation;
             }
         }
@@ -218,7 +220,7 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
             }
             $collation = $this->sanitizeCollationIdentifier((string)$row[0]);
             $charset = strtolower((string)$row[1]);
-            if ($collation !== '' && $charset === 'utf8mb4' && stripos($collation, 'utf8mb4') !== false) {
+            if ($charset === 'utf8mb4' && ABJ_404_Solution_DatabaseCollationHelper::isUtf8mb4Collation($collation)) {
                 $counts[$collation] = ($counts[$collation] ?? 0) + 1;
             }
         }
@@ -233,7 +235,7 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
             $row = is_array($varRows[0]) ? $varRows[0] : [];
             $valueRaw = isset($row['Value']) ? $row['Value'] : (isset($row['value']) ? $row['value'] : '');
             $value = $this->sanitizeCollationIdentifier(is_scalar($valueRaw) ? (string)$valueRaw : '');
-            if ($value !== '' && stripos($value, 'utf8mb4') !== false) {
+            if (ABJ_404_Solution_DatabaseCollationHelper::isUtf8mb4Collation($value)) {
                 return $value;
             }
         }
