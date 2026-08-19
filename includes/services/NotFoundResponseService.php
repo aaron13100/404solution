@@ -27,6 +27,9 @@ class ABJ_404_Solution_NotFoundResponseService {
     /** @var ABJ_404_Solution_PreviousRequestCookieTracker */
     private $previousRequestCookieTracker;
 
+    /** @var ABJ_404_Solution_RedirectLoopGuard */
+    private $loopGuard;
+
     /**
      * @param ABJ_404_Solution_NotFoundResponseDependencies|null $deps
      */
@@ -40,6 +43,9 @@ class ABJ_404_Solution_NotFoundResponseService {
         $this->previousRequestCookieTracker = $deps->previousRequestCookieTracker !== null
             ? $deps->previousRequestCookieTracker
             : abj_service('previous_request_cookie_tracker');
+        $this->loopGuard = new ABJ_404_Solution_RedirectLoopGuard(
+            $this->f, $this->logger, $this->previousRequestCookieTracker
+        );
     }
 
     /**
@@ -180,11 +186,11 @@ class ABJ_404_Solution_NotFoundResponseService {
             $finalDestination = (string)$location . $this->getCommentPartAndQueryPartOfRequest();
         }
 
-        $loopSafeDestination = $this->avoidInfiniteRedirect($finalDestination, $location);
-        if ($loopSafeDestination === false) {
+        $terminatingDestination = $this->loopGuard->terminatingDestination($finalDestination, $location);
+        if ($terminatingDestination === false) {
             return false;
         }
-        $finalDestination = $loopSafeDestination;
+        $finalDestination = $terminatingDestination;
 
         if ($type == ABJ404_TYPE_404_DISPLAYED) {
             $this->sendTo404Page($requestedURL, '', false);
@@ -244,40 +250,6 @@ class ABJ_404_Solution_NotFoundResponseService {
             }
         }
         exit;
-    }
-
-    /**
-     * @return string|false
-     */
-    private function avoidInfiniteRedirect(string $finalDestination, string $location) {
-        $previousRequest = is_object($this->previousRequestCookieTracker)
-            ? $this->previousRequestCookieTracker->readCookieWithPreviousRqeuestShort()
-            : '';
-        if (empty($previousRequest)) {
-            return $finalDestination;
-        }
-
-        $finalDestNoHome = $this->redirectPathOnly($finalDestination);
-        $locationNoHome = $this->redirectPathOnly($location);
-        if ($previousRequest == $finalDestNoHome && $previousRequest != $locationNoHome) {
-            $this->logger->infoMessage("Maybe avoided infite redirects to/from: " . $previousRequest);
-            return $location;
-        }
-
-        if ($previousRequest == $finalDestination) {
-            $this->logger->infoMessage("Avoided infite redirects to/from: " . $previousRequest);
-            return false;
-        }
-
-        return $finalDestination;
-    }
-
-    private function redirectPathOnly(string $url): string {
-        $schemePos = $this->f->strpos($url, '://');
-        $withoutHost = ($schemePos !== false)
-            ? $this->f->substr($url, $schemePos + 3) : $url;
-        $slashPos = $this->f->strpos($withoutHost, '/');
-        return ($slashPos !== false) ? $this->f->substr($withoutHost, $slashPos) : '/';
     }
 
     private function sendHeaderRedirect(string $finalDestination, int $status): bool {
