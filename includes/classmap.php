@@ -269,6 +269,7 @@ $abj404ClassesByDirectory = array(
     ),
     'services' => array(
         'PerPageOptionUpdater', 'CronScheduler', 'ScheduledEventInspector',
+        'CronWriteOutcome',
         'CronRecurrenceMigration', 'RequestInputNormalizer',
         'RedirectDestinationSuggestionService', 'RedirectEngineLabeler', 'StatsRepositoryResolver',
         'RestApiRequestParser', 'FrontendSuggestionLocaleScope', 'ShortcodeRequestedUrlResolver',

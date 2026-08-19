@@ -29,6 +29,42 @@ class ABJ_404_Solution_ScheduledEventInspector {
     const DUPLICATE_EVENT_WINDOW_SECONDS = 600;
 
     /**
+     * Whether WordPress would treat an event already stored at
+     * $storedTimestamp as a duplicate of one requested for
+     * $requestedTimestamp -- and therefore whether the stored event already
+     * satisfies that request.
+     *
+     * A port of the window wp_schedule_single_event() scans, and the reason
+     * this is a method rather than one comparison: the window is NOT symmetric
+     * around the requested run time, so `abs($stored - $requested) <= 600` is
+     * wrong in both directions.
+     *
+     *   - Asking for a run within the next ten minutes drops the lower bound to
+     *     timestamp 0, so EVERY overdue event for the hook is a duplicate. A
+     *     site with DISABLE_WP_CRON and a job that never completes accumulates
+     *     exactly those, hours or days old.
+     *   - Asking for a run that has already passed raises the upper bound to
+     *     now + ten minutes rather than requested + ten minutes.
+     *
+     * Getting this wrong does not merely mis-schedule: it makes the plugin
+     * report WordPress's benign "A duplicate event already exists." refusal as
+     * a scheduling failure, which is production report 284
+     * (vishalborewell.com, signature b2c064ec15425cf2).
+     *
+     * @param int $now The clock the request is being judged against, which is
+     *   the same `current:` value a failure would be reported with.
+     */
+    public static function duplicateWindowCovers(int $storedTimestamp, int $requestedTimestamp, int $now): bool {
+        $minTimestamp = ($requestedTimestamp < $now + self::DUPLICATE_EVENT_WINDOW_SECONDS)
+            ? 0
+            : $requestedTimestamp - self::DUPLICATE_EVENT_WINDOW_SECONDS;
+        $maxTimestamp = ($requestedTimestamp < $now)
+            ? $now + self::DUPLICATE_EVENT_WINDOW_SECONDS
+            : $requestedTimestamp + self::DUPLICATE_EVENT_WINDOW_SECONDS;
+        return $storedTimestamp >= $minTimestamp && $storedTimestamp <= $maxTimestamp;
+    }
+
+    /**
      * The event currently scheduled for a hook, with its recurrence.
      *
      * A null `recurrence` means "an event exists but this WordPress build
@@ -94,8 +130,15 @@ class ABJ_404_Solution_ScheduledEventInspector {
      *
      * @param array<int, mixed> $args
      * @param string|null $recurrence Required recurrence, or null for a single event.
+     * @param int $now The clock the caller measured $timestamp against.
      */
-    public function requestedEventIsStored(string $hook, array $args, int $timestamp, ?string $recurrence): bool {
+    public function requestedEventIsStored(
+        string $hook,
+        array $args,
+        int $timestamp,
+        ?string $recurrence,
+        int $now
+    ): bool {
         $this->forgetCachedCronOption();
 
         if (function_exists('wp_get_scheduled_event')) {
@@ -113,10 +156,10 @@ class ABJ_404_Solution_ScheduledEventInspector {
         if ($recurrence !== null) {
             return $this->scheduledRecurrenceMatches($hook, $args, $recurrence);
         }
-        // WordPress itself refuses to add a second identical event this close
-        // to an existing one, so an event inside the window satisfies the
-        // request exactly as the requested timestamp would have.
-        return abs((int)$next - $timestamp) <= self::DUPLICATE_EVENT_WINDOW_SECONDS;
+        // WordPress itself refuses to add a second identical event inside its
+        // duplicate window, so an event in that window satisfies the request
+        // exactly as one at the requested timestamp would have.
+        return self::duplicateWindowCovers((int)$next, $timestamp, $now);
     }
 
     /**
@@ -126,6 +169,10 @@ class ABJ_404_Solution_ScheduledEventInspector {
      * writes the cron array with the event taken out, so when another request
      * removed it first the write changes nothing and WordPress reports the same
      * `could_not_set` error for an event that is already gone.
+     *
+     * No duplicate window applies here, unlike its counterpart above:
+     * wp_unschedule_event() targets one exact timestamp, so absence means "no
+     * event at THAT timestamp" and nothing weaker.
      *
      * @param array<int, mixed> $args
      */
