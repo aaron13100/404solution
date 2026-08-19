@@ -268,7 +268,8 @@ $abj404ClassesByDirectory = array(
         'RestApiController',
     ),
     'services' => array(
-        'PerPageOptionUpdater', 'CronScheduler', 'RequestInputNormalizer',
+        'PerPageOptionUpdater', 'CronScheduler', 'ScheduledEventInspector',
+        'CronRecurrenceMigration', 'RequestInputNormalizer',
         'RedirectDestinationSuggestionService', 'RedirectEngineLabeler', 'StatsRepositoryResolver',
         'RestApiRequestParser', 'FrontendSuggestionLocaleScope', 'ShortcodeRequestedUrlResolver',
         'ShortcodeUrlBarUpdater', 'SettingsModePreference', 'NotFoundResponseService',

@@ -24,6 +24,7 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
         'logging',
         'clock',
         'cron_scheduler',
+        'cron_recurrence_migration',
         'rebuild_health',
         'error_handler',
     );
@@ -100,6 +101,7 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
         'logging',
         'clock',
         'cron_scheduler',
+        'cron_recurrence_migration',
         'rebuild_health',
         'error_handler',
         'db_core',

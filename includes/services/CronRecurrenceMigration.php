@@ -1,0 +1,131 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Moves a plugin cron hook onto a fixed `daily` recurrence, retiring whatever
+ * event an older build left behind at a different one.
+ *
+ * A cadence policy rather than a cron primitive, which is why it lives beside
+ * ABJ_404_Solution_CronScheduler instead of inside it: it decides WHICH event
+ * should exist and in what order the replacement and the removal must happen,
+ * then asks the scheduler to perform each step.
+ *
+ * Takes NO recurrence parameter by design: hardcoding the target here makes it
+ * structurally impossible for a future caller to reintroduce a variable-driven
+ * recurrence, which is the root shape of the original bug (a WP-Cron event's
+ * own recurrence tied to a user-configurable interval instead of a fixed,
+ * frequent trigger -- see EmailDigest::scheduleNextDigest() and WP.org support
+ * topic weekly-digest-3). Without this migration, a site upgrading from a build
+ * that scheduled `abj404_send_digest` at `weekly` recurrence would keep that
+ * stale recurrence forever: scheduleRecurringIfMissing()'s next-scheduled guard
+ * only checks whether ANY event exists for the hook, not whether it matches the
+ * intended cadence.
+ */
+class ABJ_404_Solution_CronRecurrenceMigration {
+
+    /** The one cadence this policy migrates hooks onto. */
+    const TARGET_RECURRENCE = 'daily';
+
+    /** @var ABJ_404_Solution_CronScheduler */
+    private $scheduler;
+
+    /** @var ABJ_404_Solution_ScheduledEventInspector */
+    private $inspector;
+
+    /** @var ABJ_404_Solution_Logging|null */
+    private $logger;
+
+    /**
+     * @param ABJ_404_Solution_CronScheduler $scheduler
+     * @param ABJ_404_Solution_ScheduledEventInspector $inspector
+     * @param ABJ_404_Solution_Logging|null $logger
+     */
+    public function __construct(
+        ABJ_404_Solution_CronScheduler $scheduler,
+        ABJ_404_Solution_ScheduledEventInspector $inspector,
+        $logger = null
+    ) {
+        $this->scheduler = $scheduler;
+        $this->inspector = $inspector;
+        $this->logger = $logger;
+    }
+
+    /**
+     * Ensure the hook has an event whose recurrence is exactly `daily`.
+     *
+     * The replacement is scheduled BEFORE the stale event is removed, so a
+     * request that dies between the two steps leaves the hook over-scheduled
+     * rather than unscheduled. If the removal then fails, the replacement is
+     * rolled back so the site is left exactly as it was found.
+     *
+     * @param array<int, mixed> $args
+     * @return bool True when the hook is left running at the target recurrence.
+     */
+    public function ensureDailyRecurrence(string $hook, int $delaySeconds = 0, array $args = array()): bool {
+        $current = $this->inspector->currentEvent($hook, $args);
+        if ($current === null) {
+            return $this->scheduler->scheduleRecurringAt(
+                $hook,
+                self::TARGET_RECURRENCE,
+                $this->timestampAfter($delaySeconds),
+                $args
+            );
+        }
+        if ($current['recurrence'] === self::TARGET_RECURRENCE) {
+            return true;
+        }
+        if ($current['recurrence'] === null) {
+            $this->logWarning('Cannot migrate cron hook ' . $hook . ': existing recurrence is unavailable.');
+            return false;
+        }
+        if (!function_exists('wp_unschedule_event')) {
+            $this->logWarning('Cannot migrate cron hook ' . $hook . ': wp_unschedule_event unavailable.');
+            return false;
+        }
+
+        $replacementTimestamp = $this->replacementTimestamp($delaySeconds, (int)$current['timestamp']);
+
+        if (!$this->scheduler->scheduleRecurringAt($hook, self::TARGET_RECURRENCE, $replacementTimestamp, $args)) {
+            return false;
+        }
+        if ($this->scheduler->unscheduleAt($current['timestamp'], $hook, $args, $replacementTimestamp)) {
+            return true;
+        }
+
+        if (!$this->scheduler->unscheduleAt($replacementTimestamp, $hook, $args, $current['timestamp'])) {
+            $this->logWarning('Failed to roll back replacement cron hook ' . $hook
+                . ' after stale-event removal failed.');
+        }
+        return false;
+    }
+
+    /**
+     * The instant the replacement event goes at, kept distinct from the stale
+     * event's own timestamp so the two can be told apart afterwards.
+     */
+    private function replacementTimestamp(int $delaySeconds, int $staleTimestamp): int {
+        $timestamp = $this->timestampAfter($delaySeconds);
+        if (!function_exists('wp_get_scheduled_event')) {
+            // WordPress 5.0's unschedule primitive returns void on success, so
+            // the replacement has to sit AFTER the stale event for the
+            // next-scheduled read to prove the old one was really removed.
+            return max($timestamp, $staleTimestamp + 1);
+        }
+        return $timestamp === $staleTimestamp ? $timestamp + 1 : $timestamp;
+    }
+
+    private function timestampAfter(int $delaySeconds): int {
+        return $this->scheduler->now() + max(0, $delaySeconds);
+    }
+
+    private function logWarning(string $message): void {
+        if ($this->logger !== null && method_exists($this->logger, 'warn')) {
+            $this->logger->warn($message);
+            return;
+        }
+        abj404_logPhpFallback('service-resolution-fallback', $message);
+    }
+}

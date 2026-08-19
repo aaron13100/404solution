@@ -200,6 +200,24 @@ function abj_cron_scheduler(): ABJ_404_Solution_CronScheduler {
 }
 
 /**
+ * Typed accessor for the daily-recurrence cadence policy.
+ *
+ * @return ABJ_404_Solution_CronRecurrenceMigration
+ */
+function abj_cron_recurrence_migration(): ABJ_404_Solution_CronRecurrenceMigration {
+    $migration = abj_service_optional('cron_recurrence_migration');
+    if ($migration instanceof ABJ_404_Solution_CronRecurrenceMigration) {
+        return $migration;
+    }
+    $logger = abj_service_optional('logging');
+    return new ABJ_404_Solution_CronRecurrenceMigration(
+        abj_cron_scheduler(),
+        new ABJ_404_Solution_ScheduledEventInspector(),
+        $logger instanceof ABJ_404_Solution_Logging ? $logger : null
+    );
+}
+
+/**
  * Typed accessor for the project clock service.
  *
  * Production resolves the container's SystemClock; tests can bind a

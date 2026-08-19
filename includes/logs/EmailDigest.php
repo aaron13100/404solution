@@ -410,7 +410,7 @@ class ABJ_404_Solution_EmailDigest {
             return;
         }
 
-        $scheduler->scheduleDailyMigratingStaleRecurrence($hook);
+        abj_cron_recurrence_migration()->ensureDailyRecurrence($hook);
     }
 
     /** @param array<string, mixed> $options */

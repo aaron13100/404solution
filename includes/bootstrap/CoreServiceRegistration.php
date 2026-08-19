@@ -72,6 +72,14 @@ class ABJ_404_Solution_CoreServiceRegistration {
             );
         });
 
+        $container->set('cron_recurrence_migration', function($c) {
+            return new ABJ_404_Solution_CronRecurrenceMigration(
+                $c->get('cron_scheduler'),
+                new ABJ_404_Solution_ScheduledEventInspector(),
+                $c->get('logging')
+            );
+        });
+
         $container->set('rebuild_health', function($c) {
             return new ABJ_404_Solution_RebuildHealthState(
                 $c->get('clock'),
