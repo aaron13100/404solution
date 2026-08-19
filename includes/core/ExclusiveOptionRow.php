@@ -132,9 +132,25 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 			return '';
 		}
 
-		// DAO-bypass-approved: reads the holder of the lock the DAO's own recovery path takes, so routing it through that path would make the primitive depend on itself.
+		// DAO-bypass-approved: this row is what the DAO's own bootstrap locks on (create_db_tables, update_db_version), and it lives in WordPress's options table, which the DAO's recovery path must never CREATE, REPAIR, or raise a missing-plugin-table notice about.
 		$value = $wpdb->get_var("SELECT option_value FROM `" . $table . "` "
 			. "WHERE option_name = " . $boundName . " LIMIT 1");
+
+		// get_var() answers null for "no such row" and for "the statement was
+		// refused", and every other statement in this class tells those two
+		// apart. Returning '' for both is still the right ANSWER -- a caller
+		// reads it as "no holder" and then re-attempts the atomic claim, which
+		// a live holder's row still refuses, so an unreadable row can never
+		// hand out a second copy of a lock. What it must not do is happen
+		// silently: a host that refuses this SELECT refuses the claim next to
+		// it too, which stops every synchronized section on the site with
+		// nothing anywhere saying why.
+		if ($value === null) {
+			$lastError = $this->stringPropertyOf($wpdb, 'last_error');
+			if ($lastError !== null && $lastError !== '') {
+				$this->logStorageFailure('read the options row "' . $optionName . '"', $wpdb);
+			}
+		}
 
 		return is_string($value) ? $value : '';
 	}
