@@ -1,0 +1,88 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "fr_FR",
+                "plural-forms": "nplurals=2; plural=(n \u003E 1);"
+            },
+            ". Thank you.": [
+                ". Merci."
+            ],
+            "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.": [
+                "En cliquant sur Envoyer le rapport, vous consentez à la transmission des informations ci-dessus au développeur de l'extension à des fins d'assistance. Ces données servent uniquement à diagnostiquer votre problème et ne sont partagées avec aucun tiers."
+            ],
+            "Cancel": [
+                "Annuler"
+            ],
+            "Close": [
+                "Fermer"
+            ],
+            "Could not load preview. The full report is still safe to send.": [
+                "Impossible de charger l'aperçu. Le rapport complet peut tout de même être envoyé."
+            ],
+            "Could not send report. Please try again later.": [
+                "Impossible d'envoyer le rapport. Veuillez réessayer plus tard."
+            ],
+            "Hide report contents": [
+                "Masquer le contenu du rapport"
+            ],
+            "List of active plugins": [
+                "Liste des extensions actives"
+            ],
+            "Loading report contents...": [
+                "Chargement du contenu du rapport..."
+            ],
+            "Network error: could not reach the server. Check your internet connection and try again.": [
+                "Erreur réseau : impossible de joindre le serveur. Vérifiez votre connexion Internet et réessayez."
+            ],
+            "Optional message and reply email you provide below": [
+                "Message facultatif et adresse e-mail de réponse que vous indiquez ci-dessous"
+            ],
+            "Plugin, PHP, WordPress, and database versions": [
+                "Versions de l'extension, de PHP, de WordPress et de la base de données"
+            ],
+            "Recent debug log excerpt": [
+                "Extrait récent du journal de débogage"
+            ],
+            "Retry": [
+                "Réessayer"
+            ],
+            "Send debug log to developer": [
+                "Envoyer le journal de débogage au développeur"
+            ],
+            "Send report": [
+                "Envoyer le rapport"
+            ],
+            "Sending...": [
+                "Envoi en cours..."
+            ],
+            "Sent. Reference: ": [
+                "Envoyé. Référence : "
+            ],
+            "Show what's in this report": [
+                "Afficher le contenu de ce rapport"
+            ],
+            "Site URL": [
+                "URL du site"
+            ],
+            "This report includes:": [
+                "Ce rapport contient :"
+            ],
+            "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.": [
+                "Ceci envoie un rapport de diagnostic ponctuel au développeur de l'extension afin qu'il puisse examiner le problème que vous rencontrez."
+            ],
+            "What went wrong? (optional, helps us diagnose)": [
+                "Que s'est-il passé ? (facultatif, cela nous aide à diagnostiquer)"
+            ],
+            "Where should we reply? (optional)": [
+                "Où devons-nous répondre ? (facultatif)"
+            ],
+            "You already sent a report recently. Try again in {minutes} minute(s).": [
+                "Vous avez déjà envoyé un rapport récemment. Réessayez dans {minutes} minute(s)."
+            ]
+        }
+    }
+}

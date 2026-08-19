@@ -106,6 +106,12 @@ if (!function_exists('abj404_degraded_register_support_request')) {
 				$baseUrl . 'js/support-request-button.js',
 				array('abj404-support-request-client', 'abj404-support-request-transport', 'abj404-support-request-modal-view'),
 				$ver, true);
+			// The modal renders wp.i18n.__() strings, so it needs its JED file even on
+			// the degraded page. Guarded because this boot path runs on a broken install
+			// where the class file itself may be one of the missing ones.
+			if (class_exists('ABJ_404_Solution_WPUtils')) {
+				ABJ_404_Solution_WPUtils::registerScriptTranslations();
+			}
 			$supportNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequest::NONCE_ACTION);
 			$previewNonce = wp_create_nonce(ABJ_404_Solution_Ajax_SupportRequestPreview::NONCE_ACTION);
 			$ajaxUrl = admin_url('admin-ajax.php');

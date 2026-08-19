@@ -1,0 +1,88 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "sv_SE",
+                "plural-forms": "nplurals=2; plural=(n != 1);"
+            },
+            ". Thank you.": [
+                ". Tack."
+            ],
+            "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.": [
+                "Genom att klicka på Skicka rapport samtycker du till att informationen ovan överförs till tilläggets utvecklare för supportändamål. Uppgifterna används enbart för att felsöka ditt problem och delas inte med tredje part."
+            ],
+            "Cancel": [
+                "Avbryt"
+            ],
+            "Close": [
+                "Stäng"
+            ],
+            "Could not load preview. The full report is still safe to send.": [
+                "Det gick inte att ladda förhandsgranskningen. Hela rapporten går fortfarande att skicka."
+            ],
+            "Could not send report. Please try again later.": [
+                "Det gick inte att skicka rapporten. Försök igen senare."
+            ],
+            "Hide report contents": [
+                "Dölj rapportens innehåll"
+            ],
+            "List of active plugins": [
+                "Lista över aktiva tillägg"
+            ],
+            "Loading report contents...": [
+                "Laddar rapportens innehåll..."
+            ],
+            "Network error: could not reach the server. Check your internet connection and try again.": [
+                "Nätverksfel: servern kunde inte nås. Kontrollera din internetanslutning och försök igen."
+            ],
+            "Optional message and reply email you provide below": [
+                "Valfritt meddelande och svarsadress som du anger nedan"
+            ],
+            "Plugin, PHP, WordPress, and database versions": [
+                "Versioner av tillägget, PHP, WordPress och databasen"
+            ],
+            "Recent debug log excerpt": [
+                "Senaste utdraget ur felsökningsloggen"
+            ],
+            "Retry": [
+                "Försök igen"
+            ],
+            "Send debug log to developer": [
+                "Skicka felsökningsloggen till utvecklaren"
+            ],
+            "Send report": [
+                "Skicka rapport"
+            ],
+            "Sending...": [
+                "Skickar..."
+            ],
+            "Sent. Reference: ": [
+                "Skickad. Referens: "
+            ],
+            "Show what's in this report": [
+                "Visa vad rapporten innehåller"
+            ],
+            "Site URL": [
+                "Webbplatsens URL"
+            ],
+            "This report includes:": [
+                "Rapporten innehåller:"
+            ],
+            "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.": [
+                "Detta skickar en engångsrapport med diagnostik till tilläggets utvecklare, så att utvecklaren kan undersöka problemet du ser."
+            ],
+            "What went wrong? (optional, helps us diagnose)": [
+                "Vad gick fel? (valfritt, hjälper oss att felsöka)"
+            ],
+            "Where should we reply? (optional)": [
+                "Vart ska vi svara? (valfritt)"
+            ],
+            "You already sent a report recently. Try again in {minutes} minute(s).": [
+                "Du har redan skickat en rapport nyligen. Försök igen om {minutes} minut(er)."
+            ]
+        }
+    }
+}

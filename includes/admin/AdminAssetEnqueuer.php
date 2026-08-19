@@ -178,6 +178,10 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
 
             self::registerSupportRequestAssets();
 
+            // Every translated script has been registered by this point, so one call
+            // wires wp.i18n for whichever of them this screen actually enqueued.
+            ABJ_404_Solution_WPUtils::registerScriptTranslations();
+
             ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-styles', ABJ404_URL . 'includes/html/404solutionStyles.css',
                     array());
             ABJ_404_Solution_WPUtils::my_wp_enq_style('abj404solution-themes', ABJ404_URL . 'includes/html/adminThemes.css',
@@ -239,6 +243,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
         }
         try {
             self::registerSupportRequestAssets();
+            ABJ_404_Solution_WPUtils::registerScriptTranslations();
         } catch (Throwable $e) {
             call_user_func($errorReporter, 'admin_enqueue_scripts:plugins.php', $e);
         }

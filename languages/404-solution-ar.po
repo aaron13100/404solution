@@ -4212,3 +4212,75 @@ msgstr "خطأ: تدعم وجهات التعبير النمطي النسبية �
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "خطأ: تشير وجهة التعبير النمطي إلى $%1$d، لكن النمط المصدر يعرّف %2$d من مجموعات الالتقاط."
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "تعذر تحميل بيانات الرسم البياني. أعد تحميل هذه الصفحة وحاول مرة أخرى."
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "يؤدي هذا إلى إرسال تقرير تشخيصي لمرة واحدة إلى مطور الإضافة ليتمكن من فحص المشكلة التي تواجهها."
+
+msgid "This report includes:"
+msgstr "يتضمن هذا التقرير:"
+
+msgid "Site URL"
+msgstr "رابط الموقع"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "إصدارات الإضافة وPHP وووردبريس وقاعدة البيانات"
+
+msgid "List of active plugins"
+msgstr "قائمة الإضافات النشطة"
+
+msgid "Recent debug log excerpt"
+msgstr "مقتطف حديث من سجل التصحيح"
+
+msgid "Optional message and reply email you provide below"
+msgstr "رسالة اختيارية وبريد إلكتروني للرد تقدمهما أدناه"
+
+msgid "Show what's in this report"
+msgstr "عرض محتويات هذا التقرير"
+
+msgid "Hide report contents"
+msgstr "إخفاء محتويات التقرير"
+
+msgid "Loading report contents..."
+msgstr "جاري تحميل محتويات التقرير..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "تعذر تحميل المعاينة. لا يزال بالإمكان إرسال التقرير الكامل بأمان."
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "ما الخطأ الذي حدث؟ (اختياري، يساعدنا في التشخيص)"
+
+msgid "Where should we reply? (optional)"
+msgstr "إلى أين نرد؟ (اختياري)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "بالنقر على إرسال التقرير، فإنك توافق على إرسال المعلومات أعلاه إلى مطور الإضافة لأغراض الدعم. تُستخدم البيانات فقط لتشخيص مشكلتك ولا تتم مشاركتها مع أطراف أخرى."
+
+msgid "Send report"
+msgstr "إرسال التقرير"
+
+msgid "Sending..."
+msgstr "جاري الإرسال..."
+
+msgid "Retry"
+msgstr "إعادة المحاولة"
+
+msgid "Sent. Reference: "
+msgstr "تم الإرسال. الرقم المرجعي: "
+
+msgid ". Thank you."
+msgstr ". شكراً لك."
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "لقد أرسلت تقريراً مؤخراً. حاول مرة أخرى بعد {minutes} دقيقة."
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "خطأ في الشبكة: تعذر الوصول إلى الخادم. تحقق من اتصالك بالإنترنت وحاول مرة أخرى."
+
+msgid "Could not send report. Please try again later."
+msgstr "تعذر إرسال التقرير. يرجى المحاولة مرة أخرى لاحقاً."
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "تعذر تحميل إعدادات أداة الترحيل. أعد تحميل هذه الصفحة وحاول مرة أخرى."

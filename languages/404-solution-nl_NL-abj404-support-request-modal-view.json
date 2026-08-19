@@ -1,0 +1,88 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "nl_NL",
+                "plural-forms": "nplurals=2; plural=(n != 1);"
+            },
+            ". Thank you.": [
+                ". Bedankt."
+            ],
+            "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.": [
+                "Door op Rapport versturen te klikken, stem je ermee in dat de bovenstaande informatie voor ondersteuningsdoeleinden naar de plugin-ontwikkelaar wordt verstuurd. De gegevens worden alleen gebruikt om je probleem te onderzoeken en worden niet gedeeld met derden."
+            ],
+            "Cancel": [
+                "Annuleren"
+            ],
+            "Close": [
+                "Sluiten"
+            ],
+            "Could not load preview. The full report is still safe to send.": [
+                "Kan het voorbeeld niet laden. Het volledige rapport kan nog steeds veilig worden verstuurd."
+            ],
+            "Could not send report. Please try again later.": [
+                "Kan het rapport niet versturen. Probeer het later opnieuw."
+            ],
+            "Hide report contents": [
+                "Rapportinhoud verbergen"
+            ],
+            "List of active plugins": [
+                "Lijst met actieve plugins"
+            ],
+            "Loading report contents...": [
+                "Rapportinhoud laden..."
+            ],
+            "Network error: could not reach the server. Check your internet connection and try again.": [
+                "Netwerkfout: de server is niet bereikbaar. Controleer je internetverbinding en probeer het opnieuw."
+            ],
+            "Optional message and reply email you provide below": [
+                "Optioneel bericht en antwoord-e-mailadres die je hieronder opgeeft"
+            ],
+            "Plugin, PHP, WordPress, and database versions": [
+                "Versies van de plugin, PHP, WordPress en de database"
+            ],
+            "Recent debug log excerpt": [
+                "Recent fragment uit het debug-logboek"
+            ],
+            "Retry": [
+                "Opnieuw proberen"
+            ],
+            "Send debug log to developer": [
+                "Debug-logboek naar ontwikkelaar sturen"
+            ],
+            "Send report": [
+                "Rapport versturen"
+            ],
+            "Sending...": [
+                "Bezig met versturen..."
+            ],
+            "Sent. Reference: ": [
+                "Verstuurd. Referentie: "
+            ],
+            "Show what's in this report": [
+                "Toon wat er in dit rapport staat"
+            ],
+            "Site URL": [
+                "Site-URL"
+            ],
+            "This report includes:": [
+                "Dit rapport bevat:"
+            ],
+            "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.": [
+                "Hiermee wordt een eenmalig diagnoserapport naar de plugin-ontwikkelaar gestuurd, zodat die het probleem dat je ziet kan onderzoeken."
+            ],
+            "What went wrong? (optional, helps us diagnose)": [
+                "Wat ging er mis? (optioneel, helpt ons bij de diagnose)"
+            ],
+            "Where should we reply? (optional)": [
+                "Waar moeten we antwoorden? (optioneel)"
+            ],
+            "You already sent a report recently. Try again in {minutes} minute(s).": [
+                "Je hebt onlangs al een rapport verstuurd. Probeer het over {minutes} minuut\/minuten opnieuw."
+            ]
+        }
+    }
+}

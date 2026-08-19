@@ -1,0 +1,88 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "ja",
+                "plural-forms": "nplurals=1; plural=0;"
+            },
+            ". Thank you.": [
+                "。ありがとうございました。"
+            ],
+            "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.": [
+                "レポートを送信をクリックすると、上記の情報がサポート目的でプラグイン開発者に送信されることに同意したことになります。データはお客様の問題の診断にのみ使用され、第三者と共有されることはありません。"
+            ],
+            "Cancel": [
+                "キャンセル"
+            ],
+            "Close": [
+                "閉じる"
+            ],
+            "Could not load preview. The full report is still safe to send.": [
+                "プレビューを読み込めませんでした。レポート全体はそのまま安全に送信できます。"
+            ],
+            "Could not send report. Please try again later.": [
+                "レポートを送信できませんでした。しばらくしてからもう一度お試しください。"
+            ],
+            "Hide report contents": [
+                "レポートの内容を隠す"
+            ],
+            "List of active plugins": [
+                "有効なプラグインの一覧"
+            ],
+            "Loading report contents...": [
+                "レポートの内容を読み込み中..."
+            ],
+            "Network error: could not reach the server. Check your internet connection and try again.": [
+                "ネットワークエラー: サーバーに接続できませんでした。インターネット接続を確認してやり直してください。"
+            ],
+            "Optional message and reply email you provide below": [
+                "下に入力する任意のメッセージと返信用メールアドレス"
+            ],
+            "Plugin, PHP, WordPress, and database versions": [
+                "プラグイン、PHP、WordPress、データベースの各バージョン"
+            ],
+            "Recent debug log excerpt": [
+                "最近のデバッグログの抜粋"
+            ],
+            "Retry": [
+                "再試行"
+            ],
+            "Send debug log to developer": [
+                "デバッグログを開発者に送信"
+            ],
+            "Send report": [
+                "レポートを送信"
+            ],
+            "Sending...": [
+                "送信中..."
+            ],
+            "Sent. Reference: ": [
+                "送信しました。参照番号: "
+            ],
+            "Show what's in this report": [
+                "このレポートの内容を表示"
+            ],
+            "Site URL": [
+                "サイト URL"
+            ],
+            "This report includes:": [
+                "このレポートに含まれる情報:"
+            ],
+            "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.": [
+                "これは、お使いの環境で起きている問題を調査できるよう、診断レポートを一度だけプラグイン開発者に送信します。"
+            ],
+            "What went wrong? (optional, helps us diagnose)": [
+                "何が起きましたか? (任意、診断に役立ちます)"
+            ],
+            "Where should we reply? (optional)": [
+                "返信先はどちらにしますか? (任意)"
+            ],
+            "You already sent a report recently. Try again in {minutes} minute(s).": [
+                "最近レポートを送信済みです。{minutes} 分後にもう一度お試しください。"
+            ]
+        }
+    }
+}

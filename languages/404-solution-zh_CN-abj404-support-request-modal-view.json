@@ -1,0 +1,88 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "zh_CN",
+                "plural-forms": "nplurals=1; plural=0;"
+            },
+            ". Thank you.": [
+                "。谢谢。"
+            ],
+            "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.": [
+                "点击发送报告即表示您同意将上述信息发送给插件开发者用于支持目的。这些数据仅用于诊断您的问题，不会与第三方共享。"
+            ],
+            "Cancel": [
+                "取消"
+            ],
+            "Close": [
+                "关闭"
+            ],
+            "Could not load preview. The full report is still safe to send.": [
+                "无法加载预览。完整报告仍可安全发送。"
+            ],
+            "Could not send report. Please try again later.": [
+                "无法发送报告。请稍后重试。"
+            ],
+            "Hide report contents": [
+                "隐藏报告内容"
+            ],
+            "List of active plugins": [
+                "已启用插件列表"
+            ],
+            "Loading report contents...": [
+                "正在加载报告内容..."
+            ],
+            "Network error: could not reach the server. Check your internet connection and try again.": [
+                "网络错误: 无法连接服务器。请检查您的网络连接后重试。"
+            ],
+            "Optional message and reply email you provide below": [
+                "您在下方填写的可选留言和回复邮箱"
+            ],
+            "Plugin, PHP, WordPress, and database versions": [
+                "插件、PHP、WordPress 以及数据库的版本"
+            ],
+            "Recent debug log excerpt": [
+                "最近的调试日志摘录"
+            ],
+            "Retry": [
+                "重试"
+            ],
+            "Send debug log to developer": [
+                "将调试日志发送给开发者"
+            ],
+            "Send report": [
+                "发送报告"
+            ],
+            "Sending...": [
+                "正在发送..."
+            ],
+            "Sent. Reference: ": [
+                "已发送。参考编号: "
+            ],
+            "Show what's in this report": [
+                "查看此报告包含的内容"
+            ],
+            "Site URL": [
+                "站点 URL"
+            ],
+            "This report includes:": [
+                "此报告包含:"
+            ],
+            "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.": [
+                "此操作会向插件开发者发送一次性诊断报告，以便其调查您遇到的问题。"
+            ],
+            "What went wrong? (optional, helps us diagnose)": [
+                "出了什么问题? (可选，有助于我们诊断)"
+            ],
+            "Where should we reply? (optional)": [
+                "我们应回复到哪里? (可选)"
+            ],
+            "You already sent a report recently. Try again in {minutes} minute(s).": [
+                "您最近已经发送过报告。请在 {minutes} 分钟后重试。"
+            ]
+        }
+    }
+}

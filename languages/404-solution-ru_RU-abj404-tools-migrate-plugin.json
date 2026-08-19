@@ -1,0 +1,16 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "ru_RU",
+                "plural-forms": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10\u003E=2 && n%10\u003C=4 && (n%100\u003C10 || n%100\u003E=20) ? 1 : 2);"
+            },
+            "Could not load the migration tool configuration. Reload this page and try again.": [
+                "Не удалось загрузить конфигурацию инструмента миграции. Перезагрузите эту страницу и повторите попытку."
+            ]
+        }
+    }
+}

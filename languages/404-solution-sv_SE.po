@@ -4188,3 +4188,75 @@ msgstr "Fel: Relativa regex-destinationer stöder numrerade fångstgrupper skriv
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "Fel: Regex-destinationen refererar till $%1$d, men källmönstret definierar %2$d fångstgrupp(er)."
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "Det gick inte att ladda diagramdata. Ladda om sidan och försök igen."
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "Detta skickar en engångsrapport med diagnostik till tilläggets utvecklare, så att utvecklaren kan undersöka problemet du ser."
+
+msgid "This report includes:"
+msgstr "Rapporten innehåller:"
+
+msgid "Site URL"
+msgstr "Webbplatsens URL"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "Versioner av tillägget, PHP, WordPress och databasen"
+
+msgid "List of active plugins"
+msgstr "Lista över aktiva tillägg"
+
+msgid "Recent debug log excerpt"
+msgstr "Senaste utdraget ur felsökningsloggen"
+
+msgid "Optional message and reply email you provide below"
+msgstr "Valfritt meddelande och svarsadress som du anger nedan"
+
+msgid "Show what's in this report"
+msgstr "Visa vad rapporten innehåller"
+
+msgid "Hide report contents"
+msgstr "Dölj rapportens innehåll"
+
+msgid "Loading report contents..."
+msgstr "Laddar rapportens innehåll..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "Det gick inte att ladda förhandsgranskningen. Hela rapporten går fortfarande att skicka."
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "Vad gick fel? (valfritt, hjälper oss att felsöka)"
+
+msgid "Where should we reply? (optional)"
+msgstr "Vart ska vi svara? (valfritt)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "Genom att klicka på Skicka rapport samtycker du till att informationen ovan överförs till tilläggets utvecklare för supportändamål. Uppgifterna används enbart för att felsöka ditt problem och delas inte med tredje part."
+
+msgid "Send report"
+msgstr "Skicka rapport"
+
+msgid "Sending..."
+msgstr "Skickar..."
+
+msgid "Retry"
+msgstr "Försök igen"
+
+msgid "Sent. Reference: "
+msgstr "Skickad. Referens: "
+
+msgid ". Thank you."
+msgstr ". Tack."
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "Du har redan skickat en rapport nyligen. Försök igen om {minutes} minut(er)."
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "Nätverksfel: servern kunde inte nås. Kontrollera din internetanslutning och försök igen."
+
+msgid "Could not send report. Please try again later."
+msgstr "Det gick inte att skicka rapporten. Försök igen senare."
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "Det gick inte att ladda konfigurationen för migreringsverktyget. Ladda om sidan och försök igen."

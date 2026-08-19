@@ -4187,3 +4187,75 @@ msgstr "Ошибка: относительные назначения регул
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "Ошибка: назначение регулярного выражения ссылается на $%1$d, но исходный шаблон определяет %2$d групп(ы) захвата."
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "Не удалось загрузить данные диаграммы. Перезагрузите эту страницу и повторите попытку."
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "Это отправит разработчику плагина однократный диагностический отчет, чтобы он смог разобраться в возникшей у вас проблеме."
+
+msgid "This report includes:"
+msgstr "Этот отчет включает:"
+
+msgid "Site URL"
+msgstr "URL сайта"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "Версии плагина, PHP, WordPress и базы данных"
+
+msgid "List of active plugins"
+msgstr "Список активных плагинов"
+
+msgid "Recent debug log excerpt"
+msgstr "Недавний фрагмент журнала отладки"
+
+msgid "Optional message and reply email you provide below"
+msgstr "Необязательное сообщение и адрес для ответа, указанные вами ниже"
+
+msgid "Show what's in this report"
+msgstr "Показать содержимое этого отчета"
+
+msgid "Hide report contents"
+msgstr "Скрыть содержимое отчета"
+
+msgid "Loading report contents..."
+msgstr "Загрузка содержимого отчета..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "Не удалось загрузить предпросмотр. Полный отчет по-прежнему можно безопасно отправить."
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "Что пошло не так? (необязательно, помогает нам с диагностикой)"
+
+msgid "Where should we reply? (optional)"
+msgstr "Куда нам ответить? (необязательно)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "Нажимая кнопку «Отправить отчет», вы соглашаетесь на передачу указанных выше сведений разработчику плагина в целях поддержки. Эти данные используются только для диагностики вашей проблемы и не передаются третьим лицам."
+
+msgid "Send report"
+msgstr "Отправить отчет"
+
+msgid "Sending..."
+msgstr "Отправка..."
+
+msgid "Retry"
+msgstr "Повторить"
+
+msgid "Sent. Reference: "
+msgstr "Отправлено. Номер: "
+
+msgid ". Thank you."
+msgstr ". Спасибо."
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "Вы уже отправляли отчет недавно. Повторите попытку через {minutes} мин."
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "Сетевая ошибка: не удалось связаться с сервером. Проверьте подключение к интернету и повторите попытку."
+
+msgid "Could not send report. Please try again later."
+msgstr "Не удалось отправить отчет. Повторите попытку позже."
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "Не удалось загрузить конфигурацию инструмента миграции. Перезагрузите эту страницу и повторите попытку."

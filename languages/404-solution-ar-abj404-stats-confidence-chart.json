@@ -1,0 +1,16 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "ar",
+                "plural-forms": "nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100\u003E=3 && n%100\u003C=10 ? 3 : n%100\u003E=11 && n%100\u003C=99 ? 4 : 5);"
+            },
+            "Could not load chart data. Reload this page and try again.": [
+                "تعذر تحميل بيانات الرسم البياني. أعد تحميل هذه الصفحة وحاول مرة أخرى."
+            ]
+        }
+    }
+}

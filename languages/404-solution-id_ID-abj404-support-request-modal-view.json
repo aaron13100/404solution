@@ -1,0 +1,88 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "id_ID",
+                "plural-forms": "nplurals=2; plural=n \u003E 1;"
+            },
+            ". Thank you.": [
+                ". Terima kasih."
+            ],
+            "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties.": [
+                "Dengan mengklik Kirim laporan, Anda menyetujui pengiriman informasi di atas kepada pengembang plugin untuk keperluan dukungan. Data hanya digunakan untuk mendiagnosis masalah Anda dan tidak dibagikan kepada pihak ketiga."
+            ],
+            "Cancel": [
+                "Batal"
+            ],
+            "Close": [
+                "Tutup"
+            ],
+            "Could not load preview. The full report is still safe to send.": [
+                "Tidak dapat memuat pratinjau. Laporan lengkap tetap aman untuk dikirim."
+            ],
+            "Could not send report. Please try again later.": [
+                "Tidak dapat mengirim laporan. Silakan coba lagi nanti."
+            ],
+            "Hide report contents": [
+                "Sembunyikan isi laporan"
+            ],
+            "List of active plugins": [
+                "Daftar plugin aktif"
+            ],
+            "Loading report contents...": [
+                "Memuat isi laporan..."
+            ],
+            "Network error: could not reach the server. Check your internet connection and try again.": [
+                "Kesalahan jaringan: tidak dapat menghubungi server. Periksa koneksi internet Anda dan coba lagi."
+            ],
+            "Optional message and reply email you provide below": [
+                "Pesan opsional dan email balasan yang Anda isi di bawah"
+            ],
+            "Plugin, PHP, WordPress, and database versions": [
+                "Versi plugin, PHP, WordPress, dan basis data"
+            ],
+            "Recent debug log excerpt": [
+                "Kutipan terbaru dari log debug"
+            ],
+            "Retry": [
+                "Coba lagi"
+            ],
+            "Send debug log to developer": [
+                "Kirim log debug ke pengembang"
+            ],
+            "Send report": [
+                "Kirim laporan"
+            ],
+            "Sending...": [
+                "Mengirim..."
+            ],
+            "Sent. Reference: ": [
+                "Terkirim. Referensi: "
+            ],
+            "Show what's in this report": [
+                "Tampilkan isi laporan ini"
+            ],
+            "Site URL": [
+                "URL situs"
+            ],
+            "This report includes:": [
+                "Laporan ini mencakup:"
+            ],
+            "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing.": [
+                "Ini mengirimkan satu laporan diagnostik sekali jalan kepada pengembang plugin agar mereka dapat menyelidiki masalah yang Anda alami."
+            ],
+            "What went wrong? (optional, helps us diagnose)": [
+                "Apa yang bermasalah? (opsional, membantu kami mendiagnosis)"
+            ],
+            "Where should we reply? (optional)": [
+                "Ke mana kami harus membalas? (opsional)"
+            ],
+            "You already sent a report recently. Try again in {minutes} minute(s).": [
+                "Anda baru saja mengirim laporan. Coba lagi dalam {minutes} menit."
+            ]
+        }
+    }
+}

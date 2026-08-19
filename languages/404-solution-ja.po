@@ -4191,3 +4191,75 @@ msgstr "エラー：相対の正規表現リダイレクト先は (...) と書�
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "エラー：正規表現のリダイレクト先が $%1$d を参照していますが、ソースパターンで定義されているキャプチャグループは %2$d 個です。"
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "グラフデータを読み込めませんでした。このページを再読み込みしてやり直してください。"
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "これは、お使いの環境で起きている問題を調査できるよう、診断レポートを一度だけプラグイン開発者に送信します。"
+
+msgid "This report includes:"
+msgstr "このレポートに含まれる情報:"
+
+msgid "Site URL"
+msgstr "サイト URL"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "プラグイン、PHP、WordPress、データベースの各バージョン"
+
+msgid "List of active plugins"
+msgstr "有効なプラグインの一覧"
+
+msgid "Recent debug log excerpt"
+msgstr "最近のデバッグログの抜粋"
+
+msgid "Optional message and reply email you provide below"
+msgstr "下に入力する任意のメッセージと返信用メールアドレス"
+
+msgid "Show what's in this report"
+msgstr "このレポートの内容を表示"
+
+msgid "Hide report contents"
+msgstr "レポートの内容を隠す"
+
+msgid "Loading report contents..."
+msgstr "レポートの内容を読み込み中..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "プレビューを読み込めませんでした。レポート全体はそのまま安全に送信できます。"
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "何が起きましたか? (任意、診断に役立ちます)"
+
+msgid "Where should we reply? (optional)"
+msgstr "返信先はどちらにしますか? (任意)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "レポートを送信をクリックすると、上記の情報がサポート目的でプラグイン開発者に送信されることに同意したことになります。データはお客様の問題の診断にのみ使用され、第三者と共有されることはありません。"
+
+msgid "Send report"
+msgstr "レポートを送信"
+
+msgid "Sending..."
+msgstr "送信中..."
+
+msgid "Retry"
+msgstr "再試行"
+
+msgid "Sent. Reference: "
+msgstr "送信しました。参照番号: "
+
+msgid ". Thank you."
+msgstr "。ありがとうございました。"
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "最近レポートを送信済みです。{minutes} 分後にもう一度お試しください。"
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "ネットワークエラー: サーバーに接続できませんでした。インターネット接続を確認してやり直してください。"
+
+msgid "Could not send report. Please try again later."
+msgstr "レポートを送信できませんでした。しばらくしてからもう一度お試しください。"
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "移行ツールの設定を読み込めませんでした。このページを再読み込みしてやり直してください。"

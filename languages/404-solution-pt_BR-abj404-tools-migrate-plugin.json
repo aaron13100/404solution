@@ -1,0 +1,16 @@
+{
+    "generator": "404 Solution scripts\/build-script-translations.php",
+    "domain": "messages",
+    "locale_data": {
+        "messages": {
+            "": {
+                "domain": "messages",
+                "lang": "pt_BR",
+                "plural-forms": "nplurals=2; plural=(n \u003E 1);"
+            },
+            "Could not load the migration tool configuration. Reload this page and try again.": [
+                "Não foi possível carregar a configuração da ferramenta de migração. Recarregue esta página e tente novamente."
+            ]
+        }
+    }
+}

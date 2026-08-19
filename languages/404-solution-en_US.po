@@ -4223,3 +4223,75 @@ msgstr "Error: Relative regex destinations support numbered capture groups writt
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "Could not load chart data. Reload this page and try again."
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+
+msgid "This report includes:"
+msgstr "This report includes:"
+
+msgid "Site URL"
+msgstr "Site URL"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "Plugin, PHP, WordPress, and database versions"
+
+msgid "List of active plugins"
+msgstr "List of active plugins"
+
+msgid "Recent debug log excerpt"
+msgstr "Recent debug log excerpt"
+
+msgid "Optional message and reply email you provide below"
+msgstr "Optional message and reply email you provide below"
+
+msgid "Show what's in this report"
+msgstr "Show what's in this report"
+
+msgid "Hide report contents"
+msgstr "Hide report contents"
+
+msgid "Loading report contents..."
+msgstr "Loading report contents..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "Could not load preview. The full report is still safe to send."
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "What went wrong? (optional, helps us diagnose)"
+
+msgid "Where should we reply? (optional)"
+msgstr "Where should we reply? (optional)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+
+msgid "Send report"
+msgstr "Send report"
+
+msgid "Sending..."
+msgstr "Sending..."
+
+msgid "Retry"
+msgstr "Retry"
+
+msgid "Sent. Reference: "
+msgstr "Sent. Reference: "
+
+msgid ". Thank you."
+msgstr ". Thank you."
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "You already sent a report recently. Try again in {minutes} minute(s)."
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "Network error: could not reach the server. Check your internet connection and try again."
+
+msgid "Could not send report. Please try again later."
+msgstr "Could not send report. Please try again later."
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "Could not load the migration tool configuration. Reload this page and try again."

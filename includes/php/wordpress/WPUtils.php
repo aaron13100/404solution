@@ -233,5 +233,119 @@ class ABJ_404_Solution_WPUtils {
 		}
 		return false;
 	}
-	
+
+	/** Text domain shared by every translated asset in this plugin. */
+	const TEXT_DOMAIN = '404-solution';
+
+	/** Register wp.i18n translations for every script handle this screen enqueued.
+	 *
+	 * wp_set_script_translations() looks for languages/404-solution-{locale}-{handle}.json
+	 * (built from the .po catalogs by scripts/build-script-translations.php) and
+	 * prints a wp.i18n.setLocaleData() call ahead of the handle, so the JS __() calls
+	 * resolve against the same catalog the PHP side uses. It is a no-op for a handle
+	 * that the current screen never registered, so calling this once per enqueue
+	 * context covers every screen without per-screen branching.
+	 *
+	 * @return void
+	 */
+	static function registerScriptTranslations(): void {
+		if (!function_exists('wp_set_script_translations')) {
+			return;
+		}
+
+		self::addPluginLocaleScriptTranslationFilter();
+
+		$languagesDir = defined('ABJ404_PATH') ? ABJ404_PATH . 'languages' :
+			dirname(dirname(dirname(__DIR__))) . '/languages';
+		foreach (array_keys(self::scriptTranslationHandles()) as $handle) {
+			wp_set_script_translations($handle, self::TEXT_DOMAIN, $languagesDir);
+		}
+	}
+
+	/** The handle-to-JS-source map shared by the runtime, the JSON builder and the tests.
+	 *
+	 * @return array<string, string>
+	 */
+	static function scriptTranslationHandles(): array {
+		$dataFile = (defined('ABJ404_PATH') ? ABJ404_PATH : dirname(dirname(dirname(__DIR__))) . '/') .
+			'includes/data/script-translation-handles.php';
+		if (!is_file($dataFile)) {
+			return array();
+		}
+		$handles = include $dataFile;
+		if (!is_array($handles)) {
+			return array();
+		}
+		// Validate the shape rather than trusting the include. A data file that was
+		// truncated or edited into the wrong shape would otherwise reach
+		// wp_set_script_translations() as a non-string handle, where it fails silently
+		// and the modal renders in English with nothing in any log. Dropping the bad
+		// entries here means the worst case is a missing translation the positive
+		// control in ScriptTranslationsTest already fails on.
+		$typed = array();
+		foreach ($handles as $handle => $jsSource) {
+			if (is_string($handle) && is_string($jsSource)) {
+				$typed[$handle] = $jsSource;
+			}
+		}
+		return $typed;
+	}
+
+	/** Register the filter that honours the plugin's own language override for JS strings.
+	 *
+	 * The "Plugin Language Override" setting is applied to PHP translations through the
+	 * plugin_locale filter (abj404_override_plugin_locale). WordPress builds the script
+	 * translation filename from determine_locale() instead, which does not see that
+	 * override, so without this the admin page would render in the chosen language while
+	 * the modal stayed in the site language. Rewriting the filename keeps both sides on
+	 * one locale decision rather than introducing a second one.
+	 *
+	 * @return void
+	 */
+	private static function addPluginLocaleScriptTranslationFilter(): void {
+		static $added = false;
+		if ($added || !function_exists('add_filter')) {
+			return;
+		}
+		$added = true;
+		add_filter('load_script_translation_file',
+			array('ABJ_404_Solution_WPUtils', 'useOverriddenPluginLocaleForScriptTranslations'), 10, 3);
+	}
+
+	/** Point a script-translation lookup at the overridden plugin locale when one is set.
+	 *
+	 * Falls through to the unmodified path whenever no override applies or the overridden
+	 * locale has no JSON file, so a missing override catalog degrades to the site locale
+	 * rather than to no translations at all.
+	 *
+	 * @param mixed $file   Absolute path WordPress resolved for the current locale.
+	 * @param string $handle Script handle being translated.
+	 * @param string $domain Text domain being translated.
+	 * @return mixed The path to load.
+	 */
+	static function useOverriddenPluginLocaleForScriptTranslations($file, $handle, $domain) {
+		if ($domain !== self::TEXT_DOMAIN || !is_string($file) || $file === '') {
+			return $file;
+		}
+
+		$locale = function_exists('determine_locale') ? determine_locale() :
+			(function_exists('get_locale') ? get_locale() : '');
+		if (!is_string($locale) || $locale === '') {
+			return $file;
+		}
+		$pluginLocale = apply_filters('plugin_locale', $locale, self::TEXT_DOMAIN);
+		if (!is_string($pluginLocale) || $pluginLocale === '' || $pluginLocale === $locale) {
+			return $file;
+		}
+
+		$prefix = self::TEXT_DOMAIN . '-' . $locale . '-';
+		$base = basename($file);
+		if (strpos($base, $prefix) !== 0) {
+			return $file;
+		}
+		$overridden = dirname($file) . '/' . self::TEXT_DOMAIN . '-' . $pluginLocale . '-' .
+			substr($base, strlen($prefix));
+		return is_file($overridden) ? $overridden : $file;
+	}
+
 }

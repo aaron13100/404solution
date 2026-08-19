@@ -3604,3 +3604,99 @@ msgstr ""
 #, php-format
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr ""
+
+#: includes/js/statsConfidenceChart.js:25
+msgid "Could not load chart data. Reload this page and try again."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:133
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:135
+msgid "This report includes:"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:137
+msgid "Site URL"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:139
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:141
+msgid "List of active plugins"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:143
+msgid "Recent debug log excerpt"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:145
+msgid "Optional message and reply email you provide below"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:147
+msgid "Show what's in this report"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:149
+msgid "Hide report contents"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:151
+msgid "Loading report contents..."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:153
+msgid "Could not load preview. The full report is still safe to send."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:155
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:157
+msgid "Where should we reply? (optional)"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:159
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:161
+msgid "Send report"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:165
+msgid "Sending..."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:167
+msgid "Retry"
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:171
+msgid "Sent. Reference: "
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:173
+msgid ". Thank you."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:175
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:177
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr ""
+
+#: includes/js/support-request-modal-view.js:179
+msgid "Could not send report. Please try again later."
+msgstr ""
+
+#: includes/js/toolsMigratePlugin.js:28
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr ""
