@@ -533,9 +533,8 @@ msgstr "Fel: Inga ID(n) hittades för redigeringsbegäran."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Fel: Inga ID(n) angivna för massåtgärd. (%s)"
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
-msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Fel: För många ID(n) angivna för massåtgärd (max %d). (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Fel: Inga poster importerades. SQL-resultat: %s"
@@ -1924,13 +1923,13 @@ msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
 msgstr "Behöver du mer kontroll? Byt till avancerat läge för 30+ ytterligare alternativ."
 
 msgid "Need more control?"
-msgstr "Need more control?"
+msgstr "Behöver du mer kontroll?"
 
 msgid "Switch to Advanced Mode"
-msgstr "Switch to Advanced Mode"
+msgstr "Byt till avancerat läge"
 
 msgid "for 30+ additional options."
-msgstr "for 30+ additional options."
+msgstr "för 30+ ytterligare alternativ."
 
 msgid "Statistics"
 msgstr "Statistik"
@@ -2084,11 +2083,11 @@ msgstr "Denna sida finns inte eller är inte publicerad, så omdirigeringen komm
 
 #: includes/DataAccess.php
 msgid "Just now"
-msgstr "Just now"
+msgstr "Just nu"
 
 #: includes/View.php
 msgid "Data may not be immediately updated. Refresh to see latest changes."
-msgstr "Data may not be immediately updated. Refresh to see latest changes."
+msgstr "Data uppdateras kanske inte omedelbart. Ladda om sidan för att se de senaste ändringarna."
 
 #: includes/View.php
 msgid "Refresh scheduled"
@@ -2188,7 +2187,7 @@ msgstr "url-looks-like-regex"
 
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
-msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "Den här URL:en ser ut som ett reguljärt uttryck men är inte markerad som ett. Redigera omdirigeringen och markera \"Behandla denna URL som ett reguljärt uttryck\"."
 
 msgid "Create redirect from old URL to new URL"
 msgstr "Skapa omdirigering från gammal URL till ny URL"
@@ -2323,11 +2322,11 @@ msgstr "Uppladdningskatalog skrivbar"
 
 #: includes/View.php
 msgid "Yes"
-msgstr "Yes"
+msgstr "Ja"
 
 #: includes/View.php
 msgid "No"
-msgstr "No"
+msgstr "Nej"
 
 #: includes/View.php
 msgid "mbstring Extension"
@@ -2399,7 +2398,7 @@ msgstr "PÅ (%d ms per tilläggsfråga)"
 
 #: includes/View.php
 msgid "OFF"
-msgstr "OFF"
+msgstr "AV"
 
 #: includes/View.php
 msgid "Refreshing data in background…"
@@ -2808,7 +2807,7 @@ msgid "Referrer URL"
 msgstr "Hänvisnings-URL"
 
 msgid "User Agent"
-msgstr "User Agent"
+msgstr "Användaragent"
 
 msgid "IP Range (CIDR)"
 msgstr "IP-intervall (CIDR)"
@@ -3202,7 +3201,7 @@ msgid "Most sites do not need Engine Profiles. They are for advanced scenarios w
 msgstr "De flesta webbplatser behöver inga Engine-profiler. De är för avancerade scenarier där en del av din webbplats behöver en annan förslagslogik än resten."
 
 msgid "Name"
-msgstr "Name"
+msgstr "Namn"
 
 msgid "URL Pattern"
 msgstr "URL-mönster"
@@ -3583,109 +3582,109 @@ msgid "No access token received from authorization."
 msgstr "Ingen åtkomsttoken mottogs vid auktoriseringen."
 
 msgid "Automatically trash bot and spam URLs"
-msgstr "Automatically trash bot and spam URLs"
+msgstr "Flytta automatiskt bot- och skräp-URL:er till papperskorgen"
 
 msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
-msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "Flytta automatiskt infångade URL:er från bottar och säkerhetsskannrar till papperskorgen vid det dagliga underhållet"
 
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution övervakar nu din webbplats. När besökare hamnar på trasiga länkar omdirigeras de automatiskt. Vi mejlar dig om något behöver din uppmärksamhet."
 
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution övervakar nu din webbplats. När besökare hamnar på trasiga länkar omdirigeras de automatiskt."
 
 msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
-msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution övervakar nu din webbplats. Vi mejlar dig om infångade 404-URL:er behöver din uppmärksamhet."
 
 msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
-msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution övervakar nu din webbplats. Du kan när som helst skapa manuella omdirigeringar från fliken Sidomdirigeringar."
 
 msgid "You're all set!"
-msgstr "You're all set!"
+msgstr "Allt är klart!"
 
 msgid "Get email alerts about 404 problems?"
-msgstr "Get email alerts about 404 problems?"
+msgstr "Vill du få e-postaviseringar om 404-problem?"
 
 msgid "Yes, email me a weekly summary (recommended)"
-msgstr "Yes, email me a weekly summary (recommended)"
+msgstr "Ja, mejla mig en veckosammanfattning (rekommenderas)"
 
 msgid "Get notified when captured 404 URLs exceed 50"
-msgstr "Get notified when captured 404 URLs exceed 50"
+msgstr "Få en avisering när antalet infångade 404-URL:er överstiger 50"
 
 msgid "You can always enable email alerts later in Options"
-msgstr "You can always enable email alerts later in Options"
+msgstr "Du kan alltid aktivera e-postaviseringar senare under Alternativ"
 
 msgid "No, I'll check manually"
-msgstr "No, I'll check manually"
+msgstr "Nej, jag kontrollerar manuellt"
 
 msgid "Automatic Permanent Redirects"
-msgstr "Automatic Permanent Redirects"
+msgstr "Automatiska permanenta omdirigeringar"
 
 msgid "Automatic Temporary Redirects"
-msgstr "Automatic Temporary Redirects"
+msgstr "Automatiska tillfälliga omdirigeringar"
 
 msgid "Manual Permanent Redirects"
-msgstr "Manual Permanent Redirects"
+msgstr "Manuella permanenta omdirigeringar"
 
 msgid "Manual Temporary Redirects"
-msgstr "Manual Temporary Redirects"
+msgstr "Manuella tillfälliga omdirigeringar"
 
 msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
-msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "Trasiga länkar som besökare försökte nå. Välj Skapa omdirigering för de viktiga och Avfärda resten."
 
 msgid "Needs Review"
-msgstr "Needs Review"
+msgstr "Behöver granskas"
 
 msgid "Handled"
-msgstr "Handled"
+msgstr "Hanterade"
 
 msgid "Dismiss"
-msgstr "Dismiss"
+msgstr "Avfärda"
 
 msgid "All good — %d redirects active, no URLs need attention"
-msgstr "All good — %d redirects active, no URLs need attention"
+msgstr "Allt är bra: %d omdirigeringar aktiva, inga URL:er behöver åtgärdas"
 
 msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
-msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d omdirigeringar aktiva: %2$d infångade URL:er har återkommande besökare"
 
 msgid "View"
-msgstr "View"
+msgstr "Visa"
 
 msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
-msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "Tillägget skapar dessa automatiskt. Du behöver bara agera när statusfältet ovan säger det."
 
 msgid "Blocked"
-msgstr "Blocked"
+msgstr "Blockerad"
 
 msgid "Best for moved pages"
-msgstr "Best for moved pages"
+msgstr "Bäst för sidor som har flyttats"
 
 msgid "Best for seasonal or test pages"
-msgstr "Best for seasonal or test pages"
+msgstr "Bäst för säsongs- eller testsidor"
 
 msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
-msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "Permanent passar bäst för de flesta omdirigeringar. Använd Tillfällig om sidan kan komma tillbaka."
 
 msgid "Back to Captured 404s"
-msgstr "Back to Captured 404s"
+msgstr "Tillbaka till infångade 404:or"
 
 msgid "Suggested destination"
-msgstr "Suggested destination"
+msgstr "Föreslagen destination"
 
 msgid "match"
-msgstr "match"
+msgstr "matchning"
 
 msgid "Accept Suggestion"
-msgstr "Accept Suggestion"
+msgstr "Acceptera förslaget"
 
 msgid "Pick a Different Page"
-msgstr "Pick a Different Page"
+msgstr "Välj en annan sida"
 
 msgid "Post"
-msgstr "Post"
+msgstr "Inlägg"
 
 msgid "Home"
-msgstr "Home"
+msgstr "Startsida"
 
 #: includes/ViewTrait_RedirectsTable.php
 msgid "Loading status…"
@@ -3921,106 +3920,87 @@ msgstr "literal text"
 msgid "literal"
 msgstr "literal"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%1$d of %2$d"
-msgstr "%1$d of %2$d"
+msgstr "%1$d av %2$d"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
-msgstr[0] "%s item"
-msgstr[1] "%s items"
+msgstr[0] "%s objekt"
+msgstr[1] "%s objekt"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unknown purge result: %s"
-msgstr "Error: Unknown purge result: %s"
+msgstr "Fel: Okänt rensningsresultat: %s"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s redirect entries were moved to the trash."
-msgstr "%s redirect entries were moved to the trash."
+msgstr "%s omdirigeringsposter flyttades till papperskorgen."
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unable to update redirect data. Repository result: %s"
-msgstr "Error: Unable to update redirect data. Repository result: %s"
+msgstr "Fel: Kan inte uppdatera omdirigeringsdata. Repository-resultat: %s"
 
-# translation-verified: en-fallback awaiting native pass
 #: includes/
 msgid "Error: Unable to save redirect conditions. Repository result: %s"
-msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "Fel: Kan inte spara omdirigeringsvillkoren. Repository-resultat: %s"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Loading status..."
-msgstr "Loading status..."
+msgstr "Laddar status..."
 
 #: includes/
 msgid "Loading..."
 msgstr "Laddar..."
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
-msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
+msgstr "Fel: Värdet för radering av insamlade URL:er måste vara ett tal större än eller lika med noll"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Manual redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+msgstr "Fel: Värdet för radering av manuella omdirigeringar måste vara ett tal större än eller lika med noll"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Log deletion value must be a number greater than or equal to zero"
-msgstr "Error: Log deletion value must be a number greater than or equal to zero"
+msgstr "Fel: Värdet för radering av loggar måste vara ett tal större än eller lika med noll"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+msgstr "Fel: Värdet för radering av automatiska omdirigeringar måste vara ett tal större än eller lika med noll"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
-msgstr "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+msgstr "Fel: Antalet dagar innan automatiska omdirigeringar löper ut måste vara ett tal större än eller lika med noll"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Maximum log disk usage must be a number greater than zero"
-msgstr "Error: Maximum log disk usage must be a number greater than zero"
+msgstr "Fel: Maximal loggdiskanvändning måste vara ett tal större än noll"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Keep my redirects (%d)"
-msgstr "Keep my redirects (%d)"
+msgstr "Behåll mina omdirigeringar (%d)"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d minutes ago"
-msgstr "%d minutes ago"
+msgstr "%d minuter sedan"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d hours ago"
-msgstr "%d hours ago"
+msgstr "%d timmar sedan"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d days ago"
-msgstr "%d days ago"
+msgstr "%d dagar sedan"
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
-msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+msgstr "Okänt statusfilter. Giltiga värden är: manual, auto, regex (eller utelämna för alla aktiva)."
 
-# translation-verified: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "The \"to\" URL must be a relative path or an http/https URL."
-msgstr "The \"to\" URL must be a relative path or an http/https URL."
+msgstr "\"Till\"-URL:en måste vara en relativ sökväg eller en http/https-URL."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
 msgstr "Kontakta din webbhotellsleverantör. Detta orsakas oftast av en databaskvot, en gräns för tabellutrymme eller en full /tmp-partition - inte nödvändigtvis en full disk."
@@ -4079,10 +4059,9 @@ msgstr "Be ditt webbhotell att granska behörigheterna för din WordPress databa
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "Denna databas stöder inte sessionsbaserade GET_LOCK-namngivna lås. Tillägget använder en reservlösning med en WordPress option-rad för att samordna den stegvisa vybyggnaden. Vanligt på PlanetScale, Vitess och ProxySQL-distributioner med delad routning."
 
-# translation-verified: en-fallback awaiting native pass (t_260618_093531_671)
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
-msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "Förbereder tabellen med infångade 404:or. Listan laddas fortfarande och visas om ett ögonblick."
 
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
@@ -4176,54 +4155,41 @@ msgstr "Den här webbplatsen har diagnostikrapportering %s. Du kan ladda ner all
 msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
 msgstr "När detta är markerat behandlas texten som ett reguljärt uttryck. Observera att ett felaktigt eller för långsamt reguljärt uttryck KOMMER att bryta din webbplats. Var därför försiktig och testa dem någon annanstans innan du provar dem här. Om du inte vet vad du gör, använd inte det här alternativet (det behövs inte för att tillägget ska fungera)."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "/events/(.+) matchar alla URL:er som börjar med /events/. Använd $1 i destinationen för att infoga den fångade texten. Webbplatsrelativa sökvägar som /archive/$1 och fullständiga HTTP(S)-URL:er stöds."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "Använd $1 i destinationen för att infoga den fångade texten. Webbplatsrelativa sökvägar som /archive/$1 och fullständiga HTTP(S)-URL:er stöds."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination contains control characters."
-msgstr "Error: Regex destination contains control characters."
+msgstr "Fel: Regex-destinationen innehåller styrtecken."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
-msgstr "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+msgstr "Fel: Regex-destinationen måste vara en HTTP(S)-URL eller en webbplatsrelativ sökväg som börjar med /."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
-msgstr "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+msgstr "Fel: En webbplatsrelativ regex-destination måste börja med ett enda /. URL:er som börjar med // är inte tillåtna."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
-msgstr "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+msgstr "Fel: Regex-destinationen får inte innehålla mellanslag. Använd URL-kodning som %20 i stället."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination contains invalid percent encoding."
-msgstr "Error: Regex destination contains invalid percent encoding."
+msgstr "Fel: Regex-destinationen innehåller ogiltig procentkodning."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination contains characters that are not safe in a redirect URL."
-msgstr "Error: Regex destination contains characters that are not safe in a redirect URL."
+msgstr "Fel: Regex-destinationen innehåller tecken som inte är säkra i en omdirigerings-URL."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain . or .. path segments."
-msgstr "Error: Regex destination must not contain . or .. path segments."
+msgstr "Fel: Regex-destinationen får inte innehålla sökvägssegmenten . eller .."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Source regular expression is invalid."
-msgstr "Error: Source regular expression is invalid."
+msgstr "Fel: Det reguljära uttrycket i källan är ogiltigt."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
-msgstr "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+msgstr "Fel: Regex-destinationen innehåller ersättningssyntax som inte stöds. Använd $1, $2 och så vidare."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
-msgstr "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+msgstr "Fel: Relativa regex-destinationer stöder numrerade fångstgrupper skrivna som (...). Namngivna grupper och branch reset-grupper stöds inte."
 
-# translation-verified: en-fallback awaiting native pass
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
-msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+msgstr "Fel: Regex-destinationen refererar till $%1$d, men källmönstret definierar %2$d fångstgrupp(er)."
