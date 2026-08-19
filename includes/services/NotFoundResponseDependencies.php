@@ -34,6 +34,9 @@ class ABJ_404_Solution_NotFoundResponseDependencies {
     /** @var ABJ_404_Solution_PreviousRequestCookieTracker|null */
     public $previousRequestCookieTracker;
 
+    /** @var ABJ_404_Solution_NearMissRecorder|null */
+    public $nearMissRecorder;
+
     /**
      * @param ABJ_404_Solution_Functions|null $functions
      * @param ABJ_404_Solution_RedirectsRepositoryInterface|null $redirectsRepo
@@ -41,14 +44,17 @@ class ABJ_404_Solution_NotFoundResponseDependencies {
      * @param ABJ_404_Solution_Logging|null $logging
      * @param ABJ_404_Solution_PluginLogicOptionsResolver|null $optionsRepository
      * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
+     * @param ABJ_404_Solution_NearMissRecorder|null $nearMissRecorder
      */
     public function __construct($functions = null, $redirectsRepo = null, $logsRepo = null,
-            $logging = null, $optionsRepository = null, $previousRequestCookieTracker = null) {
+            $logging = null, $optionsRepository = null, $previousRequestCookieTracker = null,
+            $nearMissRecorder = null) {
         $this->functions = $functions;
         $this->redirectsRepo = $redirectsRepo;
         $this->logsRepo = $logsRepo;
         $this->logging = $logging;
         $this->optionsRepository = $optionsRepository;
         $this->previousRequestCookieTracker = $previousRequestCookieTracker;
+        $this->nearMissRecorder = $nearMissRecorder;
     }
 }

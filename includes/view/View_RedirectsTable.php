@@ -206,10 +206,11 @@ class ABJ_404_Solution_View_RedirectsTable extends ABJ_404_Solution_ViewComponen
     /**
      * @param mixed $rawScore
      * @param string $rowEngine
+     * @param int $rowStatus
      * @return string
      */
-    public function buildScoreCell($rawScore, string $rowEngine): string {
-        return $this->rowPresenter()->buildScoreCell($rawScore, $rowEngine);
+    public function buildScoreCell($rawScore, string $rowEngine, int $rowStatus): string {
+        return $this->rowPresenter()->buildScoreCell($rawScore, $rowEngine, $rowStatus);
     }
 
     /**

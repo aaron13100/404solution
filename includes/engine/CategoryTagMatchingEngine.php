@@ -210,17 +210,26 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
                 }
             }
 
-            if ($bestRow !== null && $bestScore >= $minScore) {
-                $id = isset($bestRow->id) && is_scalar($bestRow->id) ? (string)$bestRow->id : '';
-                $title = isset($bestRow->post_title) && is_string($bestRow->post_title) ? $bestRow->post_title : '';
-                $link = isset($bestRow->url) && is_string($bestRow->url) ? $bestRow->url : '';
+            if ($bestRow !== null) {
+                if ($bestScore >= $minScore) {
+                    $id = isset($bestRow->id) && is_scalar($bestRow->id) ? (string)$bestRow->id : '';
+                    $title = isset($bestRow->post_title) && is_string($bestRow->post_title) ? $bestRow->post_title : '';
+                    $link = isset($bestRow->url) && is_string($bestRow->url) ? $bestRow->url : '';
 
-                $this->logger->debugMessage("Category/tag engine Phase 1: matched post " .
-                    $id . " via category " . $categorySlug . " (score " . $bestScore . ")");
+                    $this->logger->debugMessage("Category/tag engine Phase 1: matched post " .
+                        $id . " via category " . $categorySlug . " (score " . $bestScore . ")");
 
-                return new ABJ_404_Solution_MatchResult(
-                    $id, (string)ABJ404_TYPE_POST, $link, $title, $bestScore, $this->getName()
-                );
+                    return new ABJ_404_Solution_MatchResult(
+                        $id, (string)ABJ404_TYPE_POST, $link, $title, $bestScore, $this->getName()
+                    );
+                }
+
+                // Sibling of the spelling near miss (SpellChecker::getPermalinkUsingSpelling):
+                // the best candidate lost only on the threshold, and that score is
+                // what tells the admin why the URL was captured instead of
+                // redirected. Record it before phase 1 falls through and drops it.
+                abj_service('near_miss_recorder')->record(
+                    $request->getRequestedURL(), (float)$bestScore, $this->getName());
             }
         }
 
@@ -293,6 +302,12 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
         if ($bestTerm === null || $bestType === null || $bestScore < $minScore) {
             $this->logger->debugMessage("Category/tag engine Phase 2: no match above threshold " .
                 $minScore . " (best score: " . $bestScore . ")");
+            // Sibling of the spelling near miss (SpellChecker::getPermalinkUsingSpelling):
+            // the best candidate lost only on the threshold, and that score is
+            // what tells the admin why the URL was captured instead of
+            // redirected. Record it before the reject branch discards it.
+            abj_service('near_miss_recorder')->record(
+                $request->getRequestedURL(), (float)$bestScore, $this->getName());
             return null;
         }
 

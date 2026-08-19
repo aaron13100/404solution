@@ -189,7 +189,7 @@ $abj404ClassesByDirectory = array(
         'FrontendRuntimeOptions', 'FrontendHitRecorder', 'FrontendAsyncSuggestionTrigger',
         'FrontendPipelineTrace', 'FrontendDbVersionRecovery', 'FrontendPipelineTelemetry',
         'RequestContext', 'PostEditorIntegration', 'PublishedPostsProvider', 'ShortCode',
-        'SlugChangeHandler', 'SystemPage',
+        'SlugChangeHandler', 'SuggestionPublisher', 'SystemPage',
     ),
     'gsc' => array(
         'GscConfig', 'GscOAuthTokenStore', 'GscSearchAnalyticsClient', 'GscAdminSectionRenderer',
@@ -212,7 +212,8 @@ $abj404ClassesByDirectory = array(
     'matching' => array(
         'EngineProfileSaveRequest', 'MatchingEngineOrchestrator', 'RedirectCandidateEvaluator',
         'WordPressGuessFallback', 'EngineProfileResolver', 'MatchingEngine', 'MatchRequest',
-        'MatchResult', 'OldPermalinkStructureResolver', 'PermalinkStructureCompiler',
+        'MatchResult', 'NearMissMatch', 'NearMissRecorder',
+        'OldPermalinkStructureResolver', 'PermalinkStructureCompiler',
         'OldPermalinkCandidateStructureProvider', 'OldPermalinkPostResolver',
     ),
     'ngram' => array(
@@ -262,7 +263,8 @@ $abj404ClassesByDirectory = array(
         'PublishedTermsProvider', 'PermalinkCacheRepository', 'OldPermalinkStructureStore',
         'SpellingCacheRepository', 'OldSlugRepository', 'ContentRepository',
         'RedirectsRepositoryInterface', 'RedirectConditionsRepository', 'RedirectExportReader',
-        'RedirectLookupRepository', 'RedirectRegexCacheStore', 'RedirectWriteService',
+        'RedirectLookupRepository', 'RedirectRegexCacheStore', 'RedirectsLiveColumnSet',
+        'RedirectWriteService',
         'RedirectsRepository', 'ContentKeywordsRepository', 'PluginUpdateMetadataRepository',
         'PermalinkCache', 'ReviewStateRepository', 'NetworkSitesRepository', 'NextNetworkSite',
     ),

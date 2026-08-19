@@ -74,6 +74,7 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
         'engine_spelling',
         'engine_archive_fallback',
         'matching_engines',
+        'near_miss_recorder',
     );
 
     public const RUNTIME_SERVICE_NAMES = array(
@@ -142,6 +143,7 @@ interface ABJ_404_Solution_Abj404ServiceRegistrationContract {
         'engine_spelling',
         'engine_archive_fallback',
         'matching_engines',
+        'near_miss_recorder',
         'previous_request_cookie_tracker',
         'not_found_response',
         'wordpress_connector',

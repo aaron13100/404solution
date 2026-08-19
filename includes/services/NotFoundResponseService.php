@@ -30,6 +30,9 @@ class ABJ_404_Solution_NotFoundResponseService {
     /** @var ABJ_404_Solution_RedirectLoopGuard */
     private $loopGuard;
 
+    /** @var ABJ_404_Solution_NearMissRecorder */
+    private $nearMissRecorder;
+
     /**
      * @param ABJ_404_Solution_NotFoundResponseDependencies|null $deps
      */
@@ -43,6 +46,9 @@ class ABJ_404_Solution_NotFoundResponseService {
         $this->previousRequestCookieTracker = $deps->previousRequestCookieTracker !== null
             ? $deps->previousRequestCookieTracker
             : abj_service('previous_request_cookie_tracker');
+        $this->nearMissRecorder = $deps->nearMissRecorder !== null
+            ? $deps->nearMissRecorder
+            : abj_service('near_miss_recorder');
         $this->loopGuard = new ABJ_404_Solution_RedirectLoopGuard(
             $this->f, $this->logger, $this->previousRequestCookieTracker
         );
@@ -86,9 +92,8 @@ class ABJ_404_Solution_NotFoundResponseService {
                 $pLink = is_scalar($permalink['link']) ? (string)$permalink['link'] : '';
                 $defRedir = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
                 if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                    $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                        $requestedURL, (string)ABJ404_STATUS_CAPTURED, $pType, $pId, $defRedir, 0
-                    ));
+                    $this->redirectsRepo->setupRedirect(
+                        $this->capturedRedirectSpec($requestedURL, $pType, $pId, $defRedir));
                 }
 
                 $this->logsRepo->logRedirectHit(ABJ_404_Solution_RedirectHitLogEntry::create($requestedURL, $pLink, 'user specified 404 page. ' . $reason));
@@ -104,9 +109,8 @@ class ABJ_404_Solution_NotFoundResponseService {
             $redirect = $this->redirectsRepo->getExistingRedirectForURL($requestedURL);
             $defRedir2 = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
             if (!isset($redirect['id']) || $redirect['id'] == 0) {
-                $this->redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-                    $requestedURL, (string)ABJ404_STATUS_CAPTURED, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2, 0
-                ));
+                $this->redirectsRepo->setupRedirect($this->capturedRedirectSpec(
+                    $requestedURL, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2));
             }
         } else {
             $optionsJson = json_encode($options);
@@ -115,6 +119,35 @@ class ABJ_404_Solution_NotFoundResponseService {
                     "is_page(): " . is_page() . " | is_feed(): " . is_feed() . " | is_trackback(): " .
                     is_trackback() . " | is_preview(): " . is_preview() . " | options: " . wp_kses_post(is_string($optionsJson) ? $optionsJson : ''));
         }
+    }
+
+    /**
+     * Build the insert for a captured 404, stamped with the confidence score of
+     * the best match the engines found and rejected for this URL.
+     *
+     * A captured row is not a manual redirect: when automatic matching ran and
+     * came close, the score is the one number that tells the admin why the URL
+     * was captured rather than redirected, and the Captured tab has had a
+     * Confidence column, a badge template and two covering indexes waiting for
+     * it. When no near miss was recorded -- automatic matching is off, or
+     * nothing scored at all -- score and engine stay null, which is the honest
+     * answer and what the Score column's no-score branch renders.
+     *
+     * @param string $requestedURL
+     * @param string $type ABJ404_TYPE_* discriminator for the destination.
+     * @param string $finalDest Destination id, or the 404-displayed sentinel.
+     * @param string $code HTTP status code for the redirect.
+     * @return ABJ_404_Solution_RedirectSpec
+     */
+    private function capturedRedirectSpec(string $requestedURL, string $type, string $finalDest,
+            string $code): ABJ_404_Solution_RedirectSpec {
+        $nearMiss = $this->nearMissRecorder->getBestFor($requestedURL);
+
+        return ABJ_404_Solution_RedirectSpec::create(
+            $requestedURL, (string)ABJ404_STATUS_CAPTURED, $type, $finalDest, $code, 0,
+            $nearMiss !== null ? $nearMiss->getEngineName() : null,
+            $nearMiss !== null ? $nearMiss->getScore() : null
+        );
     }
 
     /** @param string|null $dest404page @return bool */

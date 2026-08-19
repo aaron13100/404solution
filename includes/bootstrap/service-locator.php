@@ -75,6 +75,7 @@ require_once __DIR__ . '/../core/ServiceContainer.php';
  *     $name is 'engine_spelling' ? ABJ_404_Solution_SpellingMatchingEngine : (
  *     $name is 'engine_archive_fallback' ? ABJ_404_Solution_ArchiveFallbackEngine : (
  *     $name is 'matching_engines' ? array<int, object> : (
+ *     $name is 'near_miss_recorder' ? ABJ_404_Solution_NearMissRecorder : (
  *     $name is 'wordpress_connector' ? ABJ_404_Solution_WordPress_Connector : (
  *     $name is 'slug_change_handler' ? ABJ_404_Solution_SlugChangeHandler : (
  *     $name is 'sync_utils' ? ABJ_404_Solution_SynchronizationUtils : (
@@ -91,7 +92,7 @@ require_once __DIR__ . '/../core/ServiceContainer.php';
  *     $name is 'settings_mode_preference' ? ABJ_404_Solution_SettingsModePreference : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService :
  *     mixed
- * )))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+ * ))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
  */
 function abj_service($name) {
     if ($name === 'logging' && class_exists('ABJ_404_Solution_Logging', false)) {

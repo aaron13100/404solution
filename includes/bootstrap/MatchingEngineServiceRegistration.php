@@ -80,6 +80,16 @@ class ABJ_404_Solution_MatchingEngineServiceRegistration {
             );
         });
 
+        // Request-scoped carrier for matches the engines found and rejected for
+        // scoring under the auto-redirect threshold. Written by the engine side
+        // (SpellChecker), read by the captured-404 insert
+        // (NotFoundResponseService) so the Captured tab can show why a URL was
+        // not redirected. Shared instance: producer and consumer must see the
+        // same recorder within a request.
+        $container->set('near_miss_recorder', function($c) {
+            return new ABJ_404_Solution_NearMissRecorder();
+        });
+
         $container->set('matching_engines', function($c) {
             $engines = [$c->get('engine_old_permalink_structure'), $c->get('engine_slug'), $c->get('engine_url_fix'), $c->get('engine_title'), $c->get('engine_category_tag'), $c->get('engine_content'), $c->get('engine_spelling'), $c->get('engine_archive_fallback')];
             if (function_exists('apply_filters')) {

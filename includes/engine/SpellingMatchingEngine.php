@@ -23,9 +23,23 @@ class ABJ_404_Solution_SpellingMatchingEngine implements ABJ_404_Solution_Matchi
         $this->spellChecker = $spellChecker;
     }
 
+    /**
+     * The label stored in the redirect row's `engine` column for anything this
+     * engine scored. Static because SpellChecker records a rejected match under
+     * the same name (see ABJ_404_Solution_NearMissRecorder) before this engine
+     * ever sees the result, and the two must not drift apart: an automatic
+     * redirect and a captured near miss produced by the same code have to read
+     * the same in the admin Engine column.
+     *
+     * @return string
+     */
+    public static function engineName(): string {
+        return __('spell check', '404-solution');
+    }
+
     /** @return string */
     public function getName(): string {
-        return __('spell check', '404-solution');
+        return self::engineName();
     }
 
     /** @param ABJ_404_Solution_MatchRequest $request */

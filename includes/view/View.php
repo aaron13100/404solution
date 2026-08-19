@@ -40,7 +40,7 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed buildRedirectRowHTML(array<mixed> $row, string $sub, array<mixed> $tableOptions, array<mixed> $deadDestIds, int $y)
  * @method mixed buildRedirectToDropdownHtml(string $pageTitle, string $pageIDAndType)
  * @method mixed buildRedirectsColumnDefs(array<mixed> $tableOptions)
- * @method mixed buildScoreCell($rawScore, string $rowEngine)
+ * @method mixed buildScoreCell($rawScore, string $rowEngine, int $rowStatus)
  * @method mixed buildTableActionLinks($row, $sub, $tableOptions, $isCapturedPage = false)
  * @method mixed echoAddManualRedirect($tableOptions)
  * @method mixed echoAddRedirectModal($tableOptions)

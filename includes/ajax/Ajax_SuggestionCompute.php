@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 
 /**
  * AJAX handler for background suggestion computation.
- * Called via non-blocking wp_remote_post from SpellChecker::triggerAndCleanupOnFailure().
+ * Called via non-blocking wp_remote_post from SuggestionPublisher::triggerAndCleanupOnFailure().
  * Runs in a separate PHP process to avoid blocking the user's redirect.
  */
 class ABJ_404_Solution_Ajax_SuggestionCompute {
@@ -87,7 +87,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
 
         // (3) Token check via transient lookup.
         // Use the same normalizeURLForCacheKey() pipeline as the producer
-        // (SpellChecker::triggerAndCleanupOnFailure) and the polling
+        // (SuggestionPublisher::triggerAndCleanupOnFailure) and the polling
         // consumer (Ajax_SuggestionPolling::pollSuggestions). Without this,
         // any URL that esc_url touches - spaces, unicode, double ampersands -
         // hashes to a different transient key than the producer wrote, and

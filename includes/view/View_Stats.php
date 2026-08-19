@@ -181,7 +181,9 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         $labelHigh   = esc_html__('High (≥80%)', '404-solution');
         $labelMedium = esc_html__('Medium (50–79%)', '404-solution');
         $labelLow    = esc_html__('Low (<50%)', '404-solution');
-        $labelManual = esc_html__('Manual (no score)', '404-solution');
+        // The band counts rows where score IS NULL, which is not the same as
+        // "manual": a captured 404 that no engine scored has no score either.
+        $labelManual = esc_html__('No score', '404-solution');
 
         $avgLabel = ($avgScore !== null)
             ? sprintf(

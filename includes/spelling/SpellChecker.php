@@ -67,6 +67,9 @@ class ABJ_404_Solution_SpellChecker {
 	/** @var ABJ_404_Solution_SpellSuggestionShortcodeDetector */
 	private $shortcodeDetector;
 
+	/** @var ABJ_404_Solution_SuggestionPublisher */
+	private $suggestionPublisher;
+
 	/**
 	 * @param ABJ_404_Solution_SpellCheckerDependencies|null $deps
 	 */
@@ -123,6 +126,8 @@ class ABJ_404_Solution_SpellChecker {
 		$this->shortcodeDetector = new ABJ_404_Solution_SpellSuggestionShortcodeDetector(
 			$this->notFoundResponse
 		);
+
+		$this->suggestionPublisher = new ABJ_404_Solution_SuggestionPublisher($this->logger);
 	}
 
 	/**
@@ -382,115 +387,43 @@ class ABJ_404_Solution_SpellChecker {
 				}
 			}
 
+			// A match was found and rejected only for scoring under the
+			// admin's threshold. That score is the one number that explains why
+			// this URL is about to be captured instead of redirected, so hand
+			// it to the near-miss recorder before the losing branch discards
+			// the packet; the captured-404 insert reads it back and stores it
+			// on the row (NotFoundResponseService::sendTo404Page).
+			//
+			// Keyed by the full requested URL because that is the string the
+			// pipeline carries into sendTo404Page(). Callers that pass no full
+			// URL (nothing in the frontend pipeline does) fall back to the slug,
+			// which simply will not match at read time: no score, never a wrong
+			// one.
+			abj_service('near_miss_recorder')->record(
+				$fullRequestedURL !== null ? $fullRequestedURL : $requestedURL,
+				is_numeric($permalink['score']) ? (float)$permalink['score'] : 0.0,
+				ABJ_404_Solution_SpellingMatchingEngine::engineName()
+			);
+
 			if ($fullRequestedURL !== null) {
-				$this->cacheComputedSuggestionsForShortcode($fullRequestedURL, $permalinksPacket);
+				$this->suggestionPublisher->cacheComputedSuggestionsForShortcode(
+					$fullRequestedURL, $permalinksPacket);
 			}
 		}
 
 		return null;
 	}
 
-	private function cacheComputedSuggestionsForShortcode(string $fullRequestedURL, array $permalinksPacket): void {
-		$normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($fullRequestedURL);
-
-		$urlKey = md5($normalizedURL);
-		$transientKey = 'abj404_suggest_' . $urlKey;
-
-		$existing = get_transient($transientKey);
-		if ($existing !== false) {
-			return;
-		}
-
-		// allow-cache-empty: factory-built typed array; SuggestionTransient::completeArray
-		// always returns a non-empty associative array with at minimum a 'status' key.
-		set_transient(
-			$transientKey,
-			ABJ_404_Solution_SuggestionTransient::completeArray(
-				$normalizedURL,
-				$permalinksPacket,
-				abj_clock()->now(),
-				''
-			),
-			300
-		); // 5 minute TTL
-
-		$this->logger->debugMessage("Cached spell-check suggestions for shortcode: " .
-			esc_html($normalizedURL));
-	}
-
+	/**
+	 * Ask for background suggestions for this URL, rolling back the pending
+	 * marker if the dispatch fails. Delegates to the suggestion publisher, which
+	 * owns the transient and the loopback request.
+	 *
+	 * @param string $requestedURL
+	 * @return bool True when a background computation was dispatched.
+	 */
 	public function triggerAndCleanupOnFailure(string $requestedURL): bool {
-		$normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($requestedURL);
-
-		$urlKey = md5($normalizedURL);
-		$transientKey = 'abj404_suggest_' . $urlKey;
-
-		$existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
-		if ($existing !== null) {
-			$this->logger->debugMessage("Async suggestions: skipping, transient already exists for " .
-				esc_html($normalizedURL) . " (status: " . esc_html($existing->getStatus()) . ")");
-			return false;
-		}
-
-		$token = wp_generate_password(32, false);
-
-		// allow-cache-empty: factory-built typed array; keep the TTL at 120
-		// seconds so slow hosts can start before the polling UI gives up.
-		set_transient(
-			$transientKey,
-			ABJ_404_Solution_SuggestionTransient::pendingArray(
-				$normalizedURL,
-				$token,
-				0,
-				abj_clock()->now()
-			),
-			120
-		); // 2 minute TTL
-
-		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
-			esc_html($normalizedURL));
-
-		// Loopback self-dispatch to admin-ajax.php on this same host. The
-		// sslverify default of false matches WP core's own loopback convention
-		// (see wp-includes/cron.php spawn_cron(), which uses the same
-		// apply_filters('https_local_ssl_verify', false) pattern) and is
-		// intentional for three reasons:
-		//   1. The request never leaves the host. Intercepting it requires an
-		//      attacker who already controls the local machine, at which point
-		//      they can read the transient and dispatch the AJAX directly
-		//      without bothering with MITM on loopback.
-		//   2. WP sites routinely run on self-signed or hostname-mismatched
-		//      certs in dev / behind a TLS-terminating proxy. Hardcoding
-		//      sslverify true would break dispatch for those installs with no
-		//      affordance for the admin to recover.
-		//   3. The body carries only a one-shot suggestion-compute token bound
-		//      to a 2-minute pending transient (set above). Worst case for a
-		//      hypothetical local MITM is they re-trigger the same compute the
-		//      site is already running, which is rate-limited downstream.
-		// Admins on hostile-loopback topologies (e.g. reverse proxy spanning an
-		// untrusted segment) can return true from the https_local_ssl_verify
-		// filter to opt into strict TLS. Tests for both behaviors live in
-		// AsyncSuggestionsTest::testWpRemotePostSslVerify*. M104 in the design
-		// audit re-flags this every pass; this comment is the documented
-		// trade-off so the next audit can mark it accepted.
-		$response = wp_remote_post(admin_url('admin-ajax.php'), array(
-			'blocking'  => false,
-			'timeout'   => 5,
-			'sslverify' => apply_filters('https_local_ssl_verify', false),
-			'body'      => array(
-				'action'   => 'abj404_compute_suggestions',
-				'url'      => $normalizedURL,
-				'token'    => $token
-			)
-		));
-
-		if (is_wp_error($response)) {
-			$this->logger->debugMessage("Async suggestions: dispatch failed for " .
-				esc_html($normalizedURL) . " - " . $response->get_error_message());
-			delete_transient($transientKey);
-			return false;
-		}
-
-		return true;
+		return $this->suggestionPublisher->triggerAndCleanupOnFailure($requestedURL);
 	}
 
 	public function does404PageHaveSuggestionsShortcode() {

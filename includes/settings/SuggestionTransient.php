@@ -12,9 +12,9 @@ if (!defined('ABSPATH')) {
  * consumers:
  *
  *   Producers (writers):
- *     1. ABJ_404_Solution_SpellChecker::triggerAndCleanupOnFailure
+ *     1. ABJ_404_Solution_SuggestionPublisher::triggerAndCleanupOnFailure
  *        (creates 'pending', started=0, with a fresh token)
- *     2. ABJ_404_Solution_SpellChecker::cacheComputedSuggestionsForShortcode
+ *     2. ABJ_404_Solution_SuggestionPublisher::cacheComputedSuggestionsForShortcode
  *        (creates 'complete' directly, no token, when synchronous spell-check
  *         beat the async worker)
  *     3. ABJ_404_Solution_Ajax_SuggestionCompute::computeSuggestions

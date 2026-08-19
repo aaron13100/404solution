@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/../redirects/RedirectCanonicalUrl.php';
+require_once __DIR__ . '/RedirectsLiveColumnSet.php';
 
 /**
  * Application service for redirect row mutations and purge decisions.
@@ -39,12 +40,13 @@ class ABJ_404_Solution_RedirectWriteService {
     private $admissionPolicy = null;
 
     /**
-     * Per-instance memoized cache of column-existence probes against the
-     * redirects table.
+     * Memoized view of the columns the live redirects table actually has, so
+     * an install whose upgrade never added engine/score/canonical_url loses
+     * those values instead of the whole row.
      *
-     * @var array<string, bool>
+     * @var ABJ_404_Solution_RedirectsLiveColumnSet|null
      */
-    private $redirectsTableColumnsCache = array();
+    private $liveColumns = null;
 
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
@@ -143,17 +145,23 @@ class ABJ_404_Solution_RedirectWriteService {
             );
             $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
 
-            if ($this->redirectsTableHasColumn('canonical_url')) {
-                $insertData['canonical_url'] = ABJ_404_Solution_RedirectCanonicalUrl::compute($fromURL);
-                $insertFormats[] = '%s';
-            }
+            // canonical_url / engine / score all arrived in later releases, so
+            // every one of them is optional against the live table (defensive
+            // rule 7). This matters most for engine/score: a captured 404 now
+            // carries them, and a capture is the highest-frequency write the
+            // plugin makes, so an install whose upgrade never added the columns
+            // would fail every capture rather than lose one nullable display
+            // value.
+            $liveColumns = $this->liveColumns();
+            $liveColumns->appendIfPresent($insertData, $insertFormats, 'canonical_url',
+                ABJ_404_Solution_RedirectCanonicalUrl::compute($fromURL), '%s');
             if ($engine !== null) {
-                $insertData['engine'] = substr((string)$engine, 0, 64);
-                $insertFormats[] = '%s';
+                $liveColumns->appendIfPresent($insertData, $insertFormats, 'engine',
+                    substr((string)$engine, 0, 64), '%s');
             }
             if ($score !== null) {
-                $insertData['score'] = round((float)$score, 2);
-                $insertFormats[] = '%f';
+                $liveColumns->appendIfPresent($insertData, $insertFormats, 'score',
+                    round((float)$score, 2), '%f');
             }
 
             $insertSql = "INSERT INTO `" . $redirectsTable . "` (`" .
@@ -421,25 +429,12 @@ class ABJ_404_Solution_RedirectWriteService {
         return $message;
     }
 
-    private function redirectsTableHasColumn(string $columnName): bool {
-        $key = strtolower($columnName);
-        if ($this->redirectsTableColumnsCache !== array()) {
-            return isset($this->redirectsTableColumnsCache[$key]);
+    /** @return ABJ_404_Solution_RedirectsLiveColumnSet */
+    private function liveColumns(): ABJ_404_Solution_RedirectsLiveColumnSet {
+        if (!($this->liveColumns instanceof ABJ_404_Solution_RedirectsLiveColumnSet)) {
+            $this->liveColumns = new ABJ_404_Solution_RedirectsLiveColumnSet($this->dbCore);
         }
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return true;
-        }
-        $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
-        $columns = $this->dbCore->tableNameResolver()->getTableColumnNames($redirectsTable);
-        if ($columns === array()) {
-            return true;
-        }
-        $this->redirectsTableColumnsCache = array_fill_keys(
-            array_map('strtolower', $columns),
-            true
-        );
-        return isset($this->redirectsTableColumnsCache[$key]);
+        return $this->liveColumns;
     }
 
     /**

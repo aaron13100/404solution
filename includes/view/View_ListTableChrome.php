@@ -78,7 +78,11 @@ class ABJ_404_Solution_View_ListTableChrome extends ABJ_404_Solution_ViewCompone
             // allow-em-dash: pre-existing translation string with U+2013 in published .po files
             'medium' => __('Medium (50–79%)', '404-solution'),
             'low'    => __('Low (<50%)', '404-solution'),
-            'manual' => __('Manual (no score)', '404-solution'),
+            // Value stays 'manual' (it is in bookmarked URLs); the LABEL says
+            // what the option actually selects. A row without a score is not
+            // necessarily manual: a captured 404 that no engine scored has none
+            // either. See RedirectRowPresenter::noScoreTitle().
+            'manual' => __('No score', '404-solution'),
         );
         $tpl = $this->tpl('viewRedirectsTableScoreRangeOption.html');
         $html = '';
