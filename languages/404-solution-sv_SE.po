@@ -248,7 +248,7 @@ msgstr "Fångade 404:or"
 msgid "Documentation"
 msgstr "Dokumentation"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: Plugin is the label form this catalog already uses, as in Plugin administratörsanvändare, and v%s is a version token
 msgid "Plugin v%s"
 msgstr "Plugin v%s"
 
@@ -456,7 +456,7 @@ msgstr "Standardomdirigeringstyp"
 msgid "Delete the Debug File"
 msgstr "Radera felsökningsfilen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Swedish spelling; Destination is the Swedish noun already used in Föreslagen destination here
 msgid "Destination"
 msgstr "Destination"
 
@@ -598,7 +598,7 @@ msgstr "Fel: kan inte markera URL som %s"
 msgid "Error: unable to remove URL from %s list"
 msgstr "Fel: kan inte ta bort URL från %s-listan"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Swedish spelling; etcetera is a Swedish word
 msgid "Etcetera"
 msgstr "Etcetera"
 
@@ -906,7 +906,7 @@ msgstr "Rubrik för sidförslag"
 msgid "Pages listed here will not be redirected to"
 msgstr "Sidor som listas här kommer inte att omdirigeras till"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: Permanent is the Swedish adjective for this redirect type and 301 is the HTTP status code
 msgid "Permanent 301"
 msgstr "Permanent 301"
 
@@ -979,9 +979,8 @@ msgstr "Omdirigeringar"
 msgid "Referrer"
 msgstr "Referent"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "RegEx"
-msgstr "RegEx"
+msgstr "Reguljärt uttryck"
 
 msgid "Regular Expression (Manually Created)"
 msgstr "Reguljärt uttryck (manuellt skapat)"
@@ -2509,7 +2508,7 @@ msgstr "Fel: poängtröskeln per motor måste vara tom eller ett tal mellan 0 oc
 msgid "Engine"
 msgstr "Motor"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Swedish spelling; Status is the Swedish noun for the table column it labels
 msgid "Status"
 msgstr "Status"
 
@@ -2711,7 +2710,7 @@ msgstr "30 dagar"
 msgid "90 days"
 msgstr "90 dagar"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Swedish spelling; Period is the Swedish noun for the statistics time range it labels
 msgid "Period"
 msgstr "Period"
 
@@ -2748,9 +2747,8 @@ msgstr "AIOSEO"
 msgid "Safe Redirect Manager"
 msgstr "Safe Redirect Manager"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Redirection Plugin"
-msgstr "Redirection Plugin"
+msgstr "Tillägget Redirection"
 
 msgid "No supported redirect plugins detected on this site."
 msgstr "Inga stödda omdirigeringsplugin hittades på denna webbplats."
@@ -2836,7 +2834,7 @@ msgstr "innehåller inte"
 msgid "matches regex"
 msgstr "matchar regex"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Swedish spelling; Operator is the Swedish noun for the condition operator it labels
 msgid "Operator"
 msgstr "Operator"
 
@@ -3067,7 +3065,7 @@ msgstr "Hantera inställningar"
 msgid "Sent"
 msgstr "Skickat"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Swedish spelling; Plugin is the label form this catalog already uses, as in Plugin administratörsanvändare
 msgid "Plugin"
 msgstr "Plugin"
 
@@ -3107,9 +3105,8 @@ msgstr "Exportformat:"
 msgid "Native CSV (404 Solution)"
 msgstr "Eget CSV-format (404 Solution)"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Redirection Plugin CSV"
-msgstr "Redirection Plugin CSV"
+msgstr "CSV från tillägget Redirection"
 
 msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
@@ -3209,9 +3206,8 @@ msgstr "Namn"
 msgid "URL Pattern"
 msgstr "URL-mönster"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Regex"
-msgstr "Regex"
+msgstr "Reguljärt uttryck"
 
 msgid "Engines"
 msgstr "Motorer"
@@ -3318,7 +3314,7 @@ msgstr "Skicka feedback"
 msgid "301"
 msgstr "301"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Swedish spelling; Permanent is the Swedish adjective for this redirect type, already used in Permanent passar bäst för de flesta omdirigeringar
 msgid "Permanent"
 msgstr "Permanent"
 
@@ -3915,10 +3911,9 @@ msgstr "Ombyggnad av visningar/träffar pausades efter %d fel i rad (klass: %s).
 msgid "Retry Now"
 msgstr "Försök igen nu"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "literal"
-msgstr "literal"
+msgstr "bokstavlig"
 
 #: includes/
 msgid "%1$d of %2$d"

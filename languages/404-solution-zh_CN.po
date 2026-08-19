@@ -444,9 +444,8 @@ msgstr "调试文件已删除。(%s)"
 msgid "Debug logging"
 msgstr "调试日志记录"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Default"
-msgstr "Default"
+msgstr "默认"
 
 # translation-verified: Contains WordPress technical terms
 msgid "Default WordPress post types are \"post\" and \"page.\""
@@ -538,9 +537,8 @@ msgstr "错误：未找到编辑请求的 ID。"
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "错误：未为批量操作指定 ID。(%s)"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
-msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "错误：为批量操作指定的ID过多（最多%d个）。（%s）"
 
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "错误：未导入任何记录。SQL 结果：%s"
@@ -2905,13 +2903,11 @@ msgstr "添加此授权重定向 URI：%s"
 msgid "Enter your Client ID and Client Secret below."
 msgstr "请在下方输入您的客户端标识 Client ID 和客户端密钥 Client Secret。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "客户端ID"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "客户端密钥"
 
 msgid "Search Console Site URL"
 msgstr "搜索控制台中注册的站点地址"
@@ -3368,7 +3364,7 @@ msgid "Back"
 msgstr "返回"
 
 msgid "Found %d redirect(s) from %s — proceed with import?"
-msgstr "从%s找到%d个重定向——继续导入？"
+msgstr "找到%d个来自%s的重定向，是否继续导入？"
 
 msgid "No redirects found in %s. Nothing to import."
 msgstr "在%s中未找到重定向。没有可导入的内容。"
@@ -3583,136 +3579,104 @@ msgstr "连接到「谷歌搜索控制台」以获取搜索流量数据"
 msgid "No access token received from authorization."
 msgstr "授权过程中未收到访问令牌，请重新尝试授权操作。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatically trash bot and spam URLs"
-msgstr "Automatically trash bot and spam URLs"
+msgstr "自动将机器人和垃圾URL移至回收站"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
-msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "在每日维护期间，自动将来自机器人和安全扫描器的已捕获URL移至回收站"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution 现已开始监控您的站点。当访客访问失效链接时，系统会自动重定向。如果有需要处理的情况，我们会通过电子邮件通知您。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution 现已开始监控您的站点。当访客访问失效链接时，系统会自动重定向。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
-msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution 现已开始监控您的站点。如果已捕获的404 URL需要处理，我们会通过电子邮件通知您。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
-msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution 现已开始监控您的站点。您可以随时在页面重定向标签页中创建手动重定向。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You're all set!"
-msgstr "You're all set!"
+msgstr "一切就绪！"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get email alerts about 404 problems?"
-msgstr "Get email alerts about 404 problems?"
+msgstr "要接收关于404问题的电子邮件提醒吗？"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Yes, email me a weekly summary (recommended)"
-msgstr "Yes, email me a weekly summary (recommended)"
+msgstr "是，每周向我发送一封摘要邮件（推荐）"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get notified when captured 404 URLs exceed 50"
-msgstr "Get notified when captured 404 URLs exceed 50"
+msgstr "当已捕获的404 URL超过50个时通知我"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You can always enable email alerts later in Options"
-msgstr "You can always enable email alerts later in Options"
+msgstr "您随时可以稍后在选项中启用电子邮件提醒"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "No, I'll check manually"
-msgstr "No, I'll check manually"
+msgstr "否，我会手动检查"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Permanent Redirects"
-msgstr "Automatic Permanent Redirects"
+msgstr "自动永久重定向"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Temporary Redirects"
-msgstr "Automatic Temporary Redirects"
+msgstr "自动临时重定向"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Permanent Redirects"
-msgstr "Manual Permanent Redirects"
+msgstr "手动永久重定向"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Temporary Redirects"
-msgstr "Manual Temporary Redirects"
+msgstr "手动临时重定向"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
-msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "访客尝试访问的失效链接。对重要的链接使用创建重定向，其余的忽略。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Needs Review"
-msgstr "Needs Review"
+msgstr "待审核"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Handled"
-msgstr "Handled"
+msgstr "已处理"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Dismiss"
-msgstr "Dismiss"
+msgstr "忽略"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "All good — %d redirects active, no URLs need attention"
-msgstr "All good — %d redirects active, no URLs need attention"
+msgstr "一切正常：%d个重定向处于活动状态，没有URL需要处理"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
-msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d个重定向处于活动状态：%2$d个已捕获的URL有回访访客"
 
 msgid "View"
 msgstr "View"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
-msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "插件会自动创建这些内容。只有当上方状态栏提示时，您才需要处理。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Blocked"
-msgstr "Blocked"
+msgstr "已屏蔽"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for moved pages"
-msgstr "Best for moved pages"
+msgstr "最适合已移动的页面"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for seasonal or test pages"
-msgstr "Best for seasonal or test pages"
+msgstr "最适合季节性页面或测试页面"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
-msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "大多数重定向使用永久最合适。如果页面可能恢复，请使用临时。"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Back to Captured 404s"
-msgstr "Back to Captured 404s"
+msgstr "返回已捕获的404"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Suggested destination"
-msgstr "Suggested destination"
+msgstr "建议的目标"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "match"
-msgstr "match"
+msgstr "匹配度"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Accept Suggestion"
-msgstr "Accept Suggestion"
+msgstr "采纳建议"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Pick a Different Page"
-msgstr "Pick a Different Page"
+msgstr "选择其他页面"
 
 msgid "Post"
 msgstr "Post"
@@ -3944,110 +3908,90 @@ msgstr "视图/命中重建在连续失败 %d 次后已暂停（类：%s）。�
 msgid "Retry Now"
 msgstr "立即重试"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "literal"
-msgstr "literal"
+msgstr "字面"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%1$d of %2$d"
-msgstr "%1$d of %2$d"
+msgstr "第%1$d项，共%2$d项"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
 msgstr[0] "%s 个项目"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unknown purge result: %s"
-msgstr "Error: Unknown purge result: %s"
+msgstr "错误：未知的清理结果：%s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s redirect entries were moved to the trash."
-msgstr "%s redirect entries were moved to the trash."
+msgstr "%s条重定向记录已移至回收站。"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unable to update redirect data. Repository result: %s"
-msgstr "Error: Unable to update redirect data. Repository result: %s"
+msgstr "错误：无法更新重定向数据。存储库结果：%s"
 
-# translation-pending: en-fallback awaiting native pass
 #: includes/
 msgid "Error: Unable to save redirect conditions. Repository result: %s"
-msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "错误：无法保存重定向条件。存储库结果：%s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Loading status..."
-msgstr "Loading status..."
+msgstr "正在加载状态..."
 
 #: includes/
 msgid "Loading..."
 msgstr "正在加载..."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
-msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
+msgstr "错误：已收集URL的删除值必须是大于或等于零的数字"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Manual redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+msgstr "错误：手动重定向的删除值必须是大于或等于零的数字"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Log deletion value must be a number greater than or equal to zero"
-msgstr "Error: Log deletion value must be a number greater than or equal to zero"
+msgstr "错误：日志的删除值必须是大于或等于零的数字"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+msgstr "错误：自动重定向的删除值必须是大于或等于零的数字"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
-msgstr "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+msgstr "错误：自动重定向的过期天数必须是大于或等于零的数字"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Maximum log disk usage must be a number greater than zero"
-msgstr "Error: Maximum log disk usage must be a number greater than zero"
+msgstr "错误：日志的最大磁盘用量必须是大于零的数字"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Keep my redirects (%d)"
-msgstr "Keep my redirects (%d)"
+msgstr "保留我的重定向（%d个）"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d minutes ago"
-msgstr "%d minutes ago"
+msgstr "%d分钟前"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d hours ago"
-msgstr "%d hours ago"
+msgstr "%d小时前"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d days ago"
-msgstr "%d days ago"
+msgstr "%d天前"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
-msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+msgstr "未知的状态筛选条件。有效值为：manual、auto、regex（或留空以显示所有活动项）。"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "The \"to\" URL must be a relative path or an http/https URL."
-msgstr "The \"to\" URL must be a relative path or an http/https URL."
+msgstr "目标URL必须是相对路径，或者是http/https网址。"
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
 msgstr "请联系您的主机服务提供商。此问题通常由数据库配额、表空间限制或 /tmp 分区已满引起，并不一定意味着磁盘已满。"
@@ -4106,10 +4050,9 @@ msgstr "请联系您的主机服务商，复查您的 WordPress 数据库用户�
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "此数据库不支持会话级别的 GET_LOCK 命名锁。插件正在使用 WordPress 选项行回退机制来协调分阶段视图构建。这在 PlanetScale、Vitess 以及分流路由的 ProxySQL 部署中较为常见。"
 
-# translation-pending: en-fallback awaiting native pass (t_260618_093531_671)
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
-msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "正在准备已捕获的404表格。列表仍在加载中，稍后即会显示。"
 
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
@@ -4203,54 +4146,41 @@ msgstr "此站点的诊断报告已%s。您可以下载此站点在开发者服�
 msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
 msgstr "选中后，文本将被视为正则表达式。请注意，错误的或运行过慢的正则表达式将会破坏您的网站。因此请谨慎操作，在别处测试后再在此处尝试。如果您不知道自己在做什么，请不要使用此选项（插件的正常运行并不需要它）。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "/events/(.+) 会匹配所有以 /events/ 开头的网址。在目标中使用 $1 可插入捕获的文本。支持 /archive/$1 这样的站点相对路径，也支持完整的HTTP(S)网址。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "在目标中使用 $1 可插入捕获的文本。支持 /archive/$1 这样的站点相对路径，也支持完整的HTTP(S)网址。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains control characters."
-msgstr "Error: Regex destination contains control characters."
+msgstr "错误：正则表达式目标包含控制字符。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
-msgstr "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+msgstr "错误：正则表达式目标必须是HTTP(S)网址，或者是以 / 开头的站点相对路径。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
-msgstr "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+msgstr "错误：站点相对的正则表达式目标必须以单个 / 开头。不允许以 // 开头的网址。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
-msgstr "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+msgstr "错误：正则表达式目标不能包含空格。请改用 %20 这样的URL编码。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains invalid percent encoding."
-msgstr "Error: Regex destination contains invalid percent encoding."
+msgstr "错误：正则表达式目标包含无效的百分号编码。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains characters that are not safe in a redirect URL."
-msgstr "Error: Regex destination contains characters that are not safe in a redirect URL."
+msgstr "错误：正则表达式目标包含在重定向网址中不安全的字符。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain . or .. path segments."
-msgstr "Error: Regex destination must not contain . or .. path segments."
+msgstr "错误：正则表达式目标不能包含 . 或 .. 路径段。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Source regular expression is invalid."
-msgstr "Error: Source regular expression is invalid."
+msgstr "错误：源正则表达式无效。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
-msgstr "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+msgstr "错误：正则表达式目标包含不受支持的替换语法。请使用 $1、$2 等。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
-msgstr "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+msgstr "错误：相对正则表达式目标支持写作 (...) 的编号捕获组。不支持命名组和分支重置组。"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
-msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+msgstr "错误：正则表达式目标引用了 $%1$d，但源模式只定义了%2$d个捕获组。"

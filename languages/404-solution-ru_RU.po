@@ -444,9 +444,8 @@ msgstr "Файл(ы) отладки удалены. (%s)"
 msgid "Debug logging"
 msgstr "Запись отладки"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Default"
-msgstr "Default"
+msgstr "По умолчанию"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "Типы записей WordPress по умолчанию — это \"post\" и \"page.\""
@@ -535,9 +534,8 @@ msgstr "Ошибка: Не найдены ID для запроса редакт�
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Ошибка: Не указаны ID для массового действия. (%s)"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
-msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Ошибка: указано слишком много ID для массового действия (максимум %d). (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Ошибка: Записи не были импортированы. Результат SQL: %s"
@@ -978,9 +976,8 @@ msgstr "Перенаправления"
 msgid "Referrer"
 msgstr "Источник перехода"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "RegEx"
-msgstr "RegEx"
+msgstr "Регулярное выражение"
 
 msgid "Regular Expression (Manually Created)"
 msgstr "Регулярное выражение (создано вручную)"
@@ -1929,17 +1926,14 @@ msgstr "Самые старые записи удаляются при дост�
 msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
 msgstr "Нужно больше контроля? Переключитесь в расширенный режим для 30+ дополнительных параметров."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Need more control?"
-msgstr "Need more control?"
+msgstr "Нужно больше контроля?"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Switch to Advanced Mode"
-msgstr "Switch to Advanced Mode"
+msgstr "Переключиться в расширенный режим"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "for 30+ additional options."
-msgstr "for 30+ additional options."
+msgstr "для 30+ дополнительных настроек."
 
 msgid "Statistics"
 msgstr "Статистика"
@@ -2187,10 +2181,9 @@ msgstr "url-is-normal"
 msgid "url-looks-like-regex"
 msgstr "url-looks-like-regex"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
-msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "Этот URL похож на регулярное выражение, но не отмечен как таковой. Отредактируйте перенаправление и установите флажок «Обрабатывать этот URL как регулярное выражение»."
 
 msgid "Create redirect from old URL to new URL"
 msgstr "Создать перенаправление со старого URL на новый URL"
@@ -3587,136 +3580,104 @@ msgstr "Подключиться к сервису Google Search Console"
 msgid "No access token received from authorization."
 msgstr "Токен доступа не был получен при авторизации."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatically trash bot and spam URLs"
-msgstr "Automatically trash bot and spam URLs"
+msgstr "Автоматически перемещать URL ботов и спама в корзину"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
-msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "Автоматически перемещать в корзину захваченные URL от ботов и сканеров безопасности во время ежедневного обслуживания"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution теперь следит за вашим сайтом. Когда посетители попадают на неработающие ссылки, они автоматически перенаправляются. Мы отправим вам письмо, если что-то потребует внимания."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution теперь следит за вашим сайтом. Когда посетители попадают на неработающие ссылки, они автоматически перенаправляются."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
-msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution теперь следит за вашим сайтом. Мы отправим вам письмо, если захваченные URL с ошибкой 404 потребуют внимания."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
-msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution теперь следит за вашим сайтом. Вы можете создать перенаправления вручную в любое время на вкладке «Перенаправления страниц»."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You're all set!"
-msgstr "You're all set!"
+msgstr "Всё готово!"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get email alerts about 404 problems?"
-msgstr "Get email alerts about 404 problems?"
+msgstr "Получать уведомления по электронной почте о проблемах 404?"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Yes, email me a weekly summary (recommended)"
-msgstr "Yes, email me a weekly summary (recommended)"
+msgstr "Да, присылайте мне еженедельную сводку (рекомендуется)"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get notified when captured 404 URLs exceed 50"
-msgstr "Get notified when captured 404 URLs exceed 50"
+msgstr "Получать уведомление, когда захваченных URL с ошибкой 404 станет больше 50"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You can always enable email alerts later in Options"
-msgstr "You can always enable email alerts later in Options"
+msgstr "Вы всегда можете включить уведомления по электронной почте позже в разделе «Настройки»"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "No, I'll check manually"
-msgstr "No, I'll check manually"
+msgstr "Нет, я проверю вручную"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Permanent Redirects"
-msgstr "Automatic Permanent Redirects"
+msgstr "Автоматические постоянные перенаправления"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Temporary Redirects"
-msgstr "Automatic Temporary Redirects"
+msgstr "Автоматические временные перенаправления"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Permanent Redirects"
-msgstr "Manual Permanent Redirects"
+msgstr "Ручные постоянные перенаправления"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Temporary Redirects"
-msgstr "Manual Temporary Redirects"
+msgstr "Ручные временные перенаправления"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
-msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "Неработающие ссылки, на которые пытались перейти посетители. Используйте «Создать перенаправление» для важных и «Отклонить» для остальных."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Needs Review"
-msgstr "Needs Review"
+msgstr "Требует проверки"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Handled"
-msgstr "Handled"
+msgstr "Обработано"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Dismiss"
-msgstr "Dismiss"
+msgstr "Отклонить"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "All good — %d redirects active, no URLs need attention"
-msgstr "All good — %d redirects active, no URLs need attention"
+msgstr "Всё в порядке: %d перенаправлений активно, ни один URL не требует внимания"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
-msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d перенаправлений активно: у %2$d захваченных URL есть повторные посетители"
 
 msgid "View"
 msgstr "View"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
-msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "Плагин создаёт их автоматически. Вмешательство нужно только тогда, когда об этом сообщает строка состояния выше."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Blocked"
-msgstr "Blocked"
+msgstr "Заблокировано"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for moved pages"
-msgstr "Best for moved pages"
+msgstr "Лучше всего для перемещённых страниц"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for seasonal or test pages"
-msgstr "Best for seasonal or test pages"
+msgstr "Лучше всего для сезонных или тестовых страниц"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
-msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "Постоянное подходит для большинства перенаправлений. Используйте Временное, если страница может вернуться."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Back to Captured 404s"
-msgstr "Back to Captured 404s"
+msgstr "Назад к захваченным 404"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Suggested destination"
-msgstr "Suggested destination"
+msgstr "Предлагаемое назначение"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "match"
-msgstr "match"
+msgstr "совпадение"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Accept Suggestion"
-msgstr "Accept Suggestion"
+msgstr "Принять предложение"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Pick a Different Page"
-msgstr "Pick a Different Page"
+msgstr "Выбрать другую страницу"
 
 msgid "Post"
 msgstr "Post"
@@ -3948,17 +3909,14 @@ msgstr "Перестроение просмотров/попаданий при�
 msgid "Retry Now"
 msgstr "Повторить сейчас"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "literal"
-msgstr "literal"
+msgstr "буквальный"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%1$d of %2$d"
-msgstr "%1$d of %2$d"
+msgstr "%1$d из %2$d"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
@@ -3966,94 +3924,77 @@ msgstr[0] "%s элемент"
 msgstr[1] "%s элемента"
 msgstr[2] "%s элементов"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unknown purge result: %s"
-msgstr "Error: Unknown purge result: %s"
+msgstr "Ошибка: неизвестный результат очистки: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s redirect entries were moved to the trash."
-msgstr "%s redirect entries were moved to the trash."
+msgstr "%s записей перенаправлений перемещено в корзину."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unable to update redirect data. Repository result: %s"
-msgstr "Error: Unable to update redirect data. Repository result: %s"
+msgstr "Ошибка: невозможно обновить данные перенаправления. Результат репозитория: %s"
 
-# translation-pending: en-fallback awaiting native pass
 #: includes/
 msgid "Error: Unable to save redirect conditions. Repository result: %s"
-msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "Ошибка: невозможно сохранить условия перенаправления. Результат репозитория: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Loading status..."
-msgstr "Loading status..."
+msgstr "Загрузка состояния..."
 
 #: includes/
 msgid "Loading..."
 msgstr "Загрузка..."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
-msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
+msgstr "Ошибка: значение удаления собранных URL должно быть числом больше или равным нулю"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Manual redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+msgstr "Ошибка: значение удаления ручных перенаправлений должно быть числом больше или равным нулю"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Log deletion value must be a number greater than or equal to zero"
-msgstr "Error: Log deletion value must be a number greater than or equal to zero"
+msgstr "Ошибка: значение удаления журналов должно быть числом больше или равным нулю"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+msgstr "Ошибка: значение удаления автоматических перенаправлений должно быть числом больше или равным нулю"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
-msgstr "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+msgstr "Ошибка: число дней до истечения автоматических перенаправлений должно быть числом больше или равным нулю"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Maximum log disk usage must be a number greater than zero"
-msgstr "Error: Maximum log disk usage must be a number greater than zero"
+msgstr "Ошибка: максимальное использование диска журналами должно быть числом больше нуля"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Keep my redirects (%d)"
-msgstr "Keep my redirects (%d)"
+msgstr "Сохранить мои перенаправления (%d)"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d minutes ago"
-msgstr "%d minutes ago"
+msgstr "%d минут назад"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d hours ago"
-msgstr "%d hours ago"
+msgstr "%d часов назад"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d days ago"
-msgstr "%d days ago"
+msgstr "%d дней назад"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
-msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+msgstr "Неизвестный фильтр статуса. Допустимые значения: manual, auto, regex (или не указывайте для всех активных)."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "The \"to\" URL must be a relative path or an http/https URL."
-msgstr "The \"to\" URL must be a relative path or an http/https URL."
+msgstr "URL назначения должен быть относительным путём или URL http/https."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
 msgstr "Обратитесь к вашему хостинг-провайдеру. Обычно причина в квоте базы данных, ограничении табличного пространства или переполненном разделе /tmp, а не обязательно в заполненном диске."
@@ -4112,10 +4053,9 @@ msgstr "Попросите ваш хостинг проверить привил
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "Эта база данных не поддерживает именованные блокировки GET_LOCK в области сессии. Плагин использует резервный механизм на основе строки параметров WordPress для координации поэтапного построения представления. Часто встречается в развёртываниях PlanetScale, Vitess и ProxySQL с разделением маршрутизации."
 
-# translation-pending: en-fallback awaiting native pass (t_260618_093531_671)
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
-msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "Подготовка таблицы захваченных 404. Список ещё загружается и появится через мгновение."
 
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
@@ -4209,54 +4149,41 @@ msgstr "Для этого сайта диагностическая отчетн
 msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
 msgstr "Если отмечено, текст обрабатывается как регулярное выражение. Обратите внимание, что неправильное или слишком медленное регулярное выражение нарушит работу вашего сайта. Поэтому, пожалуйста, соблюдайте осторожность и протестируйте их в другом месте, прежде чем пробовать здесь. Если вы не знаете, что делаете, пожалуйста, не используйте эту опцию (она не требуется для работы плагина)."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "/events/(.+) соответствует любому URL, начинающемуся с /events/. Используйте $1 в назначении, чтобы вставить захваченный текст. Поддерживаются относительные пути сайта, такие как /archive/$1, и полные URL HTTP(S)."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "Используйте $1 в назначении, чтобы вставить захваченный текст. Поддерживаются относительные пути сайта, такие как /archive/$1, и полные URL HTTP(S)."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains control characters."
-msgstr "Error: Regex destination contains control characters."
+msgstr "Ошибка: назначение регулярного выражения содержит управляющие символы."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
-msgstr "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+msgstr "Ошибка: назначение регулярного выражения должно быть URL HTTP(S) или относительным путём сайта, начинающимся с /."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
-msgstr "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+msgstr "Ошибка: относительное назначение регулярного выражения должно начинаться с одной косой черты /. URL, начинающиеся с //, не допускаются."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
-msgstr "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+msgstr "Ошибка: назначение регулярного выражения не должно содержать пробелов. Используйте URL-кодирование, например %20."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains invalid percent encoding."
-msgstr "Error: Regex destination contains invalid percent encoding."
+msgstr "Ошибка: назначение регулярного выражения содержит недопустимое процентное кодирование."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains characters that are not safe in a redirect URL."
-msgstr "Error: Regex destination contains characters that are not safe in a redirect URL."
+msgstr "Ошибка: назначение регулярного выражения содержит символы, небезопасные в URL перенаправления."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain . or .. path segments."
-msgstr "Error: Regex destination must not contain . or .. path segments."
+msgstr "Ошибка: назначение регулярного выражения не должно содержать сегменты пути . или .."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Source regular expression is invalid."
-msgstr "Error: Source regular expression is invalid."
+msgstr "Ошибка: исходное регулярное выражение недопустимо."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
-msgstr "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+msgstr "Ошибка: назначение регулярного выражения содержит неподдерживаемый синтаксис замены. Используйте $1, $2 и так далее."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
-msgstr "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+msgstr "Ошибка: относительные назначения регулярных выражений поддерживают нумерованные группы захвата, записанные как (...). Именованные группы и группы branch reset не поддерживаются."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
-msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+msgstr "Ошибка: назначение регулярного выражения ссылается на $%1$d, но исходный шаблон определяет %2$d групп(ы) захвата."

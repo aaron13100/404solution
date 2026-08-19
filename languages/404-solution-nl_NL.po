@@ -248,7 +248,7 @@ msgstr "Gevangen 404's"
 msgid "Documentation"
 msgstr "Documentatie"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: Plugin is the standard Dutch term used throughout this catalog, and v%s is a version token
 msgid "Plugin v%s"
 msgstr "Plugin v%s"
 
@@ -402,7 +402,7 @@ msgstr "Automatische omleidingen voor tags aanmaken"
 msgid "Created"
 msgstr "Aangemaakt"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Dutch spelling; Credits is the loanword Dutch interfaces use for this section
 msgid "Credits"
 msgstr "Credits"
 
@@ -445,9 +445,8 @@ msgstr "Debug-bestand(en) verwijderd. (%s)"
 msgid "Debug logging"
 msgstr "Debug-logging"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Default"
-msgstr "Default"
+msgstr "Standaard"
 
 msgid "Default WordPress post types are \"post\" and \"page.\""
 msgstr "Standaard WordPress-berichttypen zijn \"post\" en \"page.\""
@@ -536,9 +535,8 @@ msgstr "Fout: Geen ID('s) gevonden voor bewerkingsverzoek."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Fout: Geen ID('s) opgegeven voor bulkactie. (%s)"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
-msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Fout: te veel ID's opgegeven voor bulkactie (maximaal %d). (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Fout: Geen records geïmporteerd. SQL-resultaat: %s"
@@ -600,7 +598,7 @@ msgstr "Fout: Kan URL niet markeren als %s"
 msgid "Error: unable to remove URL from %s list"
 msgstr "Fout: Kan URL niet verwijderen uit %s-lijst"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Dutch spelling; etcetera is a Dutch word, spelled the same way
 msgid "Etcetera"
 msgstr "Etcetera"
 
@@ -908,7 +906,7 @@ msgstr "Titel paginasuggesties"
 msgid "Pages listed here will not be redirected to"
 msgstr "Pagina's die hier worden vermeld, worden niet naar omgeleid"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: Permanent is the Dutch adjective already used for this redirect type here, and 301 is the HTTP status code
 msgid "Permanent 301"
 msgstr "Permanent 301"
 
@@ -981,9 +979,8 @@ msgstr "Omleidingen"
 msgid "Referrer"
 msgstr "Verwijzer"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "RegEx"
-msgstr "RegEx"
+msgstr "Reguliere expressie"
 
 msgid "Regular Expression (Manually Created)"
 msgstr "Reguliere expressie (handmatig aangemaakt)"
@@ -1929,17 +1926,14 @@ msgstr "Oudste logs worden verwijderd wanneer deze limiet is bereikt"
 msgid "Need more control? Switch to Advanced Mode for 30+ additional options."
 msgstr "Meer controle nodig? Schakel over naar de geavanceerde modus voor 30+ extra opties."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Need more control?"
-msgstr "Need more control?"
+msgstr "Meer controle nodig?"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Switch to Advanced Mode"
-msgstr "Switch to Advanced Mode"
+msgstr "Overschakelen naar de geavanceerde modus"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "for 30+ additional options."
-msgstr "for 30+ additional options."
+msgstr "voor 30+ extra opties."
 
 msgid "Statistics"
 msgstr "Statistieken"
@@ -1959,7 +1953,7 @@ msgstr "Vastgelegd"
 msgid "Ignored"
 msgstr "Genegeerd"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Dutch spelling; Later is the Dutch word for postponing this action
 msgid "Later"
 msgstr "Later"
 
@@ -2188,10 +2182,9 @@ msgstr "url-is-normal"
 msgid "url-looks-like-regex"
 msgstr "url-looks-like-regex"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 #: includes/html/tableRowPageRedirects.html
 msgid "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
-msgstr "This URL looks like a regular expression but is not marked as one. Edit the redirect and check \"Treat this URL as a regular expression\"."
+msgstr "Deze URL lijkt op een reguliere expressie maar is niet als zodanig gemarkeerd. Bewerk de omleiding en vink \"Behandel deze URL als een reguliere expressie\" aan."
 
 msgid "Create redirect from old URL to new URL"
 msgstr "Doorverwijzing maken van oude URL naar nieuwe URL"
@@ -2516,7 +2509,7 @@ msgstr "Fout: de scoredrempel per engine moet leeg zijn of een getal tussen 0 en
 msgid "Engine"
 msgstr "Zoekmachine"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Dutch spelling; Status is the Dutch noun for the table column it labels
 msgid "Status"
 msgstr "Status"
 
@@ -2754,9 +2747,8 @@ msgstr "AIOSEO"
 msgid "Safe Redirect Manager"
 msgstr "Safe Redirect Manager"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Redirection Plugin"
-msgstr "Redirection Plugin"
+msgstr "Redirection-plugin"
 
 msgid "No supported redirect plugins detected on this site."
 msgstr "Geen ondersteunde omleidingsplugins gedetecteerd op deze site."
@@ -2812,7 +2804,7 @@ msgstr "Gebruikersrol"
 msgid "Referrer URL"
 msgstr "Verwijzende URL"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: HTTP header field name, kept in English here as Dutch technical interfaces do
 msgid "User Agent"
 msgstr "User Agent"
 
@@ -2843,7 +2835,7 @@ msgstr "bevat niet"
 msgid "matches regex"
 msgstr "komt overeen met regex"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Dutch spelling; Operator is the Dutch noun for the condition operator it labels
 msgid "Operator"
 msgstr "Operator"
 
@@ -2913,13 +2905,11 @@ msgstr "Voeg deze geautoriseerde omleidings-URI toe: %s"
 msgid "Enter your Client ID and Client Secret below."
 msgstr "Voer hieronder uw Client ID en Client Secret in."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "Client-ID"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "Clientgeheim"
 
 msgid "Search Console Site URL"
 msgstr "Search Console site-URL"
@@ -3076,7 +3066,7 @@ msgstr "Instellingen beheren"
 msgid "Sent"
 msgstr "Verzonden"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Dutch spelling; Plugin is the standard Dutch term, already used in Plugin-beheerders here
 msgid "Plugin"
 msgstr "Plugin"
 
@@ -3116,9 +3106,8 @@ msgstr "Exportformaat:"
 msgid "Native CSV (404 Solution)"
 msgstr "Standaard CSV (404 Solution)"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Redirection Plugin CSV"
-msgstr "Redirection Plugin CSV"
+msgstr "CSV van de Redirection-plugin"
 
 msgid "Apache .htaccess"
 msgstr "Apache .htaccess"
@@ -3218,9 +3207,8 @@ msgstr "Name"
 msgid "URL Pattern"
 msgstr "URL-patroon"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Regex"
-msgstr "Regex"
+msgstr "Reguliere expressie"
 
 msgid "Engines"
 msgstr "Modules"
@@ -3327,7 +3315,7 @@ msgstr "Feedback sturen"
 msgid "301"
 msgstr "301"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Dutch spelling; Permanent is the Dutch adjective for this redirect type
 msgid "Permanent"
 msgstr "Permanent"
 
@@ -3595,136 +3583,104 @@ msgstr "Verbinden met Google Search Console"
 msgid "No access token received from authorization."
 msgstr "Geen toegangstoken ontvangen bij de autorisatie."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatically trash bot and spam URLs"
-msgstr "Automatically trash bot and spam URLs"
+msgstr "Bot- en spam-URL's automatisch naar de prullenbak verplaatsen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
-msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "Gevangen URL's van bots en beveiligingsscanners automatisch naar de prullenbak verplaatsen tijdens het dagelijkse onderhoud"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution bewaakt nu je site. Wanneer bezoekers op gebroken links terechtkomen, worden ze automatisch omgeleid. We sturen je een e-mail als er iets aandacht nodig heeft."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution bewaakt nu je site. Wanneer bezoekers op gebroken links terechtkomen, worden ze automatisch omgeleid."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
-msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution bewaakt nu je site. We sturen je een e-mail als gevangen 404-URL's aandacht nodig hebben."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
-msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution bewaakt nu je site. Je kunt op elk moment handmatige omleidingen aanmaken op het tabblad Pagina-omleidingen."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You're all set!"
-msgstr "You're all set!"
+msgstr "Alles is klaar!"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get email alerts about 404 problems?"
-msgstr "Get email alerts about 404 problems?"
+msgstr "Wil je e-mailmeldingen over 404-problemen ontvangen?"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Yes, email me a weekly summary (recommended)"
-msgstr "Yes, email me a weekly summary (recommended)"
+msgstr "Ja, stuur me een wekelijkse samenvatting (aanbevolen)"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get notified when captured 404 URLs exceed 50"
-msgstr "Get notified when captured 404 URLs exceed 50"
+msgstr "Een melding krijgen wanneer de gevangen 404-URL's boven de 50 uitkomen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You can always enable email alerts later in Options"
-msgstr "You can always enable email alerts later in Options"
+msgstr "Je kunt e-mailmeldingen altijd later inschakelen bij Opties"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "No, I'll check manually"
-msgstr "No, I'll check manually"
+msgstr "Nee, ik controleer het handmatig"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Permanent Redirects"
-msgstr "Automatic Permanent Redirects"
+msgstr "Automatische permanente omleidingen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Temporary Redirects"
-msgstr "Automatic Temporary Redirects"
+msgstr "Automatische tijdelijke omleidingen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Permanent Redirects"
-msgstr "Manual Permanent Redirects"
+msgstr "Handmatige permanente omleidingen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Temporary Redirects"
-msgstr "Manual Temporary Redirects"
+msgstr "Handmatige tijdelijke omleidingen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
-msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "Gebroken links die bezoekers probeerden te bereiken. Gebruik Omleiding aanmaken voor de belangrijke en Negeren voor de rest."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Needs Review"
-msgstr "Needs Review"
+msgstr "Moet worden bekeken"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Handled"
-msgstr "Handled"
+msgstr "Afgehandeld"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Dismiss"
-msgstr "Dismiss"
+msgstr "Negeren"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "All good — %d redirects active, no URLs need attention"
-msgstr "All good — %d redirects active, no URLs need attention"
+msgstr "Alles in orde: %d omleidingen actief, geen URL's hebben aandacht nodig"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
-msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d omleidingen actief: %2$d gevangen URL's hebben terugkerende bezoekers"
 
 msgid "View"
 msgstr "View"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
-msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "De plugin maakt deze automatisch aan. Je hoeft alleen iets te doen wanneer de statusbalk hierboven dat aangeeft."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Blocked"
-msgstr "Blocked"
+msgstr "Geblokkeerd"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for moved pages"
-msgstr "Best for moved pages"
+msgstr "Het beste voor verplaatste pagina's"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for seasonal or test pages"
-msgstr "Best for seasonal or test pages"
+msgstr "Het beste voor seizoens- of testpagina's"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
-msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "Permanent is het beste voor de meeste omleidingen. Gebruik Tijdelijk als de pagina kan terugkomen."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Back to Captured 404s"
-msgstr "Back to Captured 404s"
+msgstr "Terug naar gevangen 404's"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Suggested destination"
-msgstr "Suggested destination"
+msgstr "Voorgestelde bestemming"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "match"
-msgstr "match"
+msgstr "overeenkomst"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Accept Suggestion"
-msgstr "Accept Suggestion"
+msgstr "Suggestie overnemen"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Pick a Different Page"
-msgstr "Pick a Different Page"
+msgstr "Een andere pagina kiezen"
 
 msgid "Post"
 msgstr "Post"
@@ -3956,111 +3912,92 @@ msgstr "Het opnieuw opbouwen van weergaven/hits is gepauzeerd na %d opeenvolgend
 msgid "Retry Now"
 msgstr "Nu opnieuw proberen"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "literal"
-msgstr "literal"
+msgstr "letterlijk"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%1$d of %2$d"
-msgstr "%1$d of %2$d"
+msgstr "%1$d van %2$d"
 
-# translation-pending: en-fallback awaiting native pass (i310)
+# translation-verified: Dutch uses the same singular and plural nouns here, item and items, as the source
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
 msgstr[0] "%s item"
 msgstr[1] "%s items"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unknown purge result: %s"
-msgstr "Error: Unknown purge result: %s"
+msgstr "Fout: onbekend opschoonresultaat: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s redirect entries were moved to the trash."
-msgstr "%s redirect entries were moved to the trash."
+msgstr "%s omleidingsitems zijn naar de prullenbak verplaatst."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unable to update redirect data. Repository result: %s"
-msgstr "Error: Unable to update redirect data. Repository result: %s"
+msgstr "Fout: kan de omleidingsgegevens niet bijwerken. Repositoryresultaat: %s"
 
-# translation-pending: en-fallback awaiting native pass
 #: includes/
 msgid "Error: Unable to save redirect conditions. Repository result: %s"
-msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "Fout: kan de omleidingsvoorwaarden niet opslaan. Repositoryresultaat: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Loading status..."
-msgstr "Loading status..."
+msgstr "Status laden..."
 
 #: includes/
 msgid "Loading..."
 msgstr "Bezig met laden..."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
-msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
+msgstr "Fout: de verwijderwaarde voor verzamelde URL's moet een getal groter dan of gelijk aan nul zijn"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Manual redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+msgstr "Fout: de verwijderwaarde voor handmatige omleidingen moet een getal groter dan of gelijk aan nul zijn"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Log deletion value must be a number greater than or equal to zero"
-msgstr "Error: Log deletion value must be a number greater than or equal to zero"
+msgstr "Fout: de verwijderwaarde voor logs moet een getal groter dan of gelijk aan nul zijn"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+msgstr "Fout: de verwijderwaarde voor automatische omleidingen moet een getal groter dan of gelijk aan nul zijn"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
-msgstr "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+msgstr "Fout: het aantal dagen tot automatische omleidingen verlopen moet een getal groter dan of gelijk aan nul zijn"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Maximum log disk usage must be a number greater than zero"
-msgstr "Error: Maximum log disk usage must be a number greater than zero"
+msgstr "Fout: het maximale schijfgebruik voor logs moet een getal groter dan nul zijn"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Keep my redirects (%d)"
-msgstr "Keep my redirects (%d)"
+msgstr "Mijn omleidingen behouden (%d)"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d minutes ago"
-msgstr "%d minutes ago"
+msgstr "%d minuten geleden"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d hours ago"
-msgstr "%d hours ago"
+msgstr "%d uur geleden"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d days ago"
-msgstr "%d days ago"
+msgstr "%d dagen geleden"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
-msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+msgstr "Onbekend statusfilter. Geldige waarden zijn: manual, auto, regex (of laat het weg voor alle actieve)."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "The \"to\" URL must be a relative path or an http/https URL."
-msgstr "The \"to\" URL must be a relative path or an http/https URL."
+msgstr "De doel-URL moet een relatief pad of een http/https-URL zijn."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
 msgstr "Neem contact op met uw hostingprovider. Dit wordt meestal veroorzaakt door een databasequotum, een tablespace-limiet of een volle /tmp-partitie - niet noodzakelijk door een volle schijf."
@@ -4119,10 +4056,9 @@ msgstr "Vraag uw host om de rechten van uw WordPress-databasegebruiker te contro
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "Deze database ondersteunt geen sessie-gebonden GET_LOCK named locks. De plugin gebruikt een WordPress optie-rij-fallback om de gefaseerde view-build te coordineren. Komt vaak voor bij PlanetScale, Vitess en split-routing ProxySQL-implementaties."
 
-# translation-pending: en-fallback awaiting native pass (t_260618_093531_671)
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
-msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "De tabel met gevangen 404's wordt voorbereid. De lijst wordt nog geladen en verschijnt zo."
 
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
@@ -4216,54 +4152,41 @@ msgstr "Deze site heeft diagnostische rapportage %s. U kunt alles downloaden dat
 msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
 msgstr "Wanneer aangevinkt, wordt de tekst behandeld als een reguliere expressie. Let op: een foutieve of te trage reguliere expressie zal uw website breken. Wees daarom voorzichtig en test ze eerst elders voordat u ze hier probeert. Als u niet weet wat u doet, gebruik deze optie dan niet (deze is niet nodig voor het functioneren van de plugin)."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "/events/(.+) komt overeen met elke URL die begint met /events/. Gebruik $1 in de bestemming om de gevangen tekst in te voegen. Site-relatieve paden zoals /archive/$1 en volledige HTTP(S)-URL's worden ondersteund."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "Gebruik $1 in de bestemming om de gevangen tekst in te voegen. Site-relatieve paden zoals /archive/$1 en volledige HTTP(S)-URL's worden ondersteund."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains control characters."
-msgstr "Error: Regex destination contains control characters."
+msgstr "Fout: de regex-bestemming bevat stuurtekens."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
-msgstr "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+msgstr "Fout: de regex-bestemming moet een HTTP(S)-URL of een site-relatief pad zijn dat met / begint."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
-msgstr "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+msgstr "Fout: een site-relatieve regex-bestemming moet met één enkele / beginnen. URL's die met // beginnen zijn niet toegestaan."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
-msgstr "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+msgstr "Fout: de regex-bestemming mag geen spaties bevatten. Gebruik in plaats daarvan een URL-codering zoals %20."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains invalid percent encoding."
-msgstr "Error: Regex destination contains invalid percent encoding."
+msgstr "Fout: de regex-bestemming bevat een ongeldige procentcodering."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains characters that are not safe in a redirect URL."
-msgstr "Error: Regex destination contains characters that are not safe in a redirect URL."
+msgstr "Fout: de regex-bestemming bevat tekens die niet veilig zijn in een omleidings-URL."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain . or .. path segments."
-msgstr "Error: Regex destination must not contain . or .. path segments."
+msgstr "Fout: de regex-bestemming mag geen padsegmenten . of .. bevatten."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Source regular expression is invalid."
-msgstr "Error: Source regular expression is invalid."
+msgstr "Fout: de reguliere expressie van de bron is ongeldig."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
-msgstr "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+msgstr "Fout: de regex-bestemming bevat een niet-ondersteunde vervangingssyntaxis. Gebruik $1, $2, enzovoort."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
-msgstr "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+msgstr "Fout: relatieve regex-bestemmingen ondersteunen genummerde capture-groepen geschreven als (...). Groepen met een naam en branch reset-groepen worden niet ondersteund."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
-msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+msgstr "Fout: de regex-bestemming verwijst naar $%1$d, maar het bronpatroon definieert %2$d capture-groep(en)."

@@ -248,7 +248,7 @@ msgstr "404 yang Ditangkap"
 msgid "Documentation"
 msgstr "Dokumentasi"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: Plugin is the standard Indonesian term used throughout this catalog, and v%s is a version token
 msgid "Plugin v%s"
 msgstr "Plugin v%s"
 
@@ -534,9 +534,8 @@ msgstr "Kesalahan: Tidak ada ID yang ditemukan untuk permintaan edit."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Kesalahan: Tidak ada ID yang ditentukan untuk tindakan massal. (%s)"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
-msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Kesalahan: terlalu banyak ID yang ditentukan untuk tindakan massal (maksimal %d). (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Kesalahan: Tidak ada catatan yang diimpor. Hasil SQL: %s"
@@ -977,7 +976,7 @@ msgstr "Pengalihan"
 msgid "Referrer"
 msgstr "Perujuk"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: kept as the English loan phrase this catalog already uses for regular expressions, as in Perlakukan URL ini sebagai regular expression
 msgid "RegEx"
 msgstr "RegEx"
 
@@ -2006,7 +2005,7 @@ msgstr "Hapus"
 msgid "Ignore"
 msgstr "Abaikan"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Indonesian spelling; Manual is the Indonesian adjective used for manually created redirects here
 msgid "Manual"
 msgstr "Manual"
 
@@ -2508,7 +2507,7 @@ msgstr "Kesalahan: ambang skor per mesin harus kosong atau angka antara 0 dan 99
 msgid "Engine"
 msgstr "Mesin"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Indonesian spelling; Status is the Indonesian noun for the table column it labels
 msgid "Status"
 msgstr "Status"
 
@@ -2803,7 +2802,7 @@ msgstr "Peran Pengguna"
 msgid "Referrer URL"
 msgstr "URL Perujuk"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: HTTP header field name, kept in English here as Indonesian technical interfaces do
 msgid "User Agent"
 msgstr "User Agent"
 
@@ -2834,7 +2833,7 @@ msgstr "tidak mengandung"
 msgid "matches regex"
 msgstr "cocok dengan regex"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Indonesian spelling; Operator is the Indonesian noun for the condition operator it labels
 msgid "Operator"
 msgstr "Operator"
 
@@ -2904,13 +2903,11 @@ msgstr "Tambahkan URI Redirect Resmi ini: %s"
 msgid "Enter your Client ID and Client Secret below."
 msgstr "Masukkan Client ID dan Client Secret Anda di bawah ini."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "ID Klien"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "Rahasia Klien"
 
 msgid "Search Console Site URL"
 msgstr "URL Situs Search Console"
@@ -3067,7 +3064,7 @@ msgstr "Kelola pengaturan"
 msgid "Sent"
 msgstr "Terkirim"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Indonesian spelling; Plugin is the standard Indonesian term, already used in Pengguna Admin Plugin here
 msgid "Plugin"
 msgstr "Plugin"
 
@@ -3208,7 +3205,7 @@ msgstr "Name"
 msgid "URL Pattern"
 msgstr "Pola URL"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: kept as the English loan phrase this catalog already uses for regular expressions, matching Regular Expression (Dibuat Secara Manual)
 msgid "Regex"
 msgstr "Regex"
 
@@ -3584,136 +3581,104 @@ msgstr "Hubungkan ke layanan Google Search Console"
 msgid "No access token received from authorization."
 msgstr "Tidak ada token akses yang diterima dari proses otorisasi."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatically trash bot and spam URLs"
-msgstr "Automatically trash bot and spam URLs"
+msgstr "Pindahkan URL bot dan spam ke tong sampah secara otomatis"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
-msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "Pindahkan URL yang ditangkap dari bot dan pemindai keamanan ke tong sampah secara otomatis selama pemeliharaan harian"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution kini memantau situs Anda. Ketika pengunjung membuka tautan rusak, mereka akan dialihkan secara otomatis. Kami akan mengirim email jika ada yang perlu diperhatikan."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution kini memantau situs Anda. Ketika pengunjung membuka tautan rusak, mereka akan dialihkan secara otomatis."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
-msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution kini memantau situs Anda. Kami akan mengirim email jika URL 404 yang ditangkap perlu diperhatikan."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
-msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution kini memantau situs Anda. Anda dapat membuat pengalihan manual kapan saja dari tab Pengalihan Halaman."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You're all set!"
-msgstr "You're all set!"
+msgstr "Semua sudah siap!"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get email alerts about 404 problems?"
-msgstr "Get email alerts about 404 problems?"
+msgstr "Ingin menerima pemberitahuan email tentang masalah 404?"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Yes, email me a weekly summary (recommended)"
-msgstr "Yes, email me a weekly summary (recommended)"
+msgstr "Ya, kirimi saya ringkasan mingguan (disarankan)"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get notified when captured 404 URLs exceed 50"
-msgstr "Get notified when captured 404 URLs exceed 50"
+msgstr "Dapatkan pemberitahuan saat URL 404 yang ditangkap melebihi 50"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You can always enable email alerts later in Options"
-msgstr "You can always enable email alerts later in Options"
+msgstr "Anda selalu dapat mengaktifkan pemberitahuan email nanti di Opsi"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "No, I'll check manually"
-msgstr "No, I'll check manually"
+msgstr "Tidak, saya akan memeriksanya secara manual"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Permanent Redirects"
-msgstr "Automatic Permanent Redirects"
+msgstr "Pengalihan Permanen Otomatis"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Temporary Redirects"
-msgstr "Automatic Temporary Redirects"
+msgstr "Pengalihan Sementara Otomatis"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Permanent Redirects"
-msgstr "Manual Permanent Redirects"
+msgstr "Pengalihan Permanen Manual"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Temporary Redirects"
-msgstr "Manual Temporary Redirects"
+msgstr "Pengalihan Sementara Manual"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
-msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "Tautan rusak yang coba dibuka pengunjung. Gunakan Buat Redirect untuk yang penting dan Abaikan untuk sisanya."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Needs Review"
-msgstr "Needs Review"
+msgstr "Perlu Ditinjau"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Handled"
-msgstr "Handled"
+msgstr "Sudah Ditangani"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Dismiss"
-msgstr "Dismiss"
+msgstr "Abaikan"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "All good — %d redirects active, no URLs need attention"
-msgstr "All good — %d redirects active, no URLs need attention"
+msgstr "Semua baik: %d pengalihan aktif, tidak ada URL yang perlu diperhatikan"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
-msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d pengalihan aktif: %2$d URL yang ditangkap memiliki pengunjung berulang"
 
 msgid "View"
 msgstr "View"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
-msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "Plugin membuatnya secara otomatis. Anda hanya perlu bertindak jika bilah status di atas menyatakannya."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Blocked"
-msgstr "Blocked"
+msgstr "Diblokir"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for moved pages"
-msgstr "Best for moved pages"
+msgstr "Terbaik untuk halaman yang dipindahkan"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for seasonal or test pages"
-msgstr "Best for seasonal or test pages"
+msgstr "Terbaik untuk halaman musiman atau halaman uji"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
-msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "Permanen paling cocok untuk sebagian besar pengalihan. Gunakan Sementara jika halaman mungkin kembali."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Back to Captured 404s"
-msgstr "Back to Captured 404s"
+msgstr "Kembali ke 404 yang Ditangkap"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Suggested destination"
-msgstr "Suggested destination"
+msgstr "Tujuan yang disarankan"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "match"
-msgstr "match"
+msgstr "kecocokan"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Accept Suggestion"
-msgstr "Accept Suggestion"
+msgstr "Terima Saran"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Pick a Different Page"
-msgstr "Pick a Different Page"
+msgstr "Pilih Halaman Lain"
 
 msgid "Post"
 msgstr "Post"
@@ -3945,111 +3910,92 @@ msgstr "Pembangunan ulang tampilan/hit dijeda setelah %d kegagalan berturut-turu
 msgid "Retry Now"
 msgstr "Coba lagi sekarang"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "literal"
-msgstr "literal"
+msgstr "harfiah"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%1$d of %2$d"
-msgstr "%1$d of %2$d"
+msgstr "%1$d dari %2$d"
 
-# translation-pending: en-fallback awaiting native pass (i310)
+# translation-verified: Indonesian does not inflect nouns for number and uses the loanword item, so both forms match the source
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
 msgstr[0] "%s item"
 msgstr[1] "%s item"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unknown purge result: %s"
-msgstr "Error: Unknown purge result: %s"
+msgstr "Kesalahan: hasil pembersihan tidak dikenal: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s redirect entries were moved to the trash."
-msgstr "%s redirect entries were moved to the trash."
+msgstr "%s entri pengalihan dipindahkan ke tong sampah."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unable to update redirect data. Repository result: %s"
-msgstr "Error: Unable to update redirect data. Repository result: %s"
+msgstr "Kesalahan: tidak dapat memperbarui data pengalihan. Hasil repositori: %s"
 
-# translation-pending: en-fallback awaiting native pass
 #: includes/
 msgid "Error: Unable to save redirect conditions. Repository result: %s"
-msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "Kesalahan: tidak dapat menyimpan kondisi pengalihan. Hasil repositori: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Loading status..."
-msgstr "Loading status..."
+msgstr "Memuat status..."
 
 #: includes/
 msgid "Loading..."
 msgstr "Memuat..."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
-msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
+msgstr "Kesalahan: nilai penghapusan URL yang dikumpulkan harus berupa angka lebih besar dari atau sama dengan nol"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Manual redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+msgstr "Kesalahan: nilai penghapusan pengalihan manual harus berupa angka lebih besar dari atau sama dengan nol"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Log deletion value must be a number greater than or equal to zero"
-msgstr "Error: Log deletion value must be a number greater than or equal to zero"
+msgstr "Kesalahan: nilai penghapusan log harus berupa angka lebih besar dari atau sama dengan nol"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+msgstr "Kesalahan: nilai penghapusan pengalihan otomatis harus berupa angka lebih besar dari atau sama dengan nol"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
-msgstr "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+msgstr "Kesalahan: jumlah hari kedaluwarsa pengalihan otomatis harus berupa angka lebih besar dari atau sama dengan nol"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Maximum log disk usage must be a number greater than zero"
-msgstr "Error: Maximum log disk usage must be a number greater than zero"
+msgstr "Kesalahan: penggunaan disk maksimum untuk log harus berupa angka lebih besar dari nol"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Keep my redirects (%d)"
-msgstr "Keep my redirects (%d)"
+msgstr "Pertahankan pengalihan saya (%d)"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d minutes ago"
-msgstr "%d minutes ago"
+msgstr "%d menit yang lalu"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d hours ago"
-msgstr "%d hours ago"
+msgstr "%d jam yang lalu"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d days ago"
-msgstr "%d days ago"
+msgstr "%d hari yang lalu"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
-msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+msgstr "Filter status tidak dikenal. Nilai yang valid adalah: manual, auto, regex (atau kosongkan untuk semua yang aktif)."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "The \"to\" URL must be a relative path or an http/https URL."
-msgstr "The \"to\" URL must be a relative path or an http/https URL."
+msgstr "URL tujuan harus berupa jalur relatif atau URL http/https."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
 msgstr "Hubungi penyedia hosting Anda. Hal ini biasanya disebabkan oleh kuota basis data, batas tablespace, atau partisi /tmp yang penuh - belum tentu karena disk yang penuh."
@@ -4108,10 +4054,9 @@ msgstr "Mintalah host Anda untuk meninjau hak akses pengguna basis data WordPres
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "Basis data ini tidak mendukung kunci bernama GET_LOCK yang tercakup dalam sesi (session-scoped). Plugin menggunakan baris opsi WordPress sebagai cadangan untuk mengoordinasikan pembangunan tampilan bertahap. Hal ini umum terjadi pada penerapan PlanetScale, Vitess, dan ProxySQL dengan perutean terpisah (split-routing)."
 
-# translation-pending: en-fallback awaiting native pass (t_260618_093531_671)
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
-msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "Menyiapkan tabel 404 yang ditangkap. Daftar masih dimuat dan akan segera muncul."
 
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
@@ -4205,54 +4150,41 @@ msgstr "Situs ini memiliki pelaporan diagnostik %s. Anda dapat mengunduh semua y
 msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
 msgstr "Jika dicentang, teks diperlakukan sebagai regular expression. Perhatikan bahwa regular expression yang salah atau terlalu lambat AKAN merusak situs web Anda. Jadi harap berhati-hati dan uji terlebih dahulu di tempat lain sebelum mencobanya di sini. Jika Anda tidak tahu apa yang Anda lakukan, mohon jangan gunakan opsi ini (opsi ini tidak diperlukan agar plugin berfungsi)."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "/events/(.+) akan cocok dengan URL apa pun yang diawali /events/. Gunakan $1 di tujuan untuk menyisipkan teks yang ditangkap. Jalur relatif situs seperti /archive/$1 dan URL HTTP(S) lengkap didukung."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "Gunakan $1 di tujuan untuk menyisipkan teks yang ditangkap. Jalur relatif situs seperti /archive/$1 dan URL HTTP(S) lengkap didukung."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains control characters."
-msgstr "Error: Regex destination contains control characters."
+msgstr "Kesalahan: tujuan regex berisi karakter kontrol."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
-msgstr "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+msgstr "Kesalahan: tujuan regex harus berupa URL HTTP(S) atau jalur relatif situs yang diawali /."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
-msgstr "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+msgstr "Kesalahan: tujuan regex relatif situs harus diawali satu garis miring /. URL yang diawali // tidak diizinkan."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
-msgstr "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+msgstr "Kesalahan: tujuan regex tidak boleh berisi spasi. Gunakan pengodean URL seperti %20 sebagai gantinya."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains invalid percent encoding."
-msgstr "Error: Regex destination contains invalid percent encoding."
+msgstr "Kesalahan: tujuan regex berisi pengodean persen yang tidak valid."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains characters that are not safe in a redirect URL."
-msgstr "Error: Regex destination contains characters that are not safe in a redirect URL."
+msgstr "Kesalahan: tujuan regex berisi karakter yang tidak aman dalam URL pengalihan."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain . or .. path segments."
-msgstr "Error: Regex destination must not contain . or .. path segments."
+msgstr "Kesalahan: tujuan regex tidak boleh berisi segmen jalur . atau .."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Source regular expression is invalid."
-msgstr "Error: Source regular expression is invalid."
+msgstr "Kesalahan: regular expression sumber tidak valid."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
-msgstr "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+msgstr "Kesalahan: tujuan regex berisi sintaks penggantian yang tidak didukung. Gunakan $1, $2, dan seterusnya."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
-msgstr "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+msgstr "Kesalahan: tujuan regex relatif mendukung grup tangkapan bernomor yang ditulis sebagai (...). Grup bernama dan grup branch reset tidak didukung."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
-msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+msgstr "Kesalahan: tujuan regex merujuk ke $%1$d, tetapi pola sumber mendefinisikan %2$d grup tangkapan."

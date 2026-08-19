@@ -234,7 +234,7 @@ msgstr "Tema del administrador"
 msgid "Advanced"
 msgstr "Avanzado"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Spanish spelling; Simple is the Spanish adjective already used in Modo Simple here
 #: includes/View.php - Inline mode toggle
 msgid "Simple"
 msgstr "Simple"
@@ -534,9 +534,8 @@ msgstr "Error: No se encontró(aron) ID(s) para la solicitud de edición."
 msgid "Error: No ID(s) specified for bulk action. (%s)"
 msgstr "Error: No se especificó(aron) ID(s) para la acción masiva. (%s)"
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
-msgstr "Error: Too many ID(s) specified for bulk action (maximum %d). (%s)"
+msgstr "Error: demasiados ID especificados para la acción en lote (máximo %d). (%s)"
 
 msgid "Error: No records were imported. SQL result: %s"
 msgstr "Error: No se importaron registros. Resultado SQL: %s"
@@ -640,7 +639,7 @@ msgstr "Los archivos y carpetas listados aquí serán ignorados."
 msgid "First, all of the normal \"exact match\" URLs are checked, then all of the regular expression URLs are checked."
 msgstr "Primero, se verifican todas las URLs de \"coincidencia exacta\" normales, luego se verifican todas las URLs de expresión regular."
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Spanish spelling; General is the Spanish word for the tab it labels
 msgid "General"
 msgstr "General"
 
@@ -2006,7 +2005,7 @@ msgstr "Eliminar"
 msgid "Ignore"
 msgstr "Ignorar"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Spanish spelling; Manual is the Spanish adjective used for manually created redirects here
 msgid "Manual"
 msgstr "Manual"
 
@@ -2101,7 +2100,7 @@ msgstr "Actualizacion en pausa"
 msgid "Security check failed. Please try again."
 msgstr "La verificación de seguridad falló. Por favor, inténtelo de nuevo."
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Spanish spelling; Error is the Spanish noun, already used as the Error: prefix throughout this catalog
 #: includes/SetupWizard.php
 msgid "Error"
 msgstr "Error"
@@ -2588,7 +2587,7 @@ msgstr "Simulación completada. Redirecciones válidas: %d. Filas no válidas: %
 msgid "Preview issues:"
 msgstr "Problemas de la vista previa:"
 
-# translation-pending: en-fallback awaiting native pass (i656)
+# translation-verified: identical Spanish spelling; Error: is the prefix this catalog already uses on every error message
 #: includes/ImportExportService.php
 msgid "Error:"
 msgstr "Error:"
@@ -2801,9 +2800,8 @@ msgstr "Rol de usuario"
 msgid "Referrer URL"
 msgstr "URL de referencia"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "User Agent"
-msgstr "User Agent"
+msgstr "Agente de usuario"
 
 msgid "IP Range (CIDR)"
 msgstr "Rango de IP (CIDR)"
@@ -2901,13 +2899,11 @@ msgstr "Añada esta URI de redirección autorizada: %s"
 msgid "Enter your Client ID and Client Secret below."
 msgstr "Introduzca su Client ID y Client Secret a continuación."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client ID"
-msgstr "Client ID"
+msgstr "ID de cliente"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Client Secret"
-msgstr "Client Secret"
+msgstr "Secreto de cliente"
 
 msgid "Search Console Site URL"
 msgstr "URL del sitio en Search Console"
@@ -3204,9 +3200,8 @@ msgstr "Name"
 msgid "URL Pattern"
 msgstr "Patrón de URL"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Regex"
-msgstr "Regex"
+msgstr "Expresión regular"
 
 msgid "Engines"
 msgstr "Motores"
@@ -3580,136 +3575,104 @@ msgstr "Conectar con Google Search Console"
 msgid "No access token received from authorization."
 msgstr "No se recibió un token de acceso durante la autorización."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatically trash bot and spam URLs"
-msgstr "Automatically trash bot and spam URLs"
+msgstr "Mover automáticamente a la papelera las URL de bots y spam"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Auto-trash captured URLs from bots and security scanners during daily maintenance"
-msgstr "Auto-trash captured URLs from bots and security scanners during daily maintenance"
+msgstr "Mover automáticamente a la papelera las URL capturadas de bots y escáneres de seguridad durante el mantenimiento diario"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected. We will email you if something needs attention."
+msgstr "404 Solution ya está supervisando tu sitio. Cuando los visitantes lleguen a enlaces rotos, serán redirigidos automáticamente. Te enviaremos un correo electrónico si algo necesita atención."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
-msgstr "404 Solution is now monitoring your site. When visitors hit broken links, they will be automatically redirected."
+msgstr "404 Solution ya está supervisando tu sitio. Cuando los visitantes lleguen a enlaces rotos, serán redirigidos automáticamente."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
-msgstr "404 Solution is now monitoring your site. We will email you if captured 404 URLs need attention."
+msgstr "404 Solution ya está supervisando tu sitio. Te enviaremos un correo electrónico si las URL 404 capturadas necesitan atención."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
-msgstr "404 Solution is now monitoring your site. You can create manual redirects anytime from the Page Redirects tab."
+msgstr "404 Solution ya está supervisando tu sitio. Puedes crear redirecciones manuales en cualquier momento desde la pestaña Redirecciones de página."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You're all set!"
-msgstr "You're all set!"
+msgstr "¡Todo listo!"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get email alerts about 404 problems?"
-msgstr "Get email alerts about 404 problems?"
+msgstr "¿Quieres recibir avisos por correo electrónico sobre problemas 404?"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Yes, email me a weekly summary (recommended)"
-msgstr "Yes, email me a weekly summary (recommended)"
+msgstr "Sí, envíame un resumen semanal (recomendado)"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Get notified when captured 404 URLs exceed 50"
-msgstr "Get notified when captured 404 URLs exceed 50"
+msgstr "Recibir un aviso cuando las URL 404 capturadas superen 50"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "You can always enable email alerts later in Options"
-msgstr "You can always enable email alerts later in Options"
+msgstr "Siempre puedes activar los avisos por correo electrónico más tarde en Opciones"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "No, I'll check manually"
-msgstr "No, I'll check manually"
+msgstr "No, lo comprobaré manualmente"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Permanent Redirects"
-msgstr "Automatic Permanent Redirects"
+msgstr "Redirecciones permanentes automáticas"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Automatic Temporary Redirects"
-msgstr "Automatic Temporary Redirects"
+msgstr "Redirecciones temporales automáticas"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Permanent Redirects"
-msgstr "Manual Permanent Redirects"
+msgstr "Redirecciones permanentes manuales"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Manual Temporary Redirects"
-msgstr "Manual Temporary Redirects"
+msgstr "Redirecciones temporales manuales"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
-msgstr "Broken links visitors tried to reach. Create Redirect for important ones, Dismiss the rest."
+msgstr "Enlaces rotos que los visitantes intentaron abrir. Usa Crear redirección para los importantes y Descartar para el resto."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Needs Review"
-msgstr "Needs Review"
+msgstr "Requiere revisión"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Handled"
-msgstr "Handled"
+msgstr "Gestionado"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Dismiss"
-msgstr "Dismiss"
+msgstr "Descartar"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "All good — %d redirects active, no URLs need attention"
-msgstr "All good — %d redirects active, no URLs need attention"
+msgstr "Todo correcto: %d redirecciones activas, ninguna URL necesita atención"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "%1$d redirects active — %2$d captured URLs have repeat visitors"
-msgstr "%1$d redirects active — %2$d captured URLs have repeat visitors"
+msgstr "%1$d redirecciones activas: %2$d URL capturadas tienen visitantes recurrentes"
 
 msgid "View"
 msgstr "View"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "The plugin creates these automatically. You only need to act when the status bar above says so."
-msgstr "The plugin creates these automatically. You only need to act when the status bar above says so."
+msgstr "El complemento las crea automáticamente. Solo tienes que intervenir cuando la barra de estado de arriba lo indique."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Blocked"
-msgstr "Blocked"
+msgstr "Bloqueado"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for moved pages"
-msgstr "Best for moved pages"
+msgstr "Ideal para páginas que se han movido"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Best for seasonal or test pages"
-msgstr "Best for seasonal or test pages"
+msgstr "Ideal para páginas de temporada o de prueba"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Permanent is best for most redirects. Use Temporary if the page may come back."
-msgstr "Permanent is best for most redirects. Use Temporary if the page may come back."
+msgstr "Permanente es lo mejor para la mayoría de las redirecciones. Usa Temporal si la página puede volver."
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Back to Captured 404s"
-msgstr "Back to Captured 404s"
+msgstr "Volver a los 404s capturados"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Suggested destination"
-msgstr "Suggested destination"
+msgstr "Destino sugerido"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "match"
-msgstr "match"
+msgstr "de coincidencia"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Accept Suggestion"
-msgstr "Accept Suggestion"
+msgstr "Aceptar la sugerencia"
 
-# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Pick a Different Page"
-msgstr "Pick a Different Page"
+msgstr "Elegir otra página"
 
 msgid "Post"
 msgstr "Post"
@@ -3941,111 +3904,92 @@ msgstr "La reconstrucción de vistas/visitas se pausó tras %d fallos consecutiv
 msgid "Retry Now"
 msgstr "Reintentar ahora"
 
-# translation-pending: en-fallback awaiting native pass (i310)
+# translation-verified: identical Spanish spelling; literal is the Spanish adjective for a match that is not a regular expression
 #: includes/
 msgid "literal"
 msgstr "literal"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%1$d of %2$d"
-msgstr "%1$d of %2$d"
+msgstr "%1$d de %2$d"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"
-msgstr[0] "%s item"
-msgstr[1] "%s items"
+msgstr[0] "%s elemento"
+msgstr[1] "%s elementos"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unknown purge result: %s"
-msgstr "Error: Unknown purge result: %s"
+msgstr "Error: resultado de purga desconocido: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%s redirect entries were moved to the trash."
-msgstr "%s redirect entries were moved to the trash."
+msgstr "%s entradas de redirección se movieron a la papelera."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Unable to update redirect data. Repository result: %s"
-msgstr "Error: Unable to update redirect data. Repository result: %s"
+msgstr "Error: no se pueden actualizar los datos de la redirección. Resultado del repositorio: %s"
 
-# translation-pending: en-fallback awaiting native pass
 #: includes/
 msgid "Error: Unable to save redirect conditions. Repository result: %s"
-msgstr "Error: Unable to save redirect conditions. Repository result: %s"
+msgstr "Error: no se pueden guardar las condiciones de la redirección. Resultado del repositorio: %s"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Loading status..."
-msgstr "Loading status..."
+msgstr "Cargando estado..."
 
 #: includes/
 msgid "Loading..."
 msgstr "Cargando..."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Collected URL deletion value must be a number greater than or equal to zero"
-msgstr "Error: Collected URL deletion value must be a number greater than or equal to zero"
+msgstr "Error: el valor de borrado de URL recopiladas debe ser un número mayor o igual que cero"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Manual redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Manual redirect deletion value must be a number greater than or equal to zero"
+msgstr "Error: el valor de borrado de redirecciones manuales debe ser un número mayor o igual que cero"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Log deletion value must be a number greater than or equal to zero"
-msgstr "Error: Log deletion value must be a number greater than or equal to zero"
+msgstr "Error: el valor de borrado de registros debe ser un número mayor o igual que cero"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto redirect deletion value must be a number greater than or equal to zero"
-msgstr "Error: Auto redirect deletion value must be a number greater than or equal to zero"
+msgstr "Error: el valor de borrado de redirecciones automáticas debe ser un número mayor o igual que cero"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
-msgstr "Error: Auto-redirect expiration days must be a number greater than or equal to zero"
+msgstr "Error: los días de caducidad de las redirecciones automáticas deben ser un número mayor o igual que cero"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Error: Maximum log disk usage must be a number greater than zero"
-msgstr "Error: Maximum log disk usage must be a number greater than zero"
+msgstr "Error: el uso máximo de disco de los registros debe ser un número mayor que cero"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Keep my redirects (%d)"
-msgstr "Keep my redirects (%d)"
+msgstr "Conservar mis redirecciones (%d)"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d minutes ago"
-msgstr "%d minutes ago"
+msgstr "hace %d minutos"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d hours ago"
-msgstr "%d hours ago"
+msgstr "hace %d horas"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "%d days ago"
-msgstr "%d days ago"
+msgstr "hace %d días"
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
-msgstr "Unknown status filter. Valid values are: manual, auto, regex (or omit for all active)."
+msgstr "Filtro de estado desconocido. Los valores válidos son: manual, auto, regex (u omítelo para todas las activas)."
 
-# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "The \"to\" URL must be a relative path or an http/https URL."
-msgstr "The \"to\" URL must be a relative path or an http/https URL."
+msgstr "La URL de destino debe ser una ruta relativa o una URL http/https."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
 msgstr "Contacta con tu proveedor de alojamiento. Normalmente se debe a una cuota de base de datos, un limite de tablespace o una particion /tmp llena - no necesariamente a un disco lleno."
@@ -4104,10 +4048,9 @@ msgstr "Pide a tu proveedor que revise los privilegios del usuario de base de da
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
 msgstr "Esta base de datos no admite bloqueos con nombre GET_LOCK con ambito de sesion. El plugin esta usando una alternativa basada en una fila de opciones de WordPress para coordinar la reconstruccion por etapas. Es comun en despliegues PlanetScale, Vitess y ProxySQL con enrutamiento dividido."
 
-# translation-pending: en-fallback awaiting native pass (t_260618_093531_671)
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
-msgstr "Preparing the captured 404s table. The list is still loading and will appear in a moment."
+msgstr "Preparando la tabla de 404s capturados. La lista todavía se está cargando y aparecerá en un momento."
 
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
@@ -4201,54 +4144,41 @@ msgstr "Este sitio tiene el envío de informes de diagnóstico %s. Puede descarg
 msgid "When checked, the text is treated as a regular expression. Note that including a bad regular expression or one that takes too long will break your website. So please use caution and test them elsewhere before trying them here. If you don't know what you're doing please don't use this option (as it's not necessary for the functioning of the plugin)."
 msgstr "Cuando esté marcado, el texto se trata como una expresión regular. Tenga en cuenta que una expresión regular incorrecta o demasiado lenta ROMPERÁ su sitio web. Por favor, use precaución y pruébelas en otro lugar antes de probarlas aquí. Si no sabe lo que está haciendo, por favor no use esta opción (no es necesaria para el funcionamiento del plugin)."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "/events/(.+) will match any URL that begins with /events/. Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "/events/(.+) coincidirá con cualquier URL que empiece por /events/. Usa $1 en el destino para insertar el texto capturado. Se admiten rutas relativas al sitio como /archive/$1 y URL HTTP(S) completas."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
-msgstr "Use $1 in the destination to insert the captured text. Site-relative paths such as /archive/$1 and full HTTP(S) URLs are supported."
+msgstr "Usa $1 en el destino para insertar el texto capturado. Se admiten rutas relativas al sitio como /archive/$1 y URL HTTP(S) completas."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains control characters."
-msgstr "Error: Regex destination contains control characters."
+msgstr "Error: el destino de la expresión regular contiene caracteres de control."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
-msgstr "Error: Regex destination must be an HTTP(S) URL or a site-relative path starting with /."
+msgstr "Error: el destino de la expresión regular debe ser una URL HTTP(S) o una ruta relativa al sitio que empiece por /."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
-msgstr "Error: A site-relative regex destination must start with a single /. URLs beginning with // are not allowed."
+msgstr "Error: un destino de expresión regular relativo al sitio debe empezar por una sola /. No se permiten las URL que empiezan por //."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
-msgstr "Error: Regex destination must not contain spaces. Use URL encoding such as %20 instead."
+msgstr "Error: el destino de la expresión regular no debe contener espacios. Usa una codificación de URL como %20 en su lugar."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains invalid percent encoding."
-msgstr "Error: Regex destination contains invalid percent encoding."
+msgstr "Error: el destino de la expresión regular contiene una codificación de porcentaje no válida."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains characters that are not safe in a redirect URL."
-msgstr "Error: Regex destination contains characters that are not safe in a redirect URL."
+msgstr "Error: el destino de la expresión regular contiene caracteres que no son seguros en una URL de redirección."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination must not contain . or .. path segments."
-msgstr "Error: Regex destination must not contain . or .. path segments."
+msgstr "Error: el destino de la expresión regular no debe contener los segmentos de ruta . ni .."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Source regular expression is invalid."
-msgstr "Error: Source regular expression is invalid."
+msgstr "Error: la expresión regular de origen no es válida."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
-msgstr "Error: Regex destination contains unsupported replacement syntax. Use $1, $2, and so on."
+msgstr "Error: el destino de la expresión regular contiene una sintaxis de sustitución no admitida. Usa $1, $2, etc."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
-msgstr "Error: Relative regex destinations support numbered capture groups written as (...). Named and branch-reset groups are not supported."
+msgstr "Error: los destinos de expresión regular relativos admiten grupos de captura numerados escritos como (...). No se admiten los grupos con nombre ni los grupos branch reset."
 
-# translation-pending: en-fallback awaiting native pass
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
-msgstr "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
+msgstr "Error: el destino de la expresión regular hace referencia a $%1$d, pero el patrón de origen define %2$d grupo(s) de captura."
