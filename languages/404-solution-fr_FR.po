@@ -1992,7 +1992,7 @@ msgid "Ignored URL - will not be suggested"
 msgstr "URL ignorée - ne sera pas suggérée"
 
 msgid "Edit"
-msgstr "editer"
+msgstr "éditer"
 
 msgid "View Logs"
 msgstr "Voir les logs"
@@ -2090,7 +2090,7 @@ msgstr "Cette page n'existe pas ou n'est pas publiée, de sorte que la redirecti
 
 #: includes/View.php
 msgid "Refresh scheduled"
-msgstr "Actualisation planifiee"
+msgstr "Actualisation planifiée"
 
 #: includes/View.php
 msgid "Refresh running"
@@ -2262,16 +2262,16 @@ msgid "Timestamp"
 msgstr "Horodatage"
 
 msgid "Requested URL"
-msgstr "URL demandee"
+msgstr "URL demandée"
 
 msgid "Destination URL"
 msgstr "URL de destination"
 
 msgid "Some items could not be anonymized."
-msgstr "Certains elements n'ont pas pu etre anonymises."
+msgstr "Certains éléments n'ont pas pu être anonymisés."
 
 msgid "Rate limit exceeded. Please try again later."
-msgstr "Limite de taux depassee. Veuillez reessayer plus tard."
+msgstr "Limite de taux dépassée. Veuillez réessayer plus tard."
 
 msgid "Invalid nonce. Please reload the page."
 msgstr "Nonce invalide. Veuillez recharger la page."
@@ -2282,7 +2282,7 @@ msgstr "Diagnostic"
 
 #: includes/View.php
 msgid "Quick environment checks for troubleshooting and support."
-msgstr "Verifications rapides de l'environnement pour le depannage et le support."
+msgstr "Vérifications rapides de l'environnement pour le dépannage et le support."
 
 #: includes/View.php
 msgid "OK"
@@ -2310,7 +2310,7 @@ msgstr "Version de PHP"
 
 #: includes/View.php
 msgid "Uploads Directory"
-msgstr "Repertoire de televersement"
+msgstr "Répertoire de téléversement"
 
 #: includes/View.php
 msgid "Not available"
@@ -2318,7 +2318,7 @@ msgstr "Non disponible"
 
 #: includes/View.php
 msgid "Uploads Writable"
-msgstr "Televersement inscriptible"
+msgstr "Téléversement inscriptible"
 
 #: includes/View.php
 msgid "Yes"
@@ -2334,7 +2334,7 @@ msgstr "Extension mbstring"
 
 #: includes/View.php
 msgid "Loaded"
-msgstr "Chargee"
+msgstr "Chargée"
 
 #: includes/View.php
 msgid "Missing"
@@ -2354,11 +2354,11 @@ msgstr "Mode débogage WP "
 
 #: includes/View.php
 msgid "Enabled"
-msgstr "Active"
+msgstr "Activé"
 
 #: includes/View.php
 msgid "Disabled"
-msgstr "Desactive"
+msgstr "Désactivé"
 
 #: includes/html/paginationLinks.html
 msgid "data-pagination-auto-refresh"
@@ -4186,3 +4186,75 @@ msgstr "Erreur : les destinations regex relatives prennent en charge les groupes
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "Erreur : la destination regex référence $%1$d, mais le motif source définit %2$d groupe(s) de capture."
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "Impossible de charger les données du graphique. Rechargez cette page et réessayez."
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "Ceci envoie un rapport de diagnostic ponctuel au développeur de l'extension afin qu'il puisse examiner le problème que vous rencontrez."
+
+msgid "This report includes:"
+msgstr "Ce rapport contient :"
+
+msgid "Site URL"
+msgstr "URL du site"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "Versions de l'extension, de PHP, de WordPress et de la base de données"
+
+msgid "List of active plugins"
+msgstr "Liste des extensions actives"
+
+msgid "Recent debug log excerpt"
+msgstr "Extrait récent du journal de débogage"
+
+msgid "Optional message and reply email you provide below"
+msgstr "Message facultatif et adresse e-mail de réponse que vous indiquez ci-dessous"
+
+msgid "Show what's in this report"
+msgstr "Afficher le contenu de ce rapport"
+
+msgid "Hide report contents"
+msgstr "Masquer le contenu du rapport"
+
+msgid "Loading report contents..."
+msgstr "Chargement du contenu du rapport..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "Impossible de charger l'aperçu. Le rapport complet peut tout de même être envoyé."
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "Que s'est-il passé ? (facultatif, cela nous aide à diagnostiquer)"
+
+msgid "Where should we reply? (optional)"
+msgstr "Où devons-nous répondre ? (facultatif)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "En cliquant sur Envoyer le rapport, vous consentez à la transmission des informations ci-dessus au développeur de l'extension à des fins d'assistance. Ces données servent uniquement à diagnostiquer votre problème et ne sont partagées avec aucun tiers."
+
+msgid "Send report"
+msgstr "Envoyer le rapport"
+
+msgid "Sending..."
+msgstr "Envoi en cours..."
+
+msgid "Retry"
+msgstr "Réessayer"
+
+msgid "Sent. Reference: "
+msgstr "Envoyé. Référence : "
+
+msgid ". Thank you."
+msgstr ". Merci."
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "Vous avez déjà envoyé un rapport récemment. Réessayez dans {minutes} minute(s)."
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "Erreur réseau : impossible de joindre le serveur. Vérifiez votre connexion Internet et réessayez."
+
+msgid "Could not send report. Please try again later."
+msgstr "Impossible d'envoyer le rapport. Veuillez réessayer plus tard."
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "Impossible de charger la configuration de l'outil de migration. Rechargez cette page et réessayez."

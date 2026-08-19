@@ -2086,15 +2086,15 @@ msgstr "Esta página no existe o no está publicada, por lo que la redirección 
 
 #: includes/View.php
 msgid "Refresh scheduled"
-msgstr "Actualizacion programada"
+msgstr "Actualización programada"
 
 #: includes/View.php
 msgid "Refresh running"
-msgstr "Actualizacion en curso"
+msgstr "Actualización en curso"
 
 #: includes/View.php
 msgid "Refresh paused"
-msgstr "Actualizacion en pausa"
+msgstr "Actualización en pausa"
 
 #: includes/SetupWizard.php
 msgid "Security check failed. Please try again."
@@ -2267,10 +2267,10 @@ msgid "Some items could not be anonymized."
 msgstr "No se pudieron anonimizar algunos elementos."
 
 msgid "Rate limit exceeded. Please try again later."
-msgstr "Se excedio el limite de velocidad. Intentalo de nuevo mas tarde."
+msgstr "Se excedió el límite de velocidad. Inténtalo de nuevo más tarde."
 
 msgid "Invalid nonce. Please reload the page."
-msgstr "Nonce no valido. Recarga la pagina."
+msgstr "Nonce no válido. Recarga la página."
 
 #: includes/View.php
 msgid "Diagnostics"
@@ -3992,46 +3992,46 @@ msgid "The \"to\" URL must be a relative path or an http/https URL."
 msgstr "La URL de destino debe ser una ruta relativa o una URL http/https."
 
 msgid "Contact your hosting provider. This is usually caused by a database quota, tablespace limit, or full /tmp partition - not necessarily a full disk."
-msgstr "Contacta con tu proveedor de alojamiento. Normalmente se debe a una cuota de base de datos, un limite de tablespace o una particion /tmp llena - no necesariamente a un disco lleno."
+msgstr "Contacta con tu proveedor de alojamiento. Normalmente se debe a una cuota de base de datos, un límite de tablespace o una partición /tmp llena - no necesariamente a un disco lleno."
 
 msgid "A database lock wait timeout occurred. If this persists, contact your host - another process may be holding a long-running lock."
 msgstr "Se produjo un tiempo de espera de bloqueo de base de datos. Si persiste, contacta con tu proveedor - otro proceso puede estar manteniendo un bloqueo largo."
 
 msgid "404 Solution cannot function correctly: the database table %s is missing, and the plugin tried to recreate it but the CREATE TABLE statement could not be executed. This almost always means the WordPress database user does not have permission to run CREATE TABLE (and likely ALTER TABLE / CREATE INDEX) on this database. Until this is fixed, the plugin cannot record 404s, serve redirects, or generate suggestions. To fix it: ask your hosting provider or database administrator to grant CREATE, ALTER, and INDEX privileges to the WordPress database user for this site, then reload this page. Alternatively, restore the missing table from a recent database backup."
-msgstr "404 Solution no puede funcionar correctamente: falta la tabla de base de datos %s, y el plugin intento recrearla, pero no se pudo ejecutar la sentencia CREATE TABLE. Casi siempre significa que el usuario de base de datos de WordPress no tiene permiso para ejecutar CREATE TABLE (y probablemente ALTER TABLE / CREATE INDEX) en esta base de datos. Hasta que se corrija, el plugin no podra registrar 404, servir redirecciones ni generar sugerencias. Para solucionarlo: pide a tu proveedor de alojamiento o administrador de base de datos que conceda permisos CREATE, ALTER e INDEX al usuario de base de datos de WordPress para este sitio y recarga esta pagina. Como alternativa, restaura la tabla que falta desde una copia de seguridad reciente."
+msgstr "404 Solution no puede funcionar correctamente: falta la tabla de base de datos %s, y el plugin intentó recrearla, pero no se pudo ejecutar la sentencia CREATE TABLE. Casi siempre significa que el usuario de base de datos de WordPress no tiene permiso para ejecutar CREATE TABLE (y probablemente ALTER TABLE / CREATE INDEX) en esta base de datos. Hasta que se corrija, el plugin no podrá registrar 404, servir redirecciones ni generar sugerencias. Para solucionarlo: pide a tu proveedor de alojamiento o administrador de base de datos que conceda permisos CREATE, ALTER e INDEX al usuario de base de datos de WordPress para este sitio y recarga esta página. Como alternativa, restaura la tabla que falta desde una copia de seguridad reciente."
 
 msgid "Original database error: %s"
 msgstr "Error original de base de datos: %s"
 
 msgid "A database temporary table is corrupted - this is usually caused by a full or failing disk. Please contact your host. (MySQL error 1034)"
-msgstr "Una tabla temporal de la base de datos esta danada - normalmente se debe a un disco lleno o con fallos. Contacta con tu proveedor. (Error MySQL 1034)"
+msgstr "Una tabla temporal de la base de datos está dañada - normalmente se debe a un disco lleno o con fallos. Contacta con tu proveedor. (Error MySQL 1034)"
 
 msgid "Permalink cache appears empty after rebuild - suggestions may be degraded. Try rebuilding again or check available disk space."
-msgstr "La cache de enlaces permanentes parece vacia despues de reconstruirse - las sugerencias pueden degradarse. Intenta reconstruirla de nuevo o comprueba el espacio disponible en disco."
+msgstr "La caché de enlaces permanentes parece vacía después de reconstruirse - las sugerencias pueden degradarse. Intenta reconstruirla de nuevo o comprueba el espacio disponible en disco."
 
 msgid "WordPress cron does not appear to be running. The earliest overdue cron event has been waiting at least %d hours, so cron-dependent plugin features (staged view-build, daily cleanup, log updates, digest emails) are not advancing. To resolve: if DISABLE_WP_CRON is set in wp-config.php either remove it, or configure a system cron job that requests wp-cron.php periodically. To force the redirect view to rebuild right now in your browser (workaround while cron is broken), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr "WordPress cron no parece estar ejecutandose. El evento cron vencido mas antiguo lleva esperando al menos %d horas, por lo que las funciones del plugin dependientes de cron (reconstruccion por etapas, limpieza diaria, actualizaciones de registros, correos de resumen) no avanzan. Para resolverlo: si DISABLE_WP_CRON esta definido en wp-config.php, eliminalo o configura un cron del sistema que solicite wp-cron.php periodicamente. Para forzar ahora la reconstruccion de la vista de redirecciones en tu navegador (solucion temporal mientras cron esta roto), abre la pagina de redirecciones de 404 Solution con ?abj404_force_view_rebuild=1 al final de la URL."
+msgstr "WordPress cron no parece estar ejecutándose. El evento cron vencido más antiguo lleva esperando al menos %d horas, por lo que las funciones del plugin dependientes de cron (reconstrucción por etapas, limpieza diaria, actualizaciones de registros, correos de resumen) no avanzan. Para resolverlo: si DISABLE_WP_CRON está definido en wp-config.php, elimínalo o configura un cron del sistema que solicite wp-cron.php periódicamente. Para forzar ahora la reconstrucción de la vista de redirecciones en tu navegador (solución temporal mientras cron está roto), abre la página de redirecciones de 404 Solution con ?abj404_force_view_rebuild=1 al final de la URL."
 
 msgid "Scheduling the 404 Solution staged view-build cron event failed. The build will not advance in the background until this clears. This usually indicates the WordPress cron lock is held, the cron option is unwritable, or a custom cron implementation rejected the event. Check your hosting provider and any cron-replacement plugins. To force the redirect view to rebuild right now in your browser (workaround while cron scheduling is failing), open the 404 Solution Redirects page with ?abj404_force_view_rebuild=1 appended to the URL."
-msgstr "No se pudo programar el evento cron de reconstruccion por etapas de 404 Solution. La reconstruccion no avanzara en segundo plano hasta que esto se resuelva. Normalmente indica que el bloqueo de cron de WordPress esta retenido, la opcion cron no se puede escribir o una implementacion cron personalizada rechazo el evento. Revisa tu proveedor de alojamiento y los plugins de reemplazo de cron. Para forzar ahora la reconstruccion de la vista de redirecciones en tu navegador (solucion temporal mientras falla la programacion cron), abre la pagina de redirecciones de 404 Solution con ?abj404_force_view_rebuild=1 al final de la URL."
+msgstr "No se pudo programar el evento cron de reconstrucción por etapas de 404 Solution. La reconstrucción no avanzará en segundo plano hasta que esto se resuelva. Normalmente indica que el bloqueo de cron de WordPress está retenido, la opción cron no se puede escribir o una implementación cron personalizada rechazó el evento. Revisa tu proveedor de alojamiento y los plugins de reemplazo de cron. Para forzar ahora la reconstrucción de la vista de redirecciones en tu navegador (solución temporal mientras falla la programación cron), abre la página de redirecciones de 404 Solution con ?abj404_force_view_rebuild=1 al final de la URL."
 
 msgid "Your PHP memory_limit (%s) is below the recommended 128M; the redirect view rebuild may fail on large sites."
-msgstr "Tu PHP memory_limit (%s) esta por debajo de los 128M recomendados; la reconstruccion de la vista de redirecciones puede fallar en sitios grandes."
+msgstr "Tu PHP memory_limit (%s) está por debajo de los 128M recomendados; la reconstrucción de la vista de redirecciones puede fallar en sitios grandes."
 
 msgid "The 404 Solution view-build pipeline detected filesystem host constraints that may degrade the next rebuild: "
-msgstr "La canalizacion view-build de 404 Solution detecto restricciones del sistema de archivos del host que pueden degradar la proxima reconstruccion: "
+msgstr "La canalización view-build de 404 Solution detectó restricciones del sistema de archivos del host que pueden degradar la próxima reconstrucción: "
 
 msgid "The 404 Solution view-build pipeline detected MySQL session-variable settings that may degrade the next rebuild: "
-msgstr "La canalizacion view-build de 404 Solution detecto ajustes de variables de sesion MySQL que pueden degradar la proxima reconstruccion: "
+msgstr "La canalización view-build de 404 Solution detectó ajustes de variables de sesión MySQL que pueden degradar la próxima reconstrucción: "
 
 msgid "Original error: %s"
 msgstr "Error original: %s"
 
 msgid "The 404 Solution view-build pipeline halted at stage %d/11."
-msgstr "La canalizacion view-build de 404 Solution se detuvo en la etapa %d/11."
+msgstr "La canalización view-build de 404 Solution se detuvo en la etapa %d/11."
 
 msgid "The 404 Solution view-build pipeline skipped optional stage %d/11."
-msgstr "La canalizacion view-build de 404 Solution omitio la etapa opcional %d/11."
+msgstr "La canalización view-build de 404 Solution omitió la etapa opcional %d/11."
 
 msgid "Ask your host to grant the CREATE TEMPORARY TABLES privilege to your WordPress database user so the hits aggregate column can be populated."
 msgstr "Pide a tu proveedor que conceda el privilegio CREATE TEMPORARY TABLES al usuario de base de datos de WordPress para que se pueda rellenar la columna agregada de visitas."
@@ -4046,7 +4046,7 @@ msgid "Ask your host to review your WordPress database user privileges."
 msgstr "Pide a tu proveedor que revise los privilegios del usuario de base de datos de WordPress."
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
-msgstr "Esta base de datos no admite bloqueos con nombre GET_LOCK con ambito de sesion. El plugin esta usando una alternativa basada en una fila de opciones de WordPress para coordinar la reconstruccion por etapas. Es comun en despliegues PlanetScale, Vitess y ProxySQL con enrutamiento dividido."
+msgstr "Esta base de datos no admite bloqueos con nombre GET_LOCK con ámbito de sesión. El plugin está usando una alternativa basada en una fila de opciones de WordPress para coordinar la reconstrucción por etapas. Es común en despliegues PlanetScale, Vitess y ProxySQL con enrutamiento dividido."
 
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
@@ -4054,11 +4054,11 @@ msgstr "Preparando la tabla de 404s capturados. La lista todavía se está carga
 
 #: includes/admin/AdminTableColumnHeaders.php:178
 msgid "Sorting by this column is being prepared for your number of URLs (%d%% complete). The list shows newest first until it is ready."
-msgstr "La ordenacion por esta columna se esta preparando para tu numero de URL (%d%% completado). Mientras tanto, la lista muestra primero las mas recientes."
+msgstr "La ordenación por esta columna se está preparando para tu número de URL (%d%% completado). Mientras tanto, la lista muestra primero las más recientes."
 
 #: includes/view/View_Shared.php:247
 msgid "Sorting by this column is unavailable on this site. The list shows newest first."
-msgstr "La ordenacion por esta columna no esta disponible en este sitio. La lista muestra primero las mas recientes."
+msgstr "La ordenación por esta columna no está disponible en este sitio. La lista muestra primero las más recientes."
 
 msgid "Sources (%d)"
 msgstr "Fuentes (%d)"
@@ -4182,3 +4182,75 @@ msgstr "Error: los destinos de expresión regular relativos admiten grupos de ca
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "Error: el destino de la expresión regular hace referencia a $%1$d, pero el patrón de origen define %2$d grupo(s) de captura."
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "No se pudieron cargar los datos del gráfico. Recargue esta página e inténtelo de nuevo."
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "Esto envía un informe de diagnóstico único al desarrollador del plugin para que pueda investigar el problema que está viendo."
+
+msgid "This report includes:"
+msgstr "Este informe incluye:"
+
+msgid "Site URL"
+msgstr "URL del sitio"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "Versiones del plugin, de PHP, de WordPress y de la base de datos"
+
+msgid "List of active plugins"
+msgstr "Lista de plugins activos"
+
+msgid "Recent debug log excerpt"
+msgstr "Extracto reciente del registro de depuración"
+
+msgid "Optional message and reply email you provide below"
+msgstr "Mensaje opcional y correo electrónico de respuesta que indique a continuación"
+
+msgid "Show what's in this report"
+msgstr "Mostrar el contenido de este informe"
+
+msgid "Hide report contents"
+msgstr "Ocultar el contenido del informe"
+
+msgid "Loading report contents..."
+msgstr "Cargando el contenido del informe..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "No se pudo cargar la vista previa. El informe completo se puede enviar igualmente."
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "¿Qué ha fallado? (opcional, nos ayuda a diagnosticar)"
+
+msgid "Where should we reply? (optional)"
+msgstr "¿Dónde debemos responder? (opcional)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "Al hacer clic en Enviar informe, consiente la transmisión de la información anterior al desarrollador del plugin con fines de soporte. Los datos solo se utilizan para diagnosticar su problema y no se comparten con terceros."
+
+msgid "Send report"
+msgstr "Enviar informe"
+
+msgid "Sending..."
+msgstr "Enviando..."
+
+msgid "Retry"
+msgstr "Reintentar"
+
+msgid "Sent. Reference: "
+msgstr "Enviado. Referencia: "
+
+msgid ". Thank you."
+msgstr ". Gracias."
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "Ya ha enviado un informe recientemente. Vuelva a intentarlo en {minutes} minuto(s)."
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "Error de red: no se pudo contactar con el servidor. Compruebe su conexión a Internet e inténtelo de nuevo."
+
+msgid "Could not send report. Please try again later."
+msgstr "No se pudo enviar el informe. Inténtelo de nuevo más tarde."
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "No se pudo cargar la configuración de la herramienta de migración. Recargue esta página e inténtelo de nuevo."

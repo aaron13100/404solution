@@ -4054,7 +4054,7 @@ msgid "Ask your host to review your WordPress database user privileges."
 msgstr "Vraag uw host om de rechten van uw WordPress-databasegebruiker te controleren."
 
 msgid "This database does not support session-scoped GET_LOCK named locks. The plugin is using a WordPress option-row fallback to coordinate the staged view-build. Common on PlanetScale, Vitess, and split-routing ProxySQL deployments."
-msgstr "Deze database ondersteunt geen sessie-gebonden GET_LOCK named locks. De plugin gebruikt een WordPress optie-rij-fallback om de gefaseerde view-build te coordineren. Komt vaak voor bij PlanetScale, Vitess en split-routing ProxySQL-implementaties."
+msgstr "Deze database ondersteunt geen sessie-gebonden GET_LOCK named locks. De plugin gebruikt een WordPress optie-rij-fallback om de gefaseerde view-build te coördineren. Komt vaak voor bij PlanetScale, Vitess en split-routing ProxySQL-implementaties."
 
 #: includes/view/View_CapturedURLsTable.php:332
 msgid "Preparing the captured 404s table. The list is still loading and will appear in a moment."
@@ -4190,3 +4190,75 @@ msgstr "Fout: relatieve regex-bestemmingen ondersteunen genummerde capture-groep
 
 msgid "Error: Regex destination references $%1$d, but the source pattern defines %2$d capture group(s)."
 msgstr "Fout: de regex-bestemming verwijst naar $%1$d, maar het bronpatroon definieert %2$d capture-groep(en)."
+
+msgid "Could not load chart data. Reload this page and try again."
+msgstr "Kan de grafiekgegevens niet laden. Herlaad deze pagina en probeer het opnieuw."
+
+msgid "This sends a one-time diagnostic report to the plugin developer so they can investigate the issue you are seeing."
+msgstr "Hiermee wordt een eenmalig diagnoserapport naar de plugin-ontwikkelaar gestuurd, zodat die het probleem dat je ziet kan onderzoeken."
+
+msgid "This report includes:"
+msgstr "Dit rapport bevat:"
+
+msgid "Site URL"
+msgstr "Site-URL"
+
+msgid "Plugin, PHP, WordPress, and database versions"
+msgstr "Versies van de plugin, PHP, WordPress en de database"
+
+msgid "List of active plugins"
+msgstr "Lijst met actieve plugins"
+
+msgid "Recent debug log excerpt"
+msgstr "Recent fragment uit het debug-logboek"
+
+msgid "Optional message and reply email you provide below"
+msgstr "Optioneel bericht en antwoord-e-mailadres die je hieronder opgeeft"
+
+msgid "Show what's in this report"
+msgstr "Toon wat er in dit rapport staat"
+
+msgid "Hide report contents"
+msgstr "Rapportinhoud verbergen"
+
+msgid "Loading report contents..."
+msgstr "Rapportinhoud laden..."
+
+msgid "Could not load preview. The full report is still safe to send."
+msgstr "Kan het voorbeeld niet laden. Het volledige rapport kan nog steeds veilig worden verstuurd."
+
+msgid "What went wrong? (optional, helps us diagnose)"
+msgstr "Wat ging er mis? (optioneel, helpt ons bij de diagnose)"
+
+msgid "Where should we reply? (optional)"
+msgstr "Waar moeten we antwoorden? (optioneel)"
+
+msgid "By clicking Send report, you consent to transmitting the information above to the plugin developer for support purposes. The data is used only to diagnose your issue and is not shared with third parties."
+msgstr "Door op Rapport versturen te klikken, stem je ermee in dat de bovenstaande informatie voor ondersteuningsdoeleinden naar de plugin-ontwikkelaar wordt verstuurd. De gegevens worden alleen gebruikt om je probleem te onderzoeken en worden niet gedeeld met derden."
+
+msgid "Send report"
+msgstr "Rapport versturen"
+
+msgid "Sending..."
+msgstr "Bezig met versturen..."
+
+msgid "Retry"
+msgstr "Opnieuw proberen"
+
+msgid "Sent. Reference: "
+msgstr "Verstuurd. Referentie: "
+
+msgid ". Thank you."
+msgstr ". Bedankt."
+
+msgid "You already sent a report recently. Try again in {minutes} minute(s)."
+msgstr "Je hebt onlangs al een rapport verstuurd. Probeer het over {minutes} minuut/minuten opnieuw."
+
+msgid "Network error: could not reach the server. Check your internet connection and try again."
+msgstr "Netwerkfout: de server is niet bereikbaar. Controleer je internetverbinding en probeer het opnieuw."
+
+msgid "Could not send report. Please try again later."
+msgstr "Kan het rapport niet versturen. Probeer het later opnieuw."
+
+msgid "Could not load the migration tool configuration. Reload this page and try again."
+msgstr "Kan de configuratie van het migratiehulpmiddel niet laden. Herlaad deze pagina en probeer het opnieuw."
