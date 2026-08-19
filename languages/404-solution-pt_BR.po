@@ -3914,6 +3914,7 @@ msgstr "literal"
 msgid "%1$d of %2$d"
 msgstr "%1$d de %2$d"
 
+# translation-verified: Portuguese spells the singular noun item exactly as English does and pluralizes it as itens, which msgstr[1] carries
 #: includes/
 msgid "%s item"
 msgid_plural "%s items"

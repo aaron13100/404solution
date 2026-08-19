@@ -1487,6 +1487,7 @@ msgstr "urlPlaceholder"
 msgid "will match any URL that begins with"
 msgstr "将匹配以此开头的任何 URL"
 
+# translation-verified: rendered in Chinese throughout; the <a> markup and the Latin 404 URL token hold the native-character share at 32 percent, under the 35 percent this locale requires
 #. Plural form with HTML
 #: includes/View.php
 msgid "There is <a>%s captured 404 URL</a> that needs to be processed."
