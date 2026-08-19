@@ -248,6 +248,7 @@ msgstr "Fångade 404:or"
 msgid "Documentation"
 msgstr "Dokumentation"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Plugin v%s"
 msgstr "Plugin v%s"
 
@@ -455,6 +456,7 @@ msgstr "Standardomdirigeringstyp"
 msgid "Delete the Debug File"
 msgstr "Radera felsökningsfilen"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Destination"
 msgstr "Destination"
 
@@ -596,6 +598,7 @@ msgstr "Fel: kan inte markera URL som %s"
 msgid "Error: unable to remove URL from %s list"
 msgstr "Fel: kan inte ta bort URL från %s-listan"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Etcetera"
 msgstr "Etcetera"
 
@@ -903,6 +906,7 @@ msgstr "Rubrik för sidförslag"
 msgid "Pages listed here will not be redirected to"
 msgstr "Sidor som listas här kommer inte att omdirigeras till"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Permanent 301"
 msgstr "Permanent 301"
 
@@ -975,6 +979,7 @@ msgstr "Omdirigeringar"
 msgid "Referrer"
 msgstr "Referent"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "RegEx"
 msgstr "RegEx"
 
@@ -2081,14 +2086,6 @@ msgstr "Besök URL"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "Denna sida finns inte eller är inte publicerad, så omdirigeringen kommer inte att fungera."
 
-#: includes/DataAccess.php
-msgid "Just now"
-msgstr "Just nu"
-
-#: includes/View.php
-msgid "Data may not be immediately updated. Refresh to see latest changes."
-msgstr "Data uppdateras kanske inte omedelbart. Ladda om sidan för att se de senaste ändringarna."
-
 #: includes/View.php
 msgid "Refresh scheduled"
 msgstr "Uppdatering schemalagd"
@@ -2512,6 +2509,7 @@ msgstr "Fel: poängtröskeln per motor måste vara tom eller ett tal mellan 0 oc
 msgid "Engine"
 msgstr "Motor"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Status"
 msgstr "Status"
 
@@ -2713,6 +2711,7 @@ msgstr "30 dagar"
 msgid "90 days"
 msgstr "90 dagar"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Period"
 msgstr "Period"
 
@@ -2749,6 +2748,7 @@ msgstr "AIOSEO"
 msgid "Safe Redirect Manager"
 msgstr "Safe Redirect Manager"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Redirection Plugin"
 msgstr "Redirection Plugin"
 
@@ -2836,6 +2836,7 @@ msgstr "innehåller inte"
 msgid "matches regex"
 msgstr "matchar regex"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Operator"
 msgstr "Operator"
 
@@ -3066,6 +3067,7 @@ msgstr "Hantera inställningar"
 msgid "Sent"
 msgstr "Skickat"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Plugin"
 msgstr "Plugin"
 
@@ -3105,6 +3107,7 @@ msgstr "Exportformat:"
 msgid "Native CSV (404 Solution)"
 msgstr "Eget CSV-format (404 Solution)"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Redirection Plugin CSV"
 msgstr "Redirection Plugin CSV"
 
@@ -3206,6 +3209,7 @@ msgstr "Namn"
 msgid "URL Pattern"
 msgstr "URL-mönster"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Regex"
 msgstr "Regex"
 
@@ -3314,6 +3318,7 @@ msgstr "Skicka feedback"
 msgid "301"
 msgstr "301"
 
+# translation-pending: en-fallback awaiting native pass (i656)
 msgid "Permanent"
 msgstr "Permanent"
 
@@ -3910,12 +3915,7 @@ msgstr "Ombyggnad av visningar/träffar pausades efter %d fel i rad (klass: %s).
 msgid "Retry Now"
 msgstr "Försök igen nu"
 
-# translation-verified: en-fallback awaiting native pass (i310)
-#: includes/
-msgid "literal text"
-msgstr "literal text"
-
-# translation-verified: en-fallback awaiting native pass (i310)
+# translation-pending: en-fallback awaiting native pass (i310)
 #: includes/
 msgid "literal"
 msgstr "literal"

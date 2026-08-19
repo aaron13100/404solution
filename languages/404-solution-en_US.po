@@ -2108,14 +2108,6 @@ msgstr "Visit URL"
 msgid "This page doesn't exist or is not published so the redirect won't work."
 msgstr "This page doesn't exist or is not published so the redirect won't work."
 
-#: includes/DataAccess.php
-msgid "Just now"
-msgstr "Just now"
-
-#: includes/View.php
-msgid "Data may not be immediately updated. Refresh to see latest changes."
-msgstr "Data may not be immediately updated. Refresh to see latest changes."
-
 #: includes/View.php
 msgid "Refresh scheduled"
 msgstr "Refresh scheduled"
@@ -3953,10 +3945,6 @@ msgstr "View/hits rebuild paused after %d consecutive failures (class: %s). Next
 #: 404-solution.php
 msgid "Retry Now"
 msgstr "Retry Now"
-
-#: includes/
-msgid "literal text"
-msgstr "literal text"
 
 #: includes/
 msgid "literal"
