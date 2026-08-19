@@ -5,7 +5,10 @@
 // test files exist and reference their contract IDs.
 //
 // Usage: node validate-contracts.js [--contracts-dir <path>] [--vendor-dir <path>]
+//                                   [--server-contracts-dir <path>]
 // Defaults: --contracts-dir ./contracts --vendor-dir ./vendor-contracts
+//           --server-contracts-dir ../404-solution-server/contracts
+//                                  (env: ABJ404_SERVER_CONTRACTS_DIR)
 //
 // Exit 0: all checks pass (or no contracts directory found)
 // Exit 1: validation failure
@@ -21,13 +24,34 @@ const {
 } = require("./contractFileIO");
 
 const args = process.argv.slice(2);
-function getArg(name, fallback) {
+
+/**
+ * The single place this script resolves an input, in precedence order:
+ * CLI flag, then environment variable, then built-in default. Keeping all
+ * three in one function is what stops the same setting being read twice with
+ * two different defaults.
+ *
+ * @param {string} name CLI flag name, without the leading dashes.
+ * @param {string} fallback Value to use when neither flag nor env is set.
+ * @param {string} [envName] Environment variable consulted between the two.
+ * @returns {string}
+ */
+function getArg(name, fallback, envName) {
   const idx = args.indexOf(`--${name}`);
-  return idx !== -1 && args[idx + 1] ? args[idx + 1] : fallback;
+  if (idx !== -1 && args[idx + 1]) return args[idx + 1];
+  const fromEnv = envName ? process.env[envName] : undefined; // allow-direct-env: this IS the config adapter, the only env read in this script
+  return fromEnv || fallback;
 }
 
 const contractsDir = path.resolve(getArg("contracts-dir", "./contracts"));
 const vendorDir = path.resolve(getArg("vendor-dir", "./vendor-contracts"));
+const serverContractsDir = path.resolve(
+  getArg(
+    "server-contracts-dir",
+    path.join(__dirname, "..", "..", "404-solution-server", "contracts"),
+    "ABJ404_SERVER_CONTRACTS_DIR"
+  )
+);
 
 const errors = [];
 function fail(msg) {
@@ -452,6 +476,132 @@ function validateStorageContracts(dir) {
   }
 }
 
+const VENDORED_SCHEMA_OWNER_MARKER = "OWNER: 404-solution-server";
+
+/**
+ * True when the schema at this path records a FOREIGN repo as its owner.
+ *
+ * Keying off the file's own ownership record rather than a manifest field means
+ * a schema declares its status in one place, and any future vendored schema is
+ * picked up automatically. `direction` is deliberately NOT the discriminator:
+ * this repo's internal ajax-* contracts are 'client-to-server' too (browser to
+ * admin-ajax) and are owned right here.
+ *
+ * @param {string} schemaPath Absolute path to a JSON Schema file.
+ * @returns {boolean}
+ */
+function isVendoredSchema(schemaPath) {
+  if (!fileExists(schemaPath)) return false;
+  let schema;
+  try {
+    schema = loadJson(schemaPath);
+  } catch {
+    // validateSchemaFile already reported the parse error for this path.
+    return false;
+  }
+  return (
+    typeof schema.$comment === "string" &&
+    schema.$comment.includes(VENDORED_SCHEMA_OWNER_MARKER)
+  );
+}
+
+/**
+ * Fails when any file this repo VENDORS has drifted from the copy that owns it.
+ *
+ * The unit is the whole contract, not just its schema: a contract whose schema
+ * is foreign-owned has foreign-owned GOLDEN FIXTURES too, because they are the
+ * agreed examples of that same wire payload and both repos validate against
+ * them. Checking only the schema is what let contracts/fixtures/
+ * error-report.valid.json drift for the same reason and in the same commit as
+ * the schema itself did.
+ *
+ * For report.schema.json the owner is 404-solution-server, which compiles its
+ * copy as the Fastify body schema; that is the only copy whose constraints can
+ * reject a request, while this one is a send-time pre-flight.
+ *
+ * A missing server checkout is a hard failure rather than a skip: this gate
+ * exists precisely because the previous detection
+ * (.github/workflows/contract-schema-staleness.yml) never ran once, the GitHub
+ * mirror being an allowlist publish that carries no workflows, and a check that
+ * stands down when it cannot see the other side reports "no drift" forever.
+ *
+ * @param {string} dir Absolute path to this repo's contracts directory.
+ * @returns {void}
+ */
+function validateVendoredContractFiles(dir) {
+  const manifestPath = path.join(dir, "contracts.json");
+  if (!fileExists(manifestPath)) return;
+
+  let manifest;
+  try {
+    manifest = loadJson(manifestPath);
+  } catch (e) {
+    // validateBilateralContracts already reported this same parse failure with
+    // its own message; re-reporting would double-count one defect. Logged so
+    // an early return here is never silent.
+    console.log(`  (skipping vendored-file check: contracts.json unreadable: ${e.message})`);
+    return;
+  }
+  if (!manifest.contracts || !Array.isArray(manifest.contracts)) return;
+
+  const shared = new Set();
+  for (const contract of manifest.contracts) {
+    if (!contract.schema) continue;
+    if (!isVendoredSchema(path.resolve(dir, contract.schema))) continue;
+
+    shared.add(contract.schema);
+    const fixtures = contract.fixtures || {};
+    for (const f of [...(fixtures.valid || []), ...(fixtures.invalid || [])]) {
+      shared.add(f);
+    }
+  }
+
+  const vendored = [...shared].sort();
+  if (vendored.length === 0) return;
+
+  console.log(
+    `Validating ${vendored.length} vendored contract file(s) against owner: ${serverContractsDir}`
+  );
+
+  if (!fs.existsSync(serverContractsDir)) {
+    fail(
+      `vendored contract owner not found: ${serverContractsDir}. The files here ` +
+        `(${vendored.join(", ")}) are verbatim copies owned by 404-solution-server; ` +
+        `clone it beside this repo, or pass --server-contracts-dir / set ` +
+        `ABJ404_SERVER_CONTRACTS_DIR, so drift can actually be detected.`
+    );
+    return;
+  }
+
+  for (const rel of vendored) {
+    const localPath = path.resolve(dir, rel);
+    const ownerPath = path.resolve(serverContractsDir, rel);
+
+    if (!fileExists(ownerPath)) {
+      fail(
+        `vendored contract file '${rel}' has no owning copy at ${ownerPath}. Either ` +
+          `the server removed it (this copy must go too) or the path moved.`
+      );
+      continue;
+    }
+    if (!fileExists(localPath)) {
+      fail(`vendored contract file '${rel}' not found: ${localPath}`);
+      continue;
+    }
+
+    if (!fs.readFileSync(localPath).equals(fs.readFileSync(ownerPath))) {
+      fail(
+        `vendored contract file '${rel}' has drifted from its owner. This copy is ` +
+          `never edited directly: make the change in 404-solution-server, then run\n` +
+          `      cp ${ownerPath} ${localPath}\n` +
+          `    and, for report.schema.json, update EXPECTED_SHA256 in ` +
+          `tests-js/report-schema-drift.test.js here and in ` +
+          `tests/report-schema-drift.test.js there.`
+      );
+    }
+  }
+}
+
 // --- Main ---
 
 if (!fs.existsSync(contractsDir) && !fs.existsSync(vendorDir)) {
@@ -461,6 +611,7 @@ if (!fs.existsSync(contractsDir) && !fs.existsSync(vendorDir)) {
 validateBilateralContracts(contractsDir);
 validateVendorContracts(vendorDir);
 validateStorageContracts(contractsDir);
+validateVendoredContractFiles(contractsDir);
 
 if (errors.length > 0) {
   console.error(`\n${errors.length} contract validation error(s):\n`);

@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ReportBody",
   "description": "Telemetry report posted by the 404 Solution WP plugin. Covers all report_type values: error, heartbeat, uninstall, support_request.",
+  "$comment": "OWNER: 404-solution-server, contracts/schemas/report.schema.json. This exact file is byte-identical in both repos, so it says \"404-solution-server\" rather than \"this repo\". VENDORED COPY: 404-solution (the plugin repo), contracts/schemas/report.schema.json. Why 404-solution-server owns it: this file is compiled directly as the Fastify body schema by src/routes/reports.js, so this is the only copy whose constraints can actually reject a request; the plugin copy is a pre-flight convenience. The server is also the side that can be deployed on demand, while the plugin ships to thousands of sites that update on their own schedule, so a constraint must exist here before any plugin may rely on it. Note on debug_log_evidence.additionalProperties: it is true on purpose. src/server.js sets AJV removeAdditional: false so unknown body fields are preserved into the environment column rather than stripped, which means a closed sub-object does not merely ignore an unrecognised subfield, it 400s the whole report. Since a rejected error report falls back to emailing the developer, closing this object would turn the next additive plugin change into an inbox flood. The bounds below (maxLength, maximum, enum, required, minimum) are what this schema enforces; the field list is deliberately open. Change protocol: (1) edit this copy only, never the vendored one; (2) deploy the server before shipping a plugin that depends on the change, because an un-upgraded server rejects what it does not model (note the const-valued version fields, including debug_log_evidence.schema_version: a plugin that bumps one before this schema is deployed gets HTTP 400); (3) keep edits additive, so add properties and never remove, repurpose or redefine an existing one; (4) run npm run generate:types to refresh report.d.ts; (5) copy this file verbatim to the vendored path, then update EXPECTED_SHA256 in tests/report-schema-drift.test.js here and in tests-js/report-schema-drift.test.js in the plugin. Those two pins are what make a one-sided edit fail loudly. Do not add non-standard root keywords to this file: AJV strict mode (Fastify 5) throws at route build time on any unknown keyword, so this standard $comment is the only place such notes may live.",
   "type": "object",
   "required": ["plugin_version", "db_type"],
   "additionalProperties": true,
@@ -150,8 +151,15 @@
     "debug_log": { "type": "string", "maxLength": 262144 },
     "debug_log_evidence": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["schema_version", "source", "error_excerpt", "error_excerpt_in_debug_log", "error_line_number", "total_evidence_bytes"],
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "source",
+        "error_excerpt",
+        "error_excerpt_in_debug_log",
+        "error_line_number",
+        "total_evidence_bytes"
+      ],
       "properties": {
         "schema_version": { "type": "integer", "const": 1 },
         "source": { "type": "string", "enum": ["debug_log", "crash_beacon"] },
