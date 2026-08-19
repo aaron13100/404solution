@@ -94,17 +94,17 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
 
         $tdType2 = is_scalar($typeAndDest['type']) ? (string)$typeAndDest['type'] : '';
         $tdDest2 = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
-        $postedCodeForCheck2 = isset($_POST['code']) && is_scalar($_POST['code']) ? (string)$_POST['code'] : '';
+        $postedCodeForCheck2 = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'code');
         $code410 = $postedCodeForCheck2 === '410' || $postedCodeForCheck2 === '451';
         if ($tdType2 != "" && ($tdDest2 !== "" || $code410)) {
-            $code = isset($_POST['code']) && is_scalar($_POST['code']) && (string)$_POST['code'] !== '' ? (string)$_POST['code'] : '301';
+            $code = $postedCodeForCheck2 !== '' ? $postedCodeForCheck2 : '301';
 
             $newRedirectId = $redirectsRepo->setupRedirect(ABJ_404_Solution_RedirectSpec::fromArray(array(
                 'fromURL' => $manualURL,
                 'status' => (string)$statusType,
                 'type' => $tdType2,
                 'finalDest' => $tdDest2,
-                'code' => sanitize_text_field($code),
+                'code' => $code,
                 'disabled' => 0,
             )));
             if ($autoPromoteAdd['autoPromoted']) {

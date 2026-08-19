@@ -240,7 +240,7 @@ class ABJ_404_Solution_SystemPage {
         }
 
         // Only show on our plugin's settings page
-        $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+        $page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'page');
         if ($page !== ABJ404_PP) {
             return;
         }
@@ -277,7 +277,7 @@ class ABJ_404_Solution_SystemPage {
         }
 
         if (!wp_verify_nonce(
-            isset($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '',
+            ABJ_404_Solution_RequestInputNormalizer::readText($_GET, '_wpnonce'),
             'abj404_recreate_system_page'
         )) {
             return;

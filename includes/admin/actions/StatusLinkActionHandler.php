@@ -43,7 +43,7 @@ class ABJ_404_Solution_StatusLinkActionHandler {
             return '';
         }
 
-        $operation = isset($_GET[$paramName]) && is_scalar($_GET[$paramName]) ? trim((string)$_GET[$paramName]) : '';
+        $operation = trim(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET[$paramName] ?? ''));
         if ($operation !== '0' && $operation !== '1') {
             $this->parent->getLogger()->debugMessage("Unexpected {$errorActionName} operation: " .
                     esc_html($operation));

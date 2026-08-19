@@ -49,9 +49,14 @@ class ABJ_404_Solution_Ajax_UpdateOptions {
             return null;
         }
 
+        // wp_magic_quotes() backslash-escapes the payload before any plugin
+        // code sees it. general.js builds the field with encodeURI(), which
+        // percent-encodes " and \\ but leaves ' literal, so every apostrophe a
+        // user typed into a settings field arrives as \\'. Unslash at the
+        // boundary rather than letting the decoder guess.
         $postData = self::decodeComplicatedDataWithService(
             self::getQueryStringHelperService(),
-            (string)$_POST['encodedData']
+            ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['encodedData'])
         );
         if (!is_array($postData) ||
                 !ABJ_404_Solution_AjaxRequestContractValidator::requireValidLivePayload(

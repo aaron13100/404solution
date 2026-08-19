@@ -296,13 +296,13 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     private function editRedirectRequestedIds(): ?array {
         if (isset($_GET['id']) && is_scalar($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
             $this->logger->debugMessage("Edit redirect page. GET ID: " .
-                    wp_kses_post((string)json_encode($_GET['id'])));
+                    wp_kses_post((string)json_encode(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET['id']))));
             return array('recnum' => absint($_GET['id']), 'recnumsMultiple' => array());
         }
 
         if (isset($_POST['id']) && is_scalar($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
             $this->logger->debugMessage("Edit redirect page. POST ID: " .
-                    wp_kses_post((string)json_encode($_POST['id'])));
+                    wp_kses_post((string)json_encode(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['id']))));
             return array('recnum' => absint($_POST['id']), 'recnumsMultiple' => array());
         }
 

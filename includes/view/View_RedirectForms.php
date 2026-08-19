@@ -50,7 +50,7 @@ class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent
 
         $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . "/example";
         if (isset($_POST['url']) && $_POST['url'] != '') {
-            $postedURL = esc_url($_POST['url']);
+            $postedURL = esc_url(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['url']));
         } else {
             $postedURL = $urlPlaceholder;
         }

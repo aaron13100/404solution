@@ -79,7 +79,7 @@ if (!function_exists('abj404_show_diagnostic_latency_notice')) {
 		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
 			return;
 		}
-		$page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+		$page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'page');
 		if ($page !== ABJ404_PP) {
 			return;
 		}

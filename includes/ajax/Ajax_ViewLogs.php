@@ -29,8 +29,7 @@ class ABJ_404_Solution_Ajax_ViewLogs {
             return;
         }
 
-        $termRaw = array_key_exists('term', $_GET) ? $_GET['term'] : '';
-        $term = $f->strtolower(sanitize_text_field($termRaw));
+        $term = $f->strtolower(ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'term'));
         $term = substr($term, 0, 100);
 
         $suggestion = array();

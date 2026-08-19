@@ -110,7 +110,11 @@ class ABJ_404_Solution_QueryStringHelper {
     public function decodeComplicatedData($data) {
         $dataDecoded = urldecode((string)$data);
 
-        // JSON.stringify escapes single quotes and json_decode does not want them to be escaped.
+        // Tolerate a caller that did not unslash first. wp_magic_quotes()
+        // escapes the apostrophes encodeURI() leaves literal, and json_decode
+        // rejects the resulting backslash-apostrophe as an escape sequence.
+        // Ajax_UpdateOptions unslashes at the boundary now; this stays so the
+        // parser never breaks on valid input from any other caller.
         $dataStripped = str_replace("\'", "'", $dataDecoded);
         $fixedData = json_decode($dataStripped, true);
 

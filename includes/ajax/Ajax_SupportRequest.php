@@ -138,9 +138,11 @@ class ABJ_404_Solution_Ajax_SupportRequest {
 
         // Validate optional user_message. Cap length at the source so we
         // never POST a multi-MB blob to the developer endpoint by accident.
-        $userMessageRaw = isset($_POST['user_message']) && is_scalar($_POST['user_message'])
-            ? (string)$_POST['user_message'] : '';
-        $userMessage = sanitize_textarea_field($userMessageRaw);
+        // Read through the normalizer so wp_magic_quotes()' slashes are gone
+        // before sanitizing: sanitize_textarea_field() does not remove them,
+        // and report 282 stored "couldn\'t" because this call site used to
+        // sanitize the raw superglobal.
+        $userMessage = ABJ_404_Solution_RequestInputNormalizer::readTextarea($_POST, 'user_message');
         if (strlen($userMessage) > self::MAX_USER_MESSAGE_LENGTH) {
             $userMessage = substr($userMessage, 0, self::MAX_USER_MESSAGE_LENGTH);
         }

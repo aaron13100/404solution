@@ -96,7 +96,7 @@ class ABJ_404_Solution_ExportService {
 
     /** @return void */
     function doExport() {
-        $format = isset($_REQUEST['export_format']) ? sanitize_text_field((string)$_REQUEST['export_format']) : 'native';
+        $format = ABJ_404_Solution_RequestInputNormalizer::readText($_REQUEST, 'export_format', 'native');
 
         if (array_key_exists($format, $this->serverFormatRegistry())) {
             $this->doServerFormatExport($format);

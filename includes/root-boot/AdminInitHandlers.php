@@ -116,12 +116,12 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 
 	$action = null;
 	if ($isAdminRequest) {
-		$actionGet = isset($_GET['action']) && is_string($_GET['action']) ? $_GET['action'] : '';
-		$actionPost = isset($_POST['action']) && is_string($_POST['action']) ? $_POST['action'] : '';
+		$actionGet = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'action');
+		$actionPost = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'action');
 		if ($actionGet !== '') {
-			$action = sanitize_text_field($actionGet);
+			$action = $actionGet;
 		} else if ($actionPost !== '') {
-			$action = sanitize_text_field($actionPost);
+			$action = $actionPost;
 		} else {
 			$action = null;
 		}

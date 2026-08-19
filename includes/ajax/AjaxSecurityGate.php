@@ -200,7 +200,11 @@ class ABJ_404_Solution_AjaxSecurityGate {
         if (!is_scalar($raw)) {
             return '';
         }
-        return sanitize_text_field((string)$raw);
+        // Unslash before sanitizing (the one centralized place every nonce
+        // read passes through), so the gate compares the value WordPress
+        // issued rather than a magic-quoted variant of it.
+        return sanitize_text_field(
+            ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($raw));
     }
 
     /**

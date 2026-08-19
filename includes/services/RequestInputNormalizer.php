@@ -43,6 +43,68 @@ class ABJ_404_Solution_RequestInputNormalizer {
     }
 
     /**
+     * One single-line request field, unslashed and then sanitized.
+     *
+     * This pair (and readTextarea() below) exists so a handler can never get
+     * the order wrong. wp_magic_quotes() backslash-escapes every superglobal
+     * at boot and sanitize_text_field() does not undo that, so a call site
+     * that sanitizes a raw superglobal stores O\'Brien instead of O'Brien --
+     * which is exactly how support report 282 and uninstall reports 50 / 57
+     * came to hold literal backslashes the reporters never typed.
+     *
+     * Non-scalar values (an array posted where a string was expected) yield
+     * the default rather than a PHP array-to-string warning.
+     *
+     * @param array<string|int, mixed> $source One of the request superglobals.
+     * @param string $name The key to read.
+     * @param string $default Returned when the key is absent or not scalar.
+     * @return string
+     */
+    public static function readText(array $source, string $name, string $default = ''): string {
+        return self::readSanitized($source, $name, $default, 'sanitize_text_field');
+    }
+
+    /**
+     * One multi-line request field, unslashed and then sanitized.
+     * Same contract as readText(), but preserves newlines.
+     *
+     * @param array<string|int, mixed> $source One of the request superglobals.
+     * @param string $name The key to read.
+     * @param string $default Returned when the key is absent or not scalar.
+     * @return string
+     */
+    public static function readTextarea(array $source, string $name, string $default = ''): string {
+        return self::readSanitized($source, $name, $default, 'sanitize_textarea_field');
+    }
+
+    /**
+     * Shared body of readText()/readTextarea(): unslash first, sanitize
+     * second, never the other way around.
+     *
+     * @param array<string|int, mixed> $source
+     * @param string $name
+     * @param string $default
+     * @param string $sanitizer Name of the WordPress sanitizer to apply.
+     * @return string
+     */
+    private static function readSanitized(array $source, string $name, string $default, string $sanitizer): string {
+        if (!array_key_exists($name, $source) || !is_scalar($source[$name])) {
+            return $default;
+        }
+
+        $unslashed = self::normalizeScalar($source[$name]);
+        if (!function_exists($sanitizer)) {
+            // Only reachable where WordPress core itself is unavailable
+            // (sanitize_text_field exists since 2.9, sanitize_textarea_field
+            // since 4.7). Unslashing still happened, so returning the value
+            // degrades rather than silently dropping the user's input.
+            return $unslashed;
+        }
+        $clean = $sanitizer($unslashed);
+        return is_string($clean) ? $clean : $default;
+    }
+
+    /**
      * Decode a size-bounded JSON array without truncating valid input into an
      * invalid document or silently converting parse failure to an empty array.
      *

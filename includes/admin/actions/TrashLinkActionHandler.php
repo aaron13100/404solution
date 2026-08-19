@@ -51,7 +51,7 @@ class ABJ_404_Solution_TrashLinkActionHandler {
             $trash = 1;
         } else {
             $this->parent->getLogger()->errorMessage("Unexpected trash operation: " .
-                    esc_html($_GET['trash']));
+                    esc_html(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET['trash'])));
             return __('Error: Bad trash operation specified.', '404-solution');
         }
 
