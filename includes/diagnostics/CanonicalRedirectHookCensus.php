@@ -36,7 +36,15 @@ if (!defined('ABSPATH')) {
  * site's hook set is identical on every request, so the steady state is zero
  * writes.
  *
- * Rendering the record into a support payload, inside a byte budget, belongs to
+ * WHAT THIS CLASS IS NOT
+ *
+ * Reading WordPress's hook registry at all -- dispatch order, wrapped-callback
+ * identity, and which plugin owns a callback -- belongs to
+ * ABJ_404_Solution_HookCallbackRoster, which knows nothing about
+ * canonicalization and would answer the same questions about any other hook.
+ * What lives here is the FINDING: which callbacks matter, what counts as
+ * suppression, when a reading is worth writing, and the record format.
+ * Rendering that record into a support payload, inside a byte budget, belongs to
  * ABJ_404_Solution_CanonicalSuppressionSupportSection.
  */
 final class ABJ_404_Solution_CanonicalRedirectHookCensus {
@@ -134,11 +142,11 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
         }
         self::$attemptedThisRequest = true;
         try {
-            $callbacks = self::hookCallbacks(self::HOOK_NAME);
-            if ($callbacks === null) {
+            $entries = ABJ_404_Solution_HookCallbackRoster::forHook(self::HOOK_NAME);
+            if ($entries === null) {
                 return;
             }
-            $fingerprint = self::fingerprint($callbacks);
+            $fingerprint = ABJ_404_Solution_HookCallbackRoster::fingerprint($entries);
             $stored = self::read();
             $now = self::now();
             $unchanged = isset($stored['fingerprint']) && $stored['fingerprint'] === $fingerprint;
@@ -146,7 +154,7 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
             if ($unchanged && $fresh) {
                 return;
             }
-            self::write(self::census($callbacks, $fingerprint, $now, $stored));
+            self::write(self::census($entries, $fingerprint, $now, $stored));
         } catch (Throwable $e) {
             abj404_logPhpFallback('canonical-hook-census',
                 'canonical hook census failed (code ' . $e->getCode() . '): ' . $e->getMessage());
@@ -181,16 +189,19 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
     /**
      * The whole reading, ready to store.
      *
-     * @param array<int|string, mixed> $callbacks the hook's own callback table.
+     * @param array<int, array{priority: int, index: string, callback: string, function: mixed}> $entries
+     *   the `template_redirect` roster, in dispatch order.
      * @param array<string, mixed> $previous the record being replaced, so the
      *   first-observed timestamp survives a re-reading.
      * @return array<string, mixed>
      */
-    private static function census(array $callbacks, string $fingerprint, int $now, array $previous): array {
-        $entries = self::entries($callbacks);
-        $corePriority = self::priorityOf($entries, self::CORE_CANONICAL_CALLBACK);
-        $pluginPriority = self::priorityOf($entries, self::PLUGIN_LISTENER_CALLBACK);
-        $filterEntries = self::entries(self::hookCallbacks(self::CORE_CANONICAL_CALLBACK) ?? array());
+    private static function census(array $entries, string $fingerprint, int $now, array $previous): array {
+        $corePriority = ABJ_404_Solution_HookCallbackRoster::priorityOf($entries, self::CORE_CANONICAL_CALLBACK);
+        $pluginPriority = ABJ_404_Solution_HookCallbackRoster::priorityOf($entries, self::PLUGIN_LISTENER_CALLBACK);
+        // The SECOND way canonicalization stops. A plugin can leave the hook
+        // attached and return false from the `redirect_canonical` filter, which
+        // a hook-attachment reading alone would report as a healthy site.
+        $filterEntries = ABJ_404_Solution_HookCallbackRoster::forHook(self::CORE_CANONICAL_CALLBACK) ?? array();
 
         $suppression = array();
         if ($corePriority === null) {
@@ -215,7 +226,7 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
             'plugin_listener_priority' => $pluginPriority,
             'callback_count' => count($entries),
             'suppression' => $suppression,
-            'canonical_filter' => self::described(array_slice($filterEntries, 0, self::MAX_CALLBACKS)),
+            'canonical_filter' => ABJ_404_Solution_HookCallbackRoster::described($filterEntries, self::MAX_CALLBACKS),
         );
 
         // The full roster is recorded ONLY when core's callback is gone. That is
@@ -223,7 +234,7 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
         // the same list names nobody and would spend the payload's bytes saying
         // so on every healthy install.
         if ($corePriority === null) {
-            $record['callbacks'] = self::described(array_slice($entries, 0, self::MAX_CALLBACKS));
+            $record['callbacks'] = ABJ_404_Solution_HookCallbackRoster::described($entries, self::MAX_CALLBACKS);
             $record['callbacks_truncated'] = count($entries) > self::MAX_CALLBACKS;
         }
         return $record;
@@ -248,208 +259,6 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
             return;
         }
         update_option(self::OPTION_NAME, $encoded, false);
-    }
-
-    /**
-     * One named hook's callback table, or null when the registry is absent or
-     * the wrong shape.
-     *
-     * WordPress presents each hook as a WP_Hook object with a public `callbacks`
-     * table; a profiler or a very old install can present a plain array instead.
-     * Both are accepted, and anything else is reported as "nothing to read"
-     * rather than guessed at.
-     *
-     * @return array<int|string, mixed>|null
-     */
-    private static function hookCallbacks(string $hookName): ?array {
-        $wpFilter = $GLOBALS['wp_filter'] ?? null;
-        $hook = is_array($wpFilter) ? ($wpFilter[$hookName] ?? null) : null;
-        if (is_object($hook) && isset($hook->callbacks) && is_array($hook->callbacks)) {
-            return $hook->callbacks;
-        }
-        if (is_array($hook)) {
-            return $hook;
-        }
-        return null;
-    }
-
-    /**
-     * The hook's callbacks flattened to `priority => callable name`, in
-     * dispatch order.
-     *
-     * Names come from the callable itself rather than from WordPress's own index
-     * key, because that key is `spl_object_hash($object) . $method` for an object
-     * callback and therefore differs on every request. Fingerprinting those keys
-     * would make an unchanged site look like it changed on every 404, which is
-     * the write amplification this class is built to avoid.
-     *
-     * @param array<int|string, mixed> $callbacks
-     * @return array<int, array{priority: int, callback: string, function: mixed}>
-     */
-    private static function entries(array $callbacks): array {
-        $entries = array();
-        ksort($callbacks, SORT_NUMERIC);
-        foreach ($callbacks as $priority => $atPriority) {
-            if (!is_array($atPriority)) {
-                continue;
-            }
-            foreach ($atPriority as $entry) {
-                $function = is_array($entry) ? ($entry['function'] ?? null) : null;
-                $entries[] = array(
-                    'priority' => (int)$priority,
-                    'callback' => self::describeCallable($function),
-                    'function' => $function,
-                );
-            }
-        }
-        return $entries;
-    }
-
-    /**
-     * The priority a named callable is registered at, or null when it is not on
-     * the hook at all. Null for `redirect_canonical` IS the finding.
-     *
-     * @param array<int, array{priority: int, callback: string, function: mixed}> $entries
-     */
-    private static function priorityOf(array $entries, string $callbackName): ?int {
-        foreach ($entries as $entry) {
-            if ($entry['callback'] === $callbackName) {
-                return $entry['priority'];
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Entries with their owning component resolved, ready to store.
-     *
-     * Resolving the owner costs one reflection per callback, so it happens here
-     * -- on the write path, which runs when the hook set changes -- and never on
-     * the fingerprint path that every 404 pays for.
-     *
-     * @param array<int, array{priority: int, callback: string, function: mixed}> $entries
-     * @return array<int, array{priority: int, callback: string, origin: string}>
-     */
-    private static function described(array $entries): array {
-        $described = array();
-        foreach ($entries as $entry) {
-            $described[] = array(
-                'priority' => $entry['priority'],
-                'callback' => $entry['callback'],
-                'origin' => self::origin($entry['function']),
-            );
-        }
-        return $described;
-    }
-
-    /**
-     * Which component a callback came from, as `plugin:<dir>`, `mu-plugin:<dir>`,
-     * `theme:<dir>`, `wordpress-core`, or `unknown`.
-     *
-     * The component DIRECTORY is named rather than hashed, because naming the
-     * culprit is the entire purpose of this field and a hash would leave the
-     * reader exactly where the curl request left them. It discloses nothing new:
-     * the same payload already carries `active_plugins` verbatim. What never
-     * leaves is the absolute path, which is site-identifying and answers nothing.
-     *
-     * @param mixed $function
-     */
-    private static function origin($function): string {
-        try {
-            $file = self::sourceFileOf($function);
-            if ($file === '') {
-                return 'unknown';
-            }
-            $normalized = str_replace('\\', '/', $file);
-            $labels = array('plugins' => 'plugin', 'mu-plugins' => 'mu-plugin', 'themes' => 'theme');
-            foreach ($labels as $directory => $label) {
-                if (preg_match('#/wp-content/' . $directory . '/([^/]+)#i', $normalized, $match) === 1) {
-                    return $label . ':' . $match[1];
-                }
-            }
-            if (strpos($normalized, '/wp-includes/') !== false
-                    || strpos($normalized, '/wp-admin/') !== false) {
-                return 'wordpress-core';
-            }
-            return 'unknown';
-        } catch (Throwable $e) {
-            abj404_logPhpFallback('canonical-hook-census',
-                'canonical hook callback origin failed (code ' . $e->getCode() . '): ' . $e->getMessage());
-            return 'unknown';
-        }
-    }
-
-    /**
-     * The file a callable was declared in, or '' when reflection cannot say.
-     *
-     * @param mixed $function
-     * @throws ReflectionException when the callable names a target that does not exist.
-     */
-    private static function sourceFileOf($function): string {
-        if (is_string($function) && strpos($function, '::') !== false) {
-            return (string)(new ReflectionMethod($function))->getFileName();
-        }
-        if (is_string($function)) {
-            return function_exists($function)
-                ? (string)(new ReflectionFunction($function))->getFileName() : '';
-        }
-        if (is_array($function) && count($function) === 2
-                && (is_object($function[0]) || is_string($function[0]))
-                && is_string($function[1])) {
-            return (string)(new ReflectionMethod($function[0], $function[1]))->getFileName();
-        }
-        if ($function instanceof Closure) {
-            return (string)(new ReflectionFunction($function))->getFileName();
-        }
-        if (is_object($function) && method_exists($function, '__invoke')) {
-            return (string)(new ReflectionMethod($function, '__invoke'))->getFileName();
-        }
-        return '';
-    }
-
-    /**
-     * A stable structural signature of the hook's callbacks: priorities and
-     * callable names, in dispatch order.
-     *
-     * Cheap by construction. This is the only work every 404 pays for, so it
-     * does no reflection, touches no option beyond the one read it is compared
-     * against, and makes no outbound request.
-     *
-     * @param array<int|string, mixed> $callbacks
-     */
-    private static function fingerprint(array $callbacks): string {
-        $parts = array();
-        foreach (self::entries($callbacks) as $entry) {
-            $parts[] = $entry['priority'] . ':' . $entry['callback'];
-        }
-        return substr(hash('sha256', implode('|', $parts)), 0, 16);
-    }
-
-    /**
-     * A callable's stable name. Closures collapse to 'Closure' on purpose: two
-     * closures cannot be told apart without reflection, and the fingerprint this
-     * feeds must stay reflection-free. Their declaring file still reaches the
-     * record through origin() on the write path.
-     *
-     * @param mixed $function
-     */
-    private static function describeCallable($function): string {
-        if (is_string($function)) {
-            return $function;
-        }
-        if (is_array($function) && count($function) === 2) {
-            $target = $function[0];
-            $owner = is_object($target) ? get_class($target)
-                : (is_string($target) ? $target : 'unknown');
-            return $owner . '::' . (is_string($function[1]) ? $function[1] : 'unknown');
-        }
-        if ($function instanceof Closure) {
-            return 'Closure';
-        }
-        if (is_object($function)) {
-            return get_class($function) . '::__invoke';
-        }
-        return 'unknown';
     }
 
     /**
