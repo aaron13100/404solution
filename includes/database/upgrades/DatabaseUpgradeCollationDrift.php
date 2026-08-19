@@ -84,29 +84,37 @@ class ABJ_404_Solution_DatabaseUpgradeCollationDrift extends ABJ_404_Solution_Da
 
         $createTableSQL = $row[1];
 
-        // Match multiple MySQL/MariaDB output formats for charset:
-        // - CHARSET=utf8mb4
-        // - DEFAULT CHARSET=utf8mb4
-        // - CHARACTER SET=utf8mb4
-        // - DEFAULT CHARACTER SET=utf8mb4
-        // - CHARACTER SET utf8mb4 (no equals sign, space separator)
-        // - CHARSET = utf8mb4 (spaces around equals)
-        // Note: (?:\s*=\s*|\s+) requires either "=" (with optional spaces) or at least one space
-        preg_match('/(?:DEFAULT\s+)?(?:CHARSET|CHARACTER\s+SET)(?:\s*=\s*|\s+)([\w\d]+)/i', $createTableSQL, $charsetMatch);
+        // The table default lives in the table-options section, after the
+        // closing paren of the body -- never inside it. Column definitions come
+        // FIRST in real engine output, and a column may carry its own
+        // `CHARACTER SET x COLLATE y`, so a pattern run over the whole statement
+        // returns the first COLUMN's charset and calls it the table's. That is
+        // not a near-miss this caller can second-guess: correctCollations()
+        // reads "utf8mb3" off a utf8mb4 table as drift and issues ALTER TABLE
+        // ... CONVERT against a table that never drifted. The parser owns the
+        // body/options boundary so no reader has to find it again.
+        $tableDefault = ABJ_404_Solution_CreateTableOptionsParser::tableCharsetAndCollation($createTableSQL);
+        if ($tableDefault === null) {
+            $this->logger->debugMessage("SHOW CREATE TABLE output for $tableName has no readable "
+                . "table-options section; falling back to information_schema.");
+            return null;
+        }
 
-        // Match multiple formats for collation:
-        // - COLLATE=utf8mb4_unicode_ci
-        // - DEFAULT COLLATE=utf8mb4_unicode_ci
-        // - COLLATE utf8mb4_unicode_ci (no equals sign, space separator)
-        // - COLLATE = utf8mb4_unicode_ci (spaces around equals)
-        preg_match('/(?:DEFAULT\s+)?COLLATE(?:\s*=\s*|\s+)([\w\d_]+)/i', $createTableSQL, $collationMatch);
-
-        $charset = $charsetMatch[1] ?? null;
-        $collation = $collationMatch[1] ?? null;
+        $charset = $tableDefault['charset'];
+        $collation = $tableDefault['collation'];
 
         // If we got charset but no explicit collation, derive default collation from charset
         if ($charset && !$collation) {
             $collation = $this->getDefaultCollationForCharset($charset);
+
+        } else if ($collation && !$charset) {
+            // The mirror case: a table-options section that states COLLATE and
+            // leaves the charset implicit. A collation names its own charset, so
+            // the pair is derivable -- through the single owner of that rule, not
+            // a private explode() that could pair the two halves differently
+            // from everywhere else (errno 1253 is what a mismatched pair costs).
+            $pair = ABJ_404_Solution_DatabaseCollationHelper::charsetCollationPair($collation);
+            $charset = $pair['charset'];
         }
 
         return ($collation && $charset) ? [$collation, $charset] : null;

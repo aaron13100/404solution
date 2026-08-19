@@ -409,8 +409,8 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
             array('utf8mb4', $collate),
             $createTableSql
         );
-        // If the statement already specifies charset/collation, don't override.
-        if (preg_match('/\b(?:default\s+)?(?:character\s+set|charset|collate)\b/i', $createTableSql)) {
+        // Already specified AS A TABLE OPTION? Then don't override.
+        if (ABJ_404_Solution_CreateTableOptionsParser::declaresTableCharsetOrCollation($createTableSql)) {
             return $createTableSql;
         }
 

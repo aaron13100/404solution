@@ -155,13 +155,22 @@ class ABJ_404_Solution_UninstallDatabaseMetadataReader {
 
         $ddl = is_string($result[1]) ? $result[1] : '';
 
-        preg_match('/(?:DEFAULT\s+)?(?:CHARSET|CHARACTER\s+SET)(?:\s*=\s*|\s+)([\w\d]+)/i', $ddl, $charsetMatch);
-        preg_match('/(?:DEFAULT\s+)?COLLATE(?:\s*=\s*|\s+)([\w\d_]+)/i', $ddl, $collationMatch);
-        preg_match('/ENGINE\s*=\s*([\w]+)/i', $ddl, $engineMatch);
+        // Charset, collation and engine are all TABLE OPTIONS, which sit after
+        // the closing paren of the body. Column definitions come first in real
+        // engine output and a column may carry its own `CHARACTER SET x COLLATE
+        // y`, so a pattern run over the whole statement reports the first
+        // COLUMN's charset as the table's. This tier is the last one the
+        // uninstall diagnostics try, and what it returns is sent to the
+        // developer as the site's actual schema, so a confident wrong answer
+        // here sends a charset investigation after a fiction.
+        $tableDefault = ABJ_404_Solution_CreateTableOptionsParser::tableCharsetAndCollation($ddl);
+        if ($tableDefault === null) {
+            return null;
+        }
 
-        $charset = $charsetMatch[1] ?? null;
-        $collation = $collationMatch[1] ?? null;
-        $engine = $engineMatch[1] ?? 'Unknown';
+        $charset = $tableDefault['charset'];
+        $collation = $tableDefault['collation'];
+        $engine = ABJ_404_Solution_CreateTableOptionsParser::tableEngine($ddl) ?? 'Unknown';
 
         if ($charset && !$collation) {
             $collation = $charset . '_general_ci';

@@ -219,8 +219,19 @@ class ABJ_404_Solution_DatabaseCollationHelper {
     public function getTableCollationString(string $tableName): string {
         $fallback = 'utf8mb4_unicode_ci';
         $ddl = ($this->ddlReader)($tableName);
-        if (preg_match('/COLLATE[= ]([A-Za-z0-9_]+)/i', $ddl, $m)) {
-            $sanitized = $this->sanitizeCollationIdentifier($m[1]);
+
+        // The TABLE-level collation is a table option, written after the
+        // closing paren of the body. A column may carry a COLLATE of its own
+        // and columns come first, so reading the first COLLATE anywhere in the
+        // statement answers a different question than the one asked -- and this
+        // method's answer decides the collation every cross-collation
+        // comparison is coerced to. The plugin's own staging templates now
+        // state a per-column COLLATE, so the two are not hypothetically
+        // distinguishable, they routinely differ.
+        $tableDefault = ABJ_404_Solution_CreateTableOptionsParser::tableCharsetAndCollation($ddl);
+        $declaredCollation = ($tableDefault === null) ? null : $tableDefault['collation'];
+        if ($declaredCollation !== null) {
+            $sanitized = $this->sanitizeCollationIdentifier($declaredCollation);
             return $sanitized !== '' ? $sanitized : $fallback;
         }
         global $wpdb;
