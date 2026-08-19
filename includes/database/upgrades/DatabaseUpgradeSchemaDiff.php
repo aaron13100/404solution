@@ -79,26 +79,20 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 	$existingTableSQL = preg_replace($removeTextDefaultNull, "$1", $existingTableSQL) ?? $existingTableSQL;
 	$createTableStatementGoal = preg_replace($removeTextDefaultNull, "$1", $createTableStatementGoal) ?? $createTableStatementGoal;
 
-	// get column names and types pattern (backticks are optional — accept both styles);
-	// (?!key\b) guards against accidentally matching PRIMARY KEY / UNIQUE KEY lines.
-	$colNamesAndTypesPattern = "/\s+?(`?(\w+?)`? (?!key\b)(\w.+)\s?),/";
-	$existingTableMatches = null;
-	$goalTableMatches = null;
-	// match the existing table. use preg_match_all because I couldn't find an
-	// "_all" option when using mb_ereg.
-	preg_match_all($colNamesAndTypesPattern, $existingTableSQL, $existingTableMatches);
-	preg_match_all($colNamesAndTypesPattern, $createTableStatementGoal, $goalTableMatches);
+	// Split each statement into its column definitions. The parser rejects
+	// index and constraint declarations by the keyword they start with, so an
+	// index's trailing USING BTREE can never be read as a column named `using`
+	// (report 286: that misread had the upgrade issue
+	// `alter table wp_abj404_redirects add using btree` on every run).
+	$existingTableMatches = $this->columnMatchGroups($existingTableSQL);
+	$goalTableMatches = $this->columnMatchGroups($createTableStatementGoal);
 
 	// get the matches.
 	$goalTableMatchesColumnNames = $goalTableMatches[2];
 	$existingTableMatchesColumnNames = $existingTableMatches[2];
 
-	// remove any spaces
-	$goalTableMatchesColumnNames = array_map('trim', $goalTableMatchesColumnNames);
-	$existingTableMatchesColumnNames = array_map('trim', $existingTableMatchesColumnNames);
-
-	// Safety guard: if the goal DDL produced zero column names the regex failed
-	// to parse it (e.g. malformed or unparseable DDL). In that case never drop
+	// Safety guard: if the goal DDL produced zero column names the parser could
+	// not read it (e.g. malformed or unparseable DDL). In that case never drop
 	// any existing columns — an empty goal list would otherwise flag every real
 	// column as "extra" and wipe the table.
 	if (empty($goalTableMatchesColumnNames) && !empty($existingTableMatchesColumnNames)) {
@@ -127,10 +121,6 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 	$goalTableMatchesColumnDDL = $goalTableMatches[1];
 	$existingTableMatchesColumnDDL = $existingTableMatches[1];
 
-	// remove any spaces
-	$goalTableMatchesColumnDDL = array_map('trim', $goalTableMatchesColumnDDL);
-	$existingTableMatchesColumnDDL = array_map('trim', $existingTableMatchesColumnDDL);
-
 	// normalize minor differences between mysql versions (strip backticks so DDL
 	// files using either quoting style compare equal to SHOW CREATE TABLE output)
 	$goalTableMatchesColumnDDL = array_map([$this, 'normalizeColumnDDL'], $goalTableMatchesColumnDDL);
@@ -150,6 +140,32 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 			"goalTableMatchesColumnNames" => $goalTableMatchesColumnNames
 	);
 	return $results;
+    }
+
+    /**
+     * The column definitions of one CREATE TABLE statement, in the positional
+     * layout the rest of this class and its tests read:
+     *
+     *   [0] the whole entry, [1] the same entry (name + type), [2] the column
+     *   name on its own, [3] the type on its own.
+     *
+     * Kept because updateATableBasedOnDifferences() locates a column by index
+     * across [1] and [2], so the two lists have to stay positionally aligned;
+     * the parser guarantees that by construction.
+     *
+     * @param string $createTableSql
+     * @return array<int, array<int, string>>
+     */
+    private function columnMatchGroups($createTableSql) {
+	$groups = array(array(), array(), array(), array());
+	foreach (ABJ_404_Solution_CreateTableColumnParser::fromCreateTableSql($createTableSql)
+		as $column) {
+		$groups[0][] = $column['definition'];
+		$groups[1][] = $column['definition'];
+		$groups[2][] = $column['name'];
+		$groups[3][] = $column['type'];
+	}
+	return $groups;
     }
 
     /**
