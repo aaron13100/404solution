@@ -98,6 +98,7 @@ $abj404ClassesByDirectory = array(
         'DatabaseUpgradeComponentRegistry', 'DatabaseUpgradeRuntimeState',
         'DatabaseUpgradeIndexes', 'DatabaseUpgradeEngineNormalization',
         'DatabaseUpgradeCollationDrift', 'DatabaseUpgradeSelfHeal',
+        'DatabaseUpgradeAddedColumnBackfill',
         'DatabaseUpgradeCanonicalUrlBackfill', 'DatabaseUpgradeRedirectsDenormBackfill',
         'DatabaseUpgradeRedirectsSortKeyBackfill', 'DatabaseUpgradeRedirectsDenormReconcile',
         'DatabaseUpgradeDailyMaintenance', 'DatabaseUpgradeNGram',

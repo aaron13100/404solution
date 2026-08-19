@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  * re-pushes a refreshed dependency map to all of them when the coordinator's
  * collaborators change (e.g. after a test swaps in a mock DataAccess).
  *
- * This isolates the 17-component instantiation/refresh lifecycle from
+ * This isolates the 18-component instantiation/refresh lifecycle from
  * {@see ABJ_404_Solution_DatabaseUpgradesEtc}, whose remaining job is to be the
  * public upgrade facade. The registry IS the coordinator passed to each
  * component, so components reach their siblings through it. Constructed by the
@@ -37,6 +37,9 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 
 	/** @var ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill */
 	private $redirectsDenormBackfillUpgrade;
+
+	/** @var ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill */
+	private $addedColumnBackfillUpgrade;
 
 	/** @var ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill */
 	private $redirectsSortKeyBackfillUpgrade;
@@ -81,6 +84,7 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 		$this->selfHealUpgrade = new ABJ_404_Solution_DatabaseUpgradeSelfHeal($this, $deps);
 		$this->canonicalUrlBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill($this, $deps);
 		$this->redirectsDenormBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill($this, $deps);
+		$this->addedColumnBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill($this, $deps);
 		$this->redirectsSortKeyBackfillUpgrade = new ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill($this, $deps);
 		$this->redirectsDenormReconcileUpgrade = new ABJ_404_Solution_DatabaseUpgradeRedirectsDenormReconcile($this, $deps);
 		$this->dailyMaintenanceUpgrade = new ABJ_404_Solution_DatabaseUpgradeDailyMaintenance($this, $deps);
@@ -115,6 +119,7 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 			$this->selfHealUpgrade,
 			$this->canonicalUrlBackfillUpgrade,
 			$this->redirectsDenormBackfillUpgrade,
+			$this->addedColumnBackfillUpgrade,
 			$this->redirectsSortKeyBackfillUpgrade,
 			$this->redirectsDenormReconcileUpgrade,
 			$this->dailyMaintenanceUpgrade,
@@ -140,6 +145,8 @@ class ABJ_404_Solution_DatabaseUpgradeComponentRegistry implements ABJ_404_Solut
 	public function canonicalUrlBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeCanonicalUrlBackfill { return $this->canonicalUrlBackfillUpgrade; }
 
 	public function redirectsDenormBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeRedirectsDenormBackfill { return $this->redirectsDenormBackfillUpgrade; }
+
+	public function addedColumnBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill { return $this->addedColumnBackfillUpgrade; }
 
 	public function redirectsSortKeyBackfillUpgrade(): ABJ_404_Solution_DatabaseUpgradeRedirectsSortKeyBackfill { return $this->redirectsSortKeyBackfillUpgrade; }
 

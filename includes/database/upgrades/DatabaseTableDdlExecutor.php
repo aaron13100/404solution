@@ -7,29 +7,29 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/../DatabaseCollationHelper.php';
 
 /**
- * Permanent-DDL discovery, execution, and post-creation reaction for plugin
- * tables.
+ * Permanent-DDL discovery, execution, and materialization verification for
+ * plugin tables.
  *
  * Owns discovering the permanent (non-Temp) CREATE-TABLE DDL files on disk
  * (discoverPermanentDDLFiles), running them with charset/collation rewriting
- * applied (runInitialCreateTables / applyPluginTableCharsetCollate),
- * verifying each CREATE actually materialized the table on disk
- * (verifyTableMaterialized), and reacting to specific table/column
- * post-creation cases that require a one-time data backfill
- * (applyColumnAddedBackfillsAndCacheInvalidation).
+ * applied (runInitialCreateTables / createMissingPermanentTables /
+ * applyPluginTableCharsetCollate), and verifying each CREATE actually
+ * materialized the table on disk (verifyTableMaterialized).
  *
  * Extracted from the table-bootstrap orchestrator (DatabaseUpgradeBootstrap)
  * for the same reason as the lowercase-rename collaborator: DDL execution is
  * a distinct concern from bootstrap orchestration, with its own file-glob
- * discovery, per-table materialization verification, and column-triggered
- * backfill logic.
+ * discovery and per-table materialization verification.
+ *
+ * Seeding the DATA a newly added column needs is deliberately NOT here: that
+ * is {@see ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill}, reached from
+ * the schema-diff component that knows a column was actually added.
  *
  * Collaborator of ABJ_404_Solution_DatabaseUpgradeBootstrap, which constructs
- * it fresh on every call (never cached) with the upgrade coordinator, the
- * current DB core / content repository / logger, so it always observes
- * whichever dependencies are current at call time (dbCore / contentRepo /
- * logger can be swapped at runtime via replaceDatabaseUpgradeDependencies()
- * on the owning component).
+ * it fresh on every call (never cached) with the upgrade coordinator and the
+ * current DB core / logger, so it always observes whichever dependencies are
+ * current at call time (dbCore / logger can be swapped at runtime via
+ * replaceDatabaseUpgradeDependencies() on the owning component).
  */
 class ABJ_404_Solution_DatabaseTableDdlExecutor {
 
@@ -38,9 +38,6 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
 
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
-
-    /** @var ABJ_404_Solution_ContentRepositoryInterface */
-    private $contentRepo;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -55,15 +52,12 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
      *   no intersection types. Test doubles (e.g. Abj404NullDatabaseCore)
      *   implement those interfaces without extending the concrete class, so a
      *   native type hint here would break them.
-     * @param ABJ_404_Solution_ContentRepositoryInterface $contentRepo
      * @param ABJ_404_Solution_Logging $logger
      */
     public function __construct(ABJ_404_Solution_DatabaseUpgradeCoordinator $coordinator,
-            $dbCore, ABJ_404_Solution_ContentRepositoryInterface $contentRepo,
-            ABJ_404_Solution_Logging $logger) {
+            $dbCore, ABJ_404_Solution_Logging $logger) {
         $this->coordinator = $coordinator;
         $this->dbCore = $dbCore;
-        $this->contentRepo = $contentRepo;
         $this->logger = $logger;
     }
 
@@ -415,85 +409,5 @@ class ABJ_404_Solution_DatabaseTableDdlExecutor {
         }
 
         return rtrim($createTableSql) . " DEFAULT CHARACTER SET utf8mb4 COLLATE {$collate}";
-    }
-
-    /**
-     * Post-creation, column-triggered one-time data backfills. Dispatches
-     * on (tableName, colName) to exactly two cases:
-     *  - abj404_logsv2.min_log_id: runs the seed SQL (backfillLogsMinLogId)
-     *    and ensures the composite index that depends on it.
-     *  - abj404_permalink_cache.url_length: truncates the permalink cache
-     *    so the new column gets populated on next rebuild.
-     * Any other (tableName, colName) pair is a no-op.
-     *
-     * Takes a single associative array (rather than two positional strings)
-     * so the table name and column name -- both plain strings -- cannot be
-     * silently transposed at the call site.
-     *
-     * @param array{tableName: string, colName: string} $context
-     * @return void
-     */
-    public function applyColumnAddedBackfillsAndCacheInvalidation(array $context) {
-        $tableName = isset($context['tableName']) && is_string($context['tableName']) ? $context['tableName'] : '';
-        $colName = isset($context['colName']) && is_string($context['colName']) ? $context['colName'] : '';
-        if (empty($tableName)) {
-            return;
-        }
-
-        if (strpos($tableName, 'abj404_logsv2') !== false && $colName == 'min_log_id') {
-            $this->backfillLogsMinLogId($tableName);
-        }
-        if (strpos($tableName, 'abj404_permalink_cache') !== false && $colName == 'url_length') {
-            // clear the permalink cache so that the url length column will be populated.
-            // this could be more efficient but I'll assume that's not necessary.
-            $this->contentRepo->truncatePermalinkCacheTable();
-        }
-    }
-
-    /**
-     * One-time backfill for the abj404_logsv2.min_log_id column: runs the
-     * seed SQL, then ensures the composite index that depends on it exists.
-     * Extracted out of applyColumnAddedBackfillsAndCacheInvalidation() so that method stays a plain
-     * column-name dispatcher; the data-access step (SQL file load + execute)
-     * lives in its own method instead of inline in the dispatch logic.
-     *
-     * @param string $tableName
-     * @return void
-     */
-    private function backfillLogsMinLogId($tableName) {
-        try {
-            $query = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../../sql/logsSetMinLogID.sql");
-        } catch (Exception $e) {
-            $this->logger->errorMessage(
-                'Could not read logsSetMinLogID.sql backfill file for ' . $tableName
-                . ': ' . $e->getMessage() . '. Skipping min_log_id backfill and composite '
-                . 'index creation this run; will retry on the next upgrade check.'
-            );
-            return;
-        }
-        $result = $this->dbCore->queryAndGetResults($query);
-        $lastErrorValue = $result['last_error'] ?? null;
-        if (!is_string($lastErrorValue)) {
-            $this->logger->errorMessage(
-                'min_log_id backfill query returned invalid last_error type ('
-                . gettype($lastErrorValue) . ') for ' . $tableName
-                . '. Skipping composite index creation this run; will retry on the next upgrade check.'
-            );
-            return;
-        }
-        $lastError = $lastErrorValue;
-        if ($lastError !== '') {
-            // Don't create the composite index on the strength of a backfill
-            // that didn't actually run: the index exists to make min_log_id
-            // lookups fast, and building it now would just lock in whatever
-            // stale/default values the column already has. Skipping is safe
-            // (idempotent) -- the next upgrade check retries both steps.
-            $this->logger->errorMessage(
-                'min_log_id backfill query failed for ' . $tableName . ': ' . $lastError
-                . '. Skipping composite index creation this run; will retry on the next upgrade check.'
-            );
-            return;
-        }
-        $this->coordinator->indexesUpgrade()->ensureLogsCompositeIndex($tableName);
     }
 }

@@ -24,15 +24,17 @@ if (!defined('ABSPATH')) {
  *
  * Permanent-DDL file discovery/execution/verification and charset/collation
  * rewriting are delegated to ABJ_404_Solution_DatabaseTableDdlExecutor
- * (discoverPermanentDDLFiles, runInitialCreateTables,
- * applyPluginTableCharsetCollate, applyColumnAddedBackfillsAndCacheInvalidation remain here only as
- * thin delegating facades so the ~50+ existing call sites keep working).
+ * (discoverPermanentDDLFiles, runInitialCreateTables and
+ * applyPluginTableCharsetCollate remain here only as thin delegating facades
+ * so the ~50+ existing call sites keep working). Column-triggered data
+ * backfills are NOT routed through here: schema-diff reaches
+ * ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill directly.
  * The lowercase-table-rename / orphan-adoption-trigger pass is delegated to
  * ABJ_404_Solution_DatabaseTableLowercaseRenamer (renameAbj404TablesToLowerCase
  * is likewise kept here as a delegating facade). Both collaborators are
  * constructed fresh on every call, never cached, so they always observe
- * whichever dbCore/contentRepo/logger are current (these can be swapped at
- * runtime via replaceDatabaseUpgradeDependencies()).
+ * whichever dbCore/logger are current (these can be swapped at runtime via
+ * replaceDatabaseUpgradeDependencies()).
  *
  * Reached through the explicit createDatabaseTables() facade method on
  * ABJ_404_Solution_DatabaseUpgradesEtc.
@@ -279,15 +281,6 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
         );
     }
 
-    /** When certain columns are created we have to populate data.
-     * @param string $tableName
-     * @param string $colName
-     * @return void
-     */
-    function applyColumnAddedBackfillsAndCacheInvalidation($tableName, $colName) {
-        $this->ddlExecutor()->applyColumnAddedBackfillsAndCacheInvalidation(array('tableName' => $tableName, 'colName' => $colName));
-    }
-
     /**
      * Discover all permanent (non-Temp) DDL files and extract table metadata.
      *
@@ -313,13 +306,13 @@ class ABJ_404_Solution_DatabaseUpgradeBootstrap extends ABJ_404_Solution_Databas
     /**
      * Delegates permanent-DDL discovery/execution/verification and
      * charset/collation rewriting to a freshly-constructed
-     * ABJ_404_Solution_DatabaseTableDdlExecutor (never cached: dbCore/contentRepo/logger
+     * ABJ_404_Solution_DatabaseTableDdlExecutor (never cached: dbCore/logger
      * can be swapped at runtime via replaceDatabaseUpgradeDependencies(), so a cached
      * collaborator could go stale).
      */
     private function ddlExecutor(): ABJ_404_Solution_DatabaseTableDdlExecutor {
         return new ABJ_404_Solution_DatabaseTableDdlExecutor(
-            $this->upgrades(), $this->dbCore, $this->contentRepo, $this->logger
+            $this->upgrades(), $this->dbCore, $this->logger
         );
     }
 }

@@ -261,7 +261,8 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 			$this->logger->infoMessage("I added a column: " . $createColStatement);
 		}
 
-		$this->upgrades()->bootstrapUpgrade()->applyColumnAddedBackfillsAndCacheInvalidation($tableName, $colName);
+		$this->upgrades()->addedColumnBackfillUpgrade()->runBackfillsForAddedColumn(
+			array('tableName' => $tableName, 'colName' => $colName));
 	}
     }
 
