@@ -81,7 +81,29 @@ class ABJ_404_Solution_PermalinkResolver {
         } else if ($typeInt === ABJ404_TYPE_CAT) {
             self::fillCategory($permalink, $idInt);
         } else if ($typeInt === ABJ404_TYPE_HOME) {
-            $permalink['link'] = get_home_url();
+            // Ask for the home page's real URL, path included, and pin exactly
+            // one trailing delimiter on whatever comes back.
+            //
+            // Callers append the 404ing request's own comment-page/query part
+            // to this link (PluginLogicPageOrdering::buildFinalRedirectDestination),
+            // so the link has to name the home page on its own. get_home_url()
+            // with no path usually returns the site root WITHOUT a trailing
+            // slash ("https://site.com", "https://site.com/blog"), and that
+            // append then produces a URL whose path is not the home page:
+            // "https://site.com/blog?page=1" asks the server for a file named
+            // "blog", which bounces straight back to "/blog/?page=1" and 404s
+            // again (support report 282).
+            //
+            // The '/' path argument is not enough on its own. WordPress never
+            // normalizes the `home` option (sanitize_option('home') only runs
+            // sanitize_url()), and the `home_url` filter runs last, so
+            // WP_HOME, a multisite mapping, or a multilingual plugin can hand
+            // back a URL that already ends in a slash. get_home_url(null, '/')
+            // would then return "https://site.com//", whose path is likewise
+            // not the home page. rtrim + '/' is idempotent, so the delimiter
+            // is pinned regardless of what the option or the filter returns.
+            $homeUrl = get_home_url(null, '/');
+            $permalink['link'] = rtrim(is_string($homeUrl) ? $homeUrl : '', '/') . '/';
             $permalink['title'] = get_bloginfo('name');
             $permalink['status'] = 'published';
         } else if ($typeInt === ABJ404_TYPE_EXTERNAL) {
