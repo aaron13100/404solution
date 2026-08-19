@@ -288,8 +288,34 @@ class ABJ_404_Solution_CronScheduler {
         }
         $timestamp = $this->nextScheduled($hook, $args);
         while ($timestamp !== false) {
-            empty($args) ? wp_unschedule_event($timestamp, $hook) : wp_unschedule_event($timestamp, $hook, $this->listArgs($args));
-            $timestamp = $this->nextScheduled($hook, $args);
+            $result = empty($args)
+                ? wp_unschedule_event($timestamp, $hook, array(), true)
+                : wp_unschedule_event($timestamp, $hook, $this->listArgs($args), true);
+
+            // A refused removal leaves the occurrence exactly where it was, so
+            // the next read returns the same timestamp and asking again can
+            // only produce the same refusal. wp_unschedule_event() refuses on a
+            // failed cron-store write, and since WordPress 5.7 any plugin on
+            // the `pre_unschedule_event` filter can short-circuit it without
+            // removing anything.
+            if ($this->outcome->reportsFailure($result)) {
+                $this->outcome->resolveRemoval($result, $hook, $args, $timestamp);
+                return;
+            }
+
+            $next = $this->nextScheduled($hook, $args);
+
+            // Terminate on lack of progress rather than on the primitive's
+            // answer alone. A short-circuiting filter can return a truthy value
+            // while removing nothing, and builds before 5.7 report no status at
+            // all, so "it said it worked" is not evidence the occurrence is
+            // gone. Advancing is.
+            if ($next === $timestamp) {
+                $this->outcome->reportRemovalNotVerified($hook, $timestamp);
+                return;
+            }
+
+            $timestamp = $next;
         }
     }
 
