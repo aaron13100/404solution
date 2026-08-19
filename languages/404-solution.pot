@@ -3223,8 +3223,11 @@ msgstr ""
 msgid "Create automatic redirects"
 msgstr ""
 
-#: includes/ViewTrait_UI.php:673
-msgid "Automatically redirect 404s to similar pages when a good match is found"
+#. translators: 1: the configured minimum match score, e.g. 90. 2: the localized
+#. label of the Minimum match score setting, so it matches the Advanced Mode
+#. screen exactly.
+#: includes/view/View_SimpleSettings.php:65
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
 msgstr ""
 
 #: includes/ViewTrait_UI.php:674

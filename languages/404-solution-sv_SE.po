@@ -1890,8 +1890,8 @@ msgstr "Standard 404-destination"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "Vart besökare ska skickas när ett 404-fel inträffar"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "Omdirigera automatiskt 404-fel till liknande sidor när en bra matchning hittas"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "Omdirigera automatiskt 404-fel till liknande sidor som får minst %1$s av 100 poäng. Byt till avancerat läge och leta efter %2$s i systemavsnittet för att ändra den siffran."
 
 msgid "Redirect type"
 msgstr "Omdirigeringstyp"

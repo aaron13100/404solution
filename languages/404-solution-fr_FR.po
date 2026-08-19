@@ -1892,8 +1892,8 @@ msgstr "Destination 404 par défaut"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "Où envoyer les visiteurs lorsqu'une erreur 404 se produit"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "Rediriger automatiquement les 404 vers des pages similaires lorsqu'une bonne correspondance est trouvée"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "Rediriger automatiquement les 404 vers des pages similaires obtenant au moins %1$s sur 100. Pour modifier ce nombre, passez en mode avancé et cherchez %2$s dans la section Système."
 
 msgid "Redirect type"
 msgstr "Type de redirection"

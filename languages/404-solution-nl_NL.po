@@ -1890,8 +1890,8 @@ msgstr "Standaard 404-bestemming"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "Waar bezoekers naartoe sturen wanneer een 404-fout optreedt"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "404's automatisch doorsturen naar vergelijkbare pagina's wanneer een goede match is gevonden"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "Verwijs 404's automatisch door naar vergelijkbare pagina's die minstens %1$s van de 100 punten scoren. Wil je dat getal aanpassen, schakel dan over naar de geavanceerde modus en zoek %2$s in het gedeelte Systeem."
 
 msgid "Redirect type"
 msgstr "Doorverwijzingstype"

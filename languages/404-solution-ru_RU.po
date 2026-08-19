@@ -1890,8 +1890,8 @@ msgstr "Назначение 404 по умолчанию"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "Куда направлять посетителей при возникновении ошибки 404"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "Автоматически перенаправлять 404 на похожие страницы при обнаружении хорошего совпадения"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "Автоматически перенаправлять ошибки 404 на похожие страницы, набравшие не менее %1$s из 100 баллов. Чтобы изменить это число, переключитесь в расширенный режим и найдите %2$s в разделе «Система»."
 
 msgid "Redirect type"
 msgstr "Тип перенаправления"

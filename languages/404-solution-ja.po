@@ -1891,8 +1891,8 @@ msgstr "デフォルト404リダイレクト先"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "404エラー発生時に訪問者を送る先"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "良い一致が見つかった場合、404を類似ページに自動リダイレクト"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "スコアが100点満点中%1$s点以上の類似ページへ404を自動的にリダイレクトします。この数値を変更するには、詳細モードに切り替えてシステムセクションの%2$sを探してください。"
 
 msgid "Redirect type"
 msgstr "リダイレクトタイプ"

@@ -1891,8 +1891,8 @@ msgstr "Standard-404-Ziel"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "Wohin Besucher bei einem 404-Fehler weitergeleitet werden"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "404-Fehler automatisch auf ähnliche Seiten umleiten, wenn eine gute Übereinstimmung gefunden wird"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "404-Fehler automatisch zu ähnlichen Seiten weiterleiten, die mindestens %1$s von 100 Punkten erreichen. Um diese Zahl zu ändern, wechseln Sie in den erweiterten Modus und suchen Sie im Bereich System nach %2$s."
 
 msgid "Redirect type"
 msgstr "Weiterleitungstyp"

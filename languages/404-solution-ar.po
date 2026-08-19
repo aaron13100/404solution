@@ -1903,8 +1903,8 @@ msgstr "وجهة 404 الافتراضية"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "أين ترسل الزوار عند حدوث خطأ 404"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "إعادة توجيه أخطاء 404 تلقائياً إلى صفحات مشابهة عند العثور على تطابق جيد"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "إعادة توجيه أخطاء 404 تلقائياً إلى صفحات مشابهة تحصل على %1$s على الأقل من 100. لتغيير هذا الرقم، انتقل إلى الوضع المتقدم وابحث عن %2$s في قسم النظام."
 
 msgid "Redirect type"
 msgstr "نوع إعادة التوجيه"

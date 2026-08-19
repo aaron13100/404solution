@@ -62,7 +62,16 @@ class ABJ_404_Solution_View_SimpleSettings extends ABJ_404_Solution_ViewComponen
         $html = $this->f->str_replace('{Default 404 destination}', __('Default 404 destination', '404-solution'), $html);
         $html = $this->f->str_replace('{Where to send visitors when a 404 error occurs}', __('Where to send visitors when a 404 error occurs', '404-solution'), $html);
         $html = $this->f->str_replace('{Create automatic redirects}', __('Create automatic redirects', '404-solution'), $html);
-        $html = $this->f->str_replace('{Automatically redirect 404s to similar pages when a good match is found}', __('Automatically redirect 404s to similar pages when a good match is found', '404-solution'), $html);
+        $html = $this->f->str_replace(
+            '{Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section.}',
+            sprintf(
+                /* translators: 1: the configured minimum match score, e.g. 90. 2: the localized label of the Minimum match score setting, so it matches the Advanced Mode screen exactly. */
+                __('Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section.', '404-solution'),
+                esc_html($this->getMinimumMatchScoreForDisplay($options)),
+                esc_html(__('Minimum match score', '404-solution'))
+            ),
+            $html
+        );
         $html = $this->f->str_replace('{Redirect type}', __('Redirect type', '404-solution'), $html);
         $html = $this->f->str_replace('{Permanent 301}', __('Permanent 301', '404-solution'), $html);
         $html = $this->f->str_replace('{Temporary 302}', __('Temporary 302', '404-solution'), $html);
@@ -101,5 +110,33 @@ class ABJ_404_Solution_View_SimpleSettings extends ABJ_404_Solution_ViewComponen
         $html = $this->f->str_replace('{Permanent 308 (preserve method)}', __('Permanent 308 (preserve method)', '404-solution'), $html);
 
         echo $html;
+    }
+
+    /**
+     * The minimum match score to name in the Simple Mode help text.
+     *
+     * Simple Mode does not render the auto_score field itself (it lives in
+     * Advanced Mode > System), so the help text is the only place a simple-mode
+     * admin can learn what the bar currently is. Always report the value the
+     * matcher will actually apply rather than the shipped 90, so an admin who
+     * already changed it is not told the wrong number.
+     *
+     * @param array<string, mixed> $options The plugin options.
+     * @return string The configured score, or the shipped default when the
+     *   stored value is missing, blank, or not a number.
+     */
+    private function getMinimumMatchScoreForDisplay($options) {
+        $defaults = ABJ_404_Solution_PluginLogicDefaults::defaults();
+        $shippedDefault = '90';
+        if (isset($defaults['auto_score']) && is_scalar($defaults['auto_score'])) {
+            $shippedDefault = (string)$defaults['auto_score'];
+        }
+
+        $configured = $this->optionsPresenter->optStr($options, 'auto_score', $shippedDefault);
+        if (!is_numeric($configured)) {
+            return $shippedDefault;
+        }
+
+        return $configured;
     }
 }

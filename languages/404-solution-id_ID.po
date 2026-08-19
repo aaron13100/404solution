@@ -1888,8 +1888,8 @@ msgstr "Tujuan 404 default"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "Ke mana mengarahkan pengunjung saat terjadi error 404"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "Secara otomatis mengalihkan 404 ke halaman serupa saat ditemukan kecocokan yang baik"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "Alihkan 404 secara otomatis ke halaman serupa yang memperoleh skor minimal %1$s dari 100. Untuk mengubah angka tersebut, beralihlah ke Mode Lanjutan dan cari %2$s di bagian Sistem."
 
 msgid "Redirect type"
 msgstr "Jenis pengalihan"

@@ -1896,8 +1896,8 @@ msgstr "默认404目标"
 msgid "Where to send visitors when a 404 error occurs"
 msgstr "发生404错误时将访客发送到哪里"
 
-msgid "Automatically redirect 404s to similar pages when a good match is found"
-msgstr "当找到良好匹配时自动将404重定向到类似页面"
+msgid "Automatically redirect 404s to similar pages that score at least %1$s out of 100. To change that number, switch to Advanced Mode and look for %2$s in the System section."
+msgstr "自动将404重定向到评分至少为100分中%1$s分的类似页面。若要更改该数值，请切换到高级模式并在系统部分中查找%2$s。"
 
 msgid "Redirect type"
 msgstr "重定向类型"
