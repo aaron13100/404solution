@@ -51,10 +51,12 @@ class ABJ_404_Solution_ScheduledEventInspector {
      * a scheduling failure, which is production report 284
      * (vishalborewell.com, signature b2c064ec15425cf2).
      *
-     * @param int $now The clock the request is being judged against, which is
-     *   the same `current:` value a failure would be reported with.
+     * @param array{storedTimestamp: int, requestedTimestamp: int, now: int} $window
      */
-    public static function duplicateWindowCovers(int $storedTimestamp, int $requestedTimestamp, int $now): bool {
+    public static function duplicateWindowCovers(array $window): bool {
+        $storedTimestamp = $window['storedTimestamp'];
+        $requestedTimestamp = $window['requestedTimestamp'];
+        $now = $window['now'];
         $minTimestamp = ($requestedTimestamp < $now + self::DUPLICATE_EVENT_WINDOW_SECONDS)
             ? 0
             : $requestedTimestamp - self::DUPLICATE_EVENT_WINDOW_SECONDS;
@@ -83,7 +85,10 @@ class ABJ_404_Solution_ScheduledEventInspector {
                 return null;
             }
             if (!is_object($event) || !isset($event->timestamp) || !is_numeric($event->timestamp)) {
-                return array('timestamp' => 0, 'recurrence' => null);
+                throw new UnexpectedValueException(
+                    'wp_get_scheduled_event returned a malformed event for cron hook ' . $hook
+                    . ': expected an object with a numeric timestamp.'
+                );
             }
             $recurrence = isset($event->schedule) && is_string($event->schedule) && $event->schedule !== ''
                 ? $event->schedule
@@ -128,17 +133,14 @@ class ABJ_404_Solution_ScheduledEventInspector {
      * "failed" also left this request's cached copy of `cron` untouched and
      * therefore still blind to the event the other request stored.
      *
-     * @param array<int, mixed> $args
-     * @param string|null $recurrence Required recurrence, or null for a single event.
-     * @param int $now The clock the caller measured $timestamp against.
+     * @param array{hook: string, args: array<int, mixed>, timestamp: int, recurrence: string|null, now: int} $request
      */
-    public function requestedEventIsStored(
-        string $hook,
-        array $args,
-        int $timestamp,
-        ?string $recurrence,
-        int $now
-    ): bool {
+    public function requestedEventIsStored(array $request): bool {
+        $hook = $request['hook'];
+        $args = $request['args'];
+        $timestamp = $request['timestamp'];
+        $recurrence = $request['recurrence'];
+        $now = $request['now'];
         $this->forgetCachedCronOption();
 
         if (function_exists('wp_get_scheduled_event')) {
@@ -159,7 +161,11 @@ class ABJ_404_Solution_ScheduledEventInspector {
         // WordPress itself refuses to add a second identical event inside its
         // duplicate window, so an event in that window satisfies the request
         // exactly as one at the requested timestamp would have.
-        return self::duplicateWindowCovers((int)$next, $timestamp, $now);
+        return self::duplicateWindowCovers(array(
+            'storedTimestamp' => (int)$next,
+            'requestedTimestamp' => $timestamp,
+            'now' => $now,
+        ));
     }
 
     /**

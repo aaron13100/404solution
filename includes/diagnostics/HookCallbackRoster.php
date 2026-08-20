@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
  *
  * Cost is split deliberately, because the caller in front of this is on a hot
  * request path: {@see forHook} and {@see fingerprint} do no reflection at all,
- * and only {@see described} pays for it.
+ * and only {@see describeEntriesWithOrigins} pays for it.
  *
  * ABJ_404_Solution_HookCallbackIdentity answers a different question about the
  * same subject: it produces PRIVACY-HASHED identities for callbacks the plugin
@@ -113,7 +113,7 @@ final class ABJ_404_Solution_HookCallbackRoster {
      *   what the later ones see.
      * @return array<int, array<string, mixed>>
      */
-    public static function described(array $entries, int $limit): array {
+    public static function describeEntriesWithOrigins(array $entries, int $limit): array {
         $described = array();
         foreach (array_slice($entries, 0, max(0, $limit)) as $entry) {
             $record = array(
@@ -224,7 +224,8 @@ final class ABJ_404_Solution_HookCallbackRoster {
             return 'unknown';
         } catch (Throwable $e) {
             abj404_logPhpFallback('hook-callback-roster',
-                'hook callback origin failed (code ' . $e->getCode() . '): ' . $e->getMessage());
+                'hook callback origin failed (code ' . $e->getCode() . '): ' . $e->getMessage()
+                . '. Recovery: verify that the registered callback target is loaded and callable, then retry the census.');
             return 'unknown';
         }
     }

@@ -226,7 +226,10 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
             'plugin_listener_priority' => $pluginPriority,
             'callback_count' => count($entries),
             'suppression' => $suppression,
-            'canonical_filter' => ABJ_404_Solution_HookCallbackRoster::described($filterEntries, self::MAX_CALLBACKS),
+            'canonical_filter' => ABJ_404_Solution_HookCallbackRoster::describeEntriesWithOrigins(
+                $filterEntries,
+                self::MAX_CALLBACKS
+            ),
         );
 
         // The full roster is recorded ONLY when core's callback is gone. That is
@@ -234,7 +237,10 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
         // the same list names nobody and would spend the payload's bytes saying
         // so on every healthy install.
         if ($corePriority === null) {
-            $record['callbacks'] = ABJ_404_Solution_HookCallbackRoster::described($entries, self::MAX_CALLBACKS);
+            $record['callbacks'] = ABJ_404_Solution_HookCallbackRoster::describeEntriesWithOrigins(
+                $entries,
+                self::MAX_CALLBACKS
+            );
             $record['callbacks_truncated'] = count($entries) > self::MAX_CALLBACKS;
         }
         return $record;

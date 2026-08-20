@@ -107,7 +107,13 @@ class ABJ_404_Solution_CronWriteOutcome {
                     . 'equivalent event for the hook',
             ));
         }
-        if ($this->inspector->requestedEventIsStored($hook, $args, $timestamp, null, $now)) {
+        if ($this->inspector->requestedEventIsStored(array(
+            'hook' => $hook,
+            'args' => $args,
+            'timestamp' => $timestamp,
+            'recurrence' => null,
+            'now' => $now,
+        ))) {
             return $this->reportAlreadySatisfied(array(
                 'type' => 'single',
                 'hook' => $hook,
@@ -142,7 +148,13 @@ class ABJ_404_Solution_CronWriteOutcome {
         $timestamp = $request['timestamp'];
         $now = $request['now'];
 
-        if ($this->inspector->requestedEventIsStored($hook, $args, $timestamp, $recurrence, $now)) {
+        if ($this->inspector->requestedEventIsStored(array(
+            'hook' => $hook,
+            'args' => $args,
+            'timestamp' => $timestamp,
+            'recurrence' => $recurrence,
+            'now' => $now,
+        ))) {
             return $this->reportAlreadySatisfied(array(
                 'type' => 'recurring',
                 'hook' => $hook,
