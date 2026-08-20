@@ -130,7 +130,9 @@ class ABJ_404_Solution_RedirectRowPresenter {
         $lastUsed = $state['lastUsed'];
         $rowEngine = $state['rowEngine'];
         $rowCode = is_scalar($row['code'] ?? '') ? (string)($row['code'] ?? '') : '';
-        $last = $lastUsed != 0 ? (string)wp_date('Y/m/d h:i:s A', abs($lastUsed)) : __('Never Used', '404-solution');
+        $last = $lastUsed != 0
+            ? ABJ_404_Solution_SiteLocalTimestamp::format('Y/m/d h:i:s A', abs($lastUsed))
+            : __('Never Used', '404-solution');
         $rowId = is_scalar($row['id'] ?? '') ? (string)($row['id'] ?? '') : '';
         $regexState = $state['regexState'];
         $actions = $state['actions'];
@@ -171,7 +173,7 @@ class ABJ_404_Solution_RedirectRowPresenter {
             '{ajaxTrashLink}' => $links['ajaxTrashLink'],
             '{trashtitle}' => $links['trashtitle'],
             '{deletelink}' => $links['deletelink'],
-            '{created_date}' => esc_html((string)wp_date(
+            '{created_date}' => esc_html(ABJ_404_Solution_SiteLocalTimestamp::format(
                 'Y/m/d h:i:s A',
                 abs(is_scalar($row['timestamp'] ?? 0) ? intval($row['timestamp'] ?? 0) : 0)
             )),

@@ -116,10 +116,12 @@ class ABJ_404_Solution_NGramRescheduleFailureReport {
             $hookName,
             $requestedTimestamp,
             $this->cronScheduler->now(),
-            // wp_date, not date: date() renders in whatever timezone the host
-            // process happens to default to, so the same event read differently
-            // on two hosts and the line could not be compared against anything.
-            $alreadyScheduled ? (string)wp_date('Y-m-d H:i:s T', (int)$alreadyScheduled) : 'no',
+            // Site-local, not date(): date() renders in whatever timezone the
+            // host process happens to default to, so the same event read
+            // differently on two hosts and the line could not be compared.
+            $alreadyScheduled
+                ? ABJ_404_Solution_SiteLocalTimestamp::format('Y-m-d H:i:s T', (int)$alreadyScheduled)
+                : 'no',
             $dbError,
             $this->progress->rawInitializedValue(),
             $progressPercent,

@@ -89,12 +89,13 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         $hookName = self::REBUILD_CRON_HOOK;
         $armedAt = $this->armedRebuildTimestamp();
         if ($armedAt !== false) {
-            // wp_date, not date: date() renders in whatever timezone the host
-            // process happens to default to, so the same event reads
+            // Site-local, not date(): date() renders in whatever timezone the
+            // host process happens to default to, so the same event reads
             // differently on two hosts and the line cannot be compared against
             // anything else in the log.
             $this->logger->debugMessage(
-                "N-gram cache rebuild already scheduled for " . wp_date('Y-m-d H:i:s T', $armedAt));
+                "N-gram cache rebuild already scheduled for "
+                . ABJ_404_Solution_SiteLocalTimestamp::format('Y-m-d H:i:s T', $armedAt));
             return true;
         }
 
@@ -247,10 +248,12 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
             $hookName,
             $scheduleTime,
             $this->cronScheduler->now(),
-            // wp_date, not date, for the same reason the batch runner's refusal
-            // report uses it: date() renders in the host process's default
+            // Site-local, not date(), for the same reason the batch runner's
+            // refusal report is: date() renders in the host process's default
             // timezone, so the same event reads differently on two hosts.
-            $alreadyScheduled ? (string)wp_date('Y-m-d H:i:s T', (int)$alreadyScheduled) : 'no',
+            $alreadyScheduled
+                ? ABJ_404_Solution_SiteLocalTimestamp::format('Y-m-d H:i:s T', (int)$alreadyScheduled)
+                : 'no',
             $cronDisabled ? 'yes' : 'no',
             $dbError,
             $rebuildOffset,

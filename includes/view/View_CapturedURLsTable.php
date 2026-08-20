@@ -154,7 +154,7 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
         $last_used = is_scalar($row['last_used'] ?? 0) ? (int)($row['last_used'] ?? 0) : 0;
         if ($last_used != 0) {
             return array(
-                'date' => (string)wp_date("Y/m/d h:i:s A", abs($last_used)),
+                'date' => ABJ_404_Solution_SiteLocalTimestamp::format("Y/m/d h:i:s A", abs($last_used)),
                 'class' => '',
             );
         }
@@ -257,7 +257,8 @@ class ABJ_404_Solution_View_CapturedURLsTable extends ABJ_404_Solution_ViewCompo
             '{status}' => $status['text'],
             '{engineHTML}' => $capturedEngineHTML,
             '{hits}' => esc_html((string)$hits),
-            '{created_date}' => esc_html((string)wp_date("Y/m/d h:i:s A", abs($createdTimestamp))),
+            '{created_date}' => esc_html(
+                ABJ_404_Solution_SiteLocalTimestamp::format("Y/m/d h:i:s A", abs($createdTimestamp))),
             '{last_used_date}' => esc_html($lastUsed['date']),
             '{lastUsedClass}' => $lastUsed['class'],
             '{editBtnHTML}' => $btns['edit'],

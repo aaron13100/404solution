@@ -210,7 +210,8 @@ class ABJ_404_Solution_AdminLogsTable {
         }
         return $this->f->str_replace(
             array('{date_part}', '{time_part}', '{username_part}'),
-            array((string)wp_date('Y/m/d', $timeToDisplay), (string)wp_date('h:i:s A', $timeToDisplay), $usernamePart),
+            array(ABJ_404_Solution_SiteLocalTimestamp::format('Y/m/d', $timeToDisplay),
+                ABJ_404_Solution_SiteLocalTimestamp::format('h:i:s A', $timeToDisplay), $usernamePart),
             $this->tpl('viewLogsDateCell.html')
         );
     }
