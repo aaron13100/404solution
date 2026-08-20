@@ -21,6 +21,9 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_RedirectsBulkReader {
 
+    /** Number of rows fetched by each keyset page once caching is unsafe. */
+    const REGEX_READ_BATCH_SIZE = 250;
+
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
@@ -106,7 +109,7 @@ class ABJ_404_Solution_RedirectsBulkReader {
         }
 
         if ($disabled) {
-            return $this->queryBuilder->queryRegexRedirects(ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT + 1);
+            return $this->queryAllRegexRedirectsInBatches();
         }
 
         $results = $this->queryBuilder->queryRegexRedirects(ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT + 1);
@@ -115,9 +118,57 @@ class ABJ_404_Solution_RedirectsBulkReader {
             ABJ_404_Solution_RedirectsRepository::setRegexRedirectsCache($results);
         } else {
             ABJ_404_Solution_RedirectsRepository::setRegexCacheDisabled(true);
+            return $this->queryAllRegexRedirectsInBatches($results);
         }
 
         return $results;
+    }
+
+    /**
+     * Complete a regex redirect read without allowing a SQL result set to grow
+     * without bound. The optional leading rows are the cache-threshold probe
+     * and are reused so the common 51+ path does not reread them.
+     *
+     * @param array<int, array<string, mixed>> $leadingRows
+     * @return array<int, array<string, mixed>>
+     */
+    private function queryAllRegexRedirectsInBatches(array $leadingRows = array()): array {
+        $rows = $leadingRows;
+        $afterId = $this->greatestRedirectId($leadingRows);
+
+        do {
+            $page = $this->queryBuilder->queryRegexRedirectsPage(array(
+                'after_id' => $afterId,
+                'limit' => self::REGEX_READ_BATCH_SIZE,
+            ));
+            if (empty($page)) {
+                break;
+            }
+
+            $nextAfterId = $this->greatestRedirectId($page);
+            if ($nextAfterId <= $afterId) {
+                throw new UnexpectedValueException(
+                    'Regex redirect keyset page did not advance past id ' . $afterId . '.'
+                );
+            }
+
+            $rows = array_merge($rows, $page);
+            $afterId = $nextAfterId;
+        } while (count($page) === self::REGEX_READ_BATCH_SIZE);
+
+        return $rows;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function greatestRedirectId(array $rows): int {
+        $greatestId = 0;
+        foreach ($rows as $row) {
+            $id = isset($row['id']) && is_scalar($row['id']) ? (int)$row['id'] : 0;
+            $greatestId = max($greatestId, $id);
+        }
+        return $greatestId;
     }
 
     /** @return array<int, array<string, mixed>> */

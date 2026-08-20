@@ -206,6 +206,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 **Bug Fixes**
 
+* Fixed sites with more than 51 active regex redirects evaluating only the 51 oldest rules. The cache safety check used a 51-row query to decide whether the result was small enough to cache, but when it found more rules it kept using that same limited query instead of continuing through the table. Newer regex redirects therefore stayed at "Never Used" and matching requests fell through to the 404 page. Regex rules are now read completely in bounded batches, preserving their existing oldest-first precedence without imposing a matching limit.
 * Fixed a fatal error on the plugin's own Page Redirects and Captured 404s screens for sites running WordPress 5.0, 5.1 or 5.2. The plugin supports WordPress 5.0 and above, but eight places that render a date called a WordPress function that only arrived in 5.3, so those screens died with "Call to undefined function wp_date()" instead of rendering.
 * Fixed a redirect loop in which a request was answered with a redirect back to that same request. When a 404's destination was the home page and the request carried a query string such as `?page=1`, the destination was rebuilt into the original URL, so a browser or crawler looped until it gave up. Every hop was counted as another 404 hit, and one site recorded 3,892 hits on a single row this way. The home destination now resolves to the home page's own path, and no redirect is sent when the destination is the request being answered.
 * Fixed a fatal error during a plugin update, when a request that started under the old version was still running as WordPress replaced the plugin files. The plugin now notices its own files changed mid-request and re-reads its class list, instead of looking up the new files through the previous version's list and failing with "Class ABJ_404_Solution_... not found".
@@ -397,10 +398,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 * The admin-table rebuild now adapts its batch size to the host. If a batch is killed by the database, the next attempt uses a smaller batch, and the smaller size is remembered for the rest of the rebuild so slow shared hosts converge on a size they can actually finish.
 * Per-query timeouts during the rebuild are now sized to the host's own statement timeout (MariaDB max_statement_time / MySQL max_execution_time), so a kill produces a clean classifiable error the rebuild can resume from rather than a dropped connection.
-
-= Version 4.1.15 (May 6, 2026) =
-
-**Bug Fixes**
-
-* Fixed a plugin load fatal on PHP 7.4 to 8.1 hosts that was introduced in 4.1.14. A constant inside a trait (added with the staged view rebuild) is only valid in PHP 8.2 and later; the declared minimum is PHP 7.4, so this restores compatibility for all supported PHP versions.
 

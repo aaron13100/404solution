@@ -57,6 +57,21 @@ class ABJ_404_Solution_ViewQueryBuilder {
      * @return array<int, array<string, mixed>>
      */
     public function queryRegexRedirects(?int $limit = null) {
+        return $this->queryRegexRedirectsPage(array(
+            'after_id' => 0,
+            'limit' => $limit,
+        ));
+    }
+
+    /**
+     * Read one ascending-id page of active regex redirects.
+     *
+     * @param array{after_id: int, limit: int|null} $page
+     * @return array<int, array<string, mixed>>
+     */
+    public function queryRegexRedirectsPage(array $page): array {
+        $afterId = max(0, (int)($page['after_id'] ?? 0));
+        $limit = $page['limit'] ?? null;
         $query = "select \n  {wp_abj404_redirects}.id,\n  {wp_abj404_redirects}.url,\n  {wp_abj404_redirects}.status,\n"
             . "  {wp_abj404_redirects}.type,\n  {wp_abj404_redirects}.final_dest,\n  {wp_abj404_redirects}.code,\n"
             . "  {wp_abj404_redirects}.timestamp,\n {wp_posts}.id as wp_post_id\n "
@@ -65,6 +80,7 @@ class ABJ_404_Solution_ViewQueryBuilder {
             . "    on {wp_abj404_redirects}.final_dest = {wp_posts}.id \n "
             . "where status in (" . ABJ404_STATUS_REGEX . ") \n "
             . "     and disabled = 0\n"
+            . "     and {wp_abj404_redirects}.id > " . $afterId . "\n"
             . "order by {wp_abj404_redirects}.id ASC";
         if ($limit !== null) {
             $query .= "\nlimit " . max(1, intval($limit));
