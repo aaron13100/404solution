@@ -1,5 +1,36 @@
 # Changelog #
 
+## Version 4.3.4 (August 20, 2026) ##
+
+**Bug Fixes**
+
+* Fixed a fatal error on the plugin's own Page Redirects and Captured 404s screens for sites running WordPress 5.0, 5.1 or 5.2. The plugin supports WordPress 5.0 and above, but eight places that render a date called a WordPress function that only arrived in 5.3, so those screens died with "Call to undefined function wp_date()" instead of rendering.
+* Fixed a redirect loop in which a request was answered with a redirect back to that same request. When a 404's destination was the home page and the request carried a query string such as `?page=1`, the destination was rebuilt into the original URL, so a browser or crawler looped until it gave up. Every hop was counted as another 404 hit, and one site recorded 3,892 hits on a single row this way. The home destination now resolves to the home page's own path, and no redirect is sent when the destination is the request being answered.
+* Fixed a fatal error during a plugin update, when a request that started under the old version was still running as WordPress replaced the plugin files. The plugin now notices its own files changed mid-request and re-reads its class list, instead of looking up the new files through the previous version's list and failing with "Class ABJ_404_Solution_... not found".
+* Fixed the Confidence column on the Captured 404s tab reading as a dash for every row on every install. The match score was worked out when the 404 was captured and then thrown away, so the column, its tooltip and the two indexes that exist to sort by it had no value to work with. Captured 404s now record the score of their closest match.
+* Fixed apostrophes and quotes being stored with a backslash in front of them, so text typed as "didn't" was saved as "didn\'t". This affected support and uninstall feedback and other text saved from the admin screens. The redirect destination and 404 log search boxes had the same problem, so searching for a term containing an apostrophe matched nothing.
+* Fixed the plugin emailing "Failed to schedule cron hook" reports for scheduling requests that had not failed. WordPress refuses a request when an equivalent scheduled task already exists, and reports that the task list "could not be saved" when the list is written with no change; both are normal outcomes that mean the task is scheduled. One site received 18 copies of the same message, 14 of them inside one second.
+* Fixed the plugin retrying forever when WordPress refused to remove one of its scheduled tasks. Nothing in the retry could make progress, so a deactivation or cleanup request kept asking until the server's time limit killed it. Security and scheduled-task manager plugins can refuse the removal, which is what made this reachable.
+* Fixed a code path that could wait for one of the plugin's internal locks with no time limit at all. On a read-only database replica, a full disk, or an unwritable uploads directory the wait could never succeed, so the request slept and retried until the server's time limit killed it.
+* Fixed the same internal lock being granted to two requests at once on sites with no persistent object cache. Ownership was decided by writing a value and reading it back, but WordPress answered the read from its own in-memory copy, so each competing request read back its own write and concluded it had won. Two database upgrades were seen starting in the same second on one site.
+* Fixed two simultaneous requests entering the same database upgrade and the losing one reporting the winner's success as a string of errors, including a second change that could not succeed because the change it asked for had already been made.
+* Fixed "COLLATION 'latin1_swedish_ci' is not valid for CHARACTER SET 'utf8mb4'" database errors repeating every few seconds on sites whose database settings still name a latin1 collation. The permalink cache never refreshed on those sites and the published-content lookup returned nothing.
+* Fixed "Illegal mix of collations" errors when the plugin compared its own log rows against WordPress's posts table on sites where the two tables were created with different collations. The comparison returned no rows rather than failing visibly, so the check that depends on it silently found nothing.
+* Fixed the plugin repeatedly trying to add a column named "using" of type "btree" to its redirects table, and logging the resulting database error, on sites where an index definition ended in USING BTREE. The error was logged three times per upgrade and three more times per scheduled run, indefinitely.
+* Fixed the plugin rewriting a database table that was already correct. A table's character set was read from the first column that named one rather than from the table's own settings, so a correctly configured table could be read as out of date and converted when nothing had drifted.
+* Fixed one of the plugin's index repairs naming a column without first checking that the column exists. That repair removes and re-adds an index in a single statement, so a database server that applied only half of it could leave the log table with neither index.
+
+**Improvements**
+
+* The Simple Mode setting for automatic redirects now says what the match score has to reach and where to change it, instead of only saying that a good match is required. It names the score actually in force on the site rather than the shipped default.
+* The page that offers suggestions for a 404 now explains, to administrators only, what the number beside each suggestion means, what the current bar for an automatic redirect is, and the two ways to act on it: redirect that URL, or change the bar.
+
+**Internationalization**
+
+* Completed the translations for every language the plugin ships. 80 entries in Swedish and 846 across the other catalogs were still being shown in English; each is now translated, or marked to record that the English word is the right one in that language.
+* The support request dialog, the confidence chart on the stats screen and the plugin migration tool now have translations. Their text previously rendered in English in every language, no matter how complete that language's translation was.
+* Restored accented characters in seven Latin-script translations where entries had been typed without them.
+
 ## Version 4.3.3 (August 12, 2026) ##
 
 **New Features**
