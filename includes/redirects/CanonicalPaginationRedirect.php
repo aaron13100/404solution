@@ -78,7 +78,7 @@ class ABJ_404_Solution_CanonicalPaginationRedirect {
         $this->hitRecorder = $hitRecorder;
         $this->urlResolver = ($urlResolver !== null)
             ? $urlResolver
-            : new ABJ_404_Solution_CanonicalPaginationUrlResolver($logger);
+            : new ABJ_404_Solution_CanonicalPaginationUrlResolver();
     }
 
     /**
@@ -94,10 +94,14 @@ class ABJ_404_Solution_CanonicalPaginationRedirect {
     function redirectIfCanonicalizable(string $requestedURL, array $options,
             ABJ_404_Solution_FrontendPipelineTrace $trace): bool {
 
-        $canonicalUrl = $this->urlResolver->resolve($requestedURL);
-        if ($canonicalUrl === null) {
+        $resolution = $this->urlResolver->resolve($requestedURL);
+        if ($resolution['status'] !== ABJ_404_Solution_CanonicalPaginationUrlResolver::STATUS_MATCHED) {
+            if ($resolution['reason'] !== null) {
+                $this->logger->debugMessage($resolution['reason']);
+            }
             return false;
         }
+        $canonicalUrl = $resolution['url'];
 
         $trace->add('WordPress canonical', 'Matched',
             'reserved pagination query var -> ' . $canonicalUrl);

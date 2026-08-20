@@ -9,9 +9,10 @@ if (!defined('ABSPATH')) {
  * canonicalization would have sent it to -- or that there is no such URL.
  *
  * Pure policy: it reads the request and the query WordPress already ran, and
- * returns a string or null. It writes nothing, logs only its reasons, and
- * emits no response. {@see ABJ_404_Solution_CanonicalPaginationRedirect} is
- * what acts on the answer.
+ * returns either a canonical URL or a skip reason. It writes nothing, logs
+ * nothing, and emits no response. The result carries the diagnostic context
+ * to {@see ABJ_404_Solution_CanonicalPaginationRedirect}, which logs or acts
+ * on the answer.
  *
  * THE CLASS OF URL
  *
@@ -67,31 +68,23 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
      */
     const RESERVED_PAGINATION_QUERY_VARS = array('page', 'paged', 'cpage');
 
-    /** @var ABJ_404_Solution_Logging */
-    private $logger;
-
-    /**
-     * @param ABJ_404_Solution_Logging $logger
-     */
-    function __construct($logger) {
-        $this->logger = $logger;
-    }
+    const STATUS_MATCHED = 'matched';
+    const STATUS_SKIPPED = 'skipped';
 
     /**
      * The canonical destination for the request being answered.
      *
      * @param string $requestedURL requested path with sorted query string,
-     *                             used for log messages only.
-     * @return string|null absolute canonical URL, or null when the request is
-     *                     not in this class.
+     *                             used only in returned diagnostic context.
+     * @return array{status: 'matched', url: string}|array{status: 'skipped', reason: string|null}
      */
-    function resolve(string $requestedURL): ?string {
+    function resolve(string $requestedURL): array {
         if (!$this->requestIsSafeToCanonicalize()) {
-            return null;
+            return $this->skipped();
         }
 
         if (!$this->hasReservedPaginationQueryVar()) {
-            return null;
+            return $this->skipped();
         }
 
         $postId = $this->resolvedPostId();
@@ -99,19 +92,18 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
             // WordPress found no resource for this request, so there is
             // nothing to canonicalize to: a genuinely broken path that merely
             // happens to carry a pagination query var.
-            return null;
+            return $this->skipped();
         }
 
         $permalink = $this->permalinkFor($postId);
         if ($permalink === null) {
-            $this->logger->debugMessage('Canonical pagination redirect skipped: post ' . $postId .
+            return $this->skipped('Canonical pagination redirect skipped: post ' . $postId .
                 ' resolved for "' . $requestedURL . '" has no usable permalink.');
-            return null;
         }
 
         $userRequest = ABJ_404_Solution_UserRequest::getInstance();
         if ($userRequest === null) {
-            return null;
+            return $this->skipped();
         }
         $requestPath = (string)$userRequest->getPath();
         $requestQuery = (string)$userRequest->getQueryString();
@@ -123,9 +115,8 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
             // The post WordPress resolved is not the resource that was asked
             // for. Redirecting there would invent a destination, which is the
             // bug this class exists to remove.
-            $this->logger->debugMessage('Canonical pagination redirect skipped: resolved permalink "' .
+            return $this->skipped('Canonical pagination redirect skipped: resolved permalink "' .
                 $permalink . '" is a different resource than the requested path "' . $requestPath . '".');
-            return null;
         }
 
         $remainingQuery = $this->queryWithoutPaginationVars($requestQuery);
@@ -137,12 +128,27 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
         ))) {
             // Nothing to move to. Emitting this would ask the visitor to fetch
             // the URL that just 404'd.
-            $this->logger->debugMessage('Canonical pagination redirect skipped: the canonical form of "' .
+            return $this->skipped('Canonical pagination redirect skipped: the canonical form of "' .
                 $requestedURL . '" is the request itself.');
-            return null;
         }
 
-        return $canonicalUrl;
+        return $this->matched($canonicalUrl);
+    }
+
+    /**
+     * @param string $url
+     * @return array{status: 'matched', url: string}
+     */
+    private function matched(string $url): array {
+        return array('status' => self::STATUS_MATCHED, 'url' => $url);
+    }
+
+    /**
+     * @param string|null $reason
+     * @return array{status: 'skipped', reason: string|null}
+     */
+    private function skipped(?string $reason = null): array {
+        return array('status' => self::STATUS_SKIPPED, 'reason' => $reason);
     }
 
     /**
