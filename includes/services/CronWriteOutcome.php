@@ -109,6 +109,7 @@ class ABJ_404_Solution_CronWriteOutcome {
         }
         $inspectionFailure = '';
         try {
+            $this->inspector->refreshCronStoreReads();
             $stored = $this->inspector->requestedEventIsStored(array(
                 'hook' => $hook,
                 'args' => $args,
@@ -157,6 +158,7 @@ class ABJ_404_Solution_CronWriteOutcome {
 
         $inspectionFailure = '';
         try {
+            $this->inspector->refreshCronStoreReads();
             $stored = $this->inspector->requestedEventIsStored(array(
                 'hook' => $hook,
                 'args' => $args,
@@ -204,6 +206,7 @@ class ABJ_404_Solution_CronWriteOutcome {
 
         $inspectionFailure = '';
         try {
+            $this->inspector->refreshCronStoreReads();
             $absent = $this->inspector->requestedEventIsAbsent(array(
                 'hook' => $hook,
                 'args' => $args,

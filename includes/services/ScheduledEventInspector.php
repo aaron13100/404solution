@@ -129,9 +129,9 @@ class ABJ_404_Solution_ScheduledEventInspector {
      * the plugin author once per collation-failing query -- fourteen identical
      * ERROR lines inside one second -- for work that had already been done.
      *
-     * The option cache is dropped before reading, because the write that
-     * "failed" also left this request's cached copy of `cron` untouched and
-     * therefore still blind to the event the other request stored.
+     * The caller must invoke {@see refreshCronStoreReads()} after the failed
+     * write. Keeping the cache mutation explicit lets this method remain a
+     * read while still ensuring it sees the durable state.
      *
      * @param array{hook: string, args: array<int, mixed>, timestamp: int, recurrence: string|null, now: int} $request
      */
@@ -141,8 +141,6 @@ class ABJ_404_Solution_ScheduledEventInspector {
         $timestamp = $request['timestamp'];
         $recurrence = $request['recurrence'];
         $now = $request['now'];
-        $this->forgetCachedCronOption();
-
         if (function_exists('wp_get_scheduled_event')) {
             $event = wp_get_scheduled_event($hook, $this->listArgs($args), $timestamp);
             if ($event !== false) {
@@ -203,10 +201,9 @@ class ABJ_404_Solution_ScheduledEventInspector {
      * refusal this class already settles, and the behaviour that shipped before
      * this method existed. Failing the other way would strand a chain forever.
      *
-     * Deliberately reads through the option cache rather than dropping it
-     * first, unlike requestedEventIsStored(): this runs BEFORE a write, on hot
-     * paths, and dropping the autoloaded `alloptions` blob to answer it would
-     * cost far more than the duplicate request a stale read can cause.
+     * Deliberately reads through the option cache: this runs BEFORE a write, on
+     * hot paths, and dropping the autoloaded `alloptions` blob to answer it
+     * would cost far more than the duplicate request a stale read can cause.
      */
     public function anyEventIsStored(string $hook): bool {
         if (function_exists('_get_cron_array')) {
@@ -241,8 +238,6 @@ class ABJ_404_Solution_ScheduledEventInspector {
         $hook = $request['hook'];
         $args = $request['args'];
         $timestamp = $request['timestamp'];
-        $this->forgetCachedCronOption();
-
         if (function_exists('wp_get_scheduled_event')) {
             $event = wp_get_scheduled_event($hook, $this->listArgs($args), $timestamp);
             if ($event === false) {
@@ -318,7 +313,7 @@ class ABJ_404_Solution_ScheduledEventInspector {
      *
      * @return void
      */
-    private function forgetCachedCronOption(): void {
+    public function refreshCronStoreReads(): void {
         if (!function_exists('wp_cache_delete')) {
             return;
         }

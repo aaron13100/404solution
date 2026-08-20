@@ -61,8 +61,8 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
      *
      * The list is a suspect roster, not an inventory: past twenty-five entries a
      * reader has the pattern, and the record has to fit inside a support payload
-     * that is already at its byte ceiling. `callbacks_truncated` and
-     * `callback_count` keep the true size visible so the cap never disguises how
+     * that is already at its byte ceiling. `callback_count` keeps the true size
+     * visible beside the capped callback list, so the cap never disguises how
      * long the real chain was.
      */
     const MAX_CALLBACKS = 25;
@@ -161,6 +161,10 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
                 return;
             }
 
+            // DESIGN-AUDIT-OK: The mutex prevents concurrent requests that all
+            // observed the same stale record from each repeating the reflection
+            // census and UPDATE; the fresh fast path above remains lock-free,
+            // and testConcurrentRefreshLockPreventsASecondCensusWrite pins it.
             $lock = new ABJ_404_Solution_ExclusiveOptionRow();
             $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue(
                 (string)($now + self::REFRESH_LOCK_SECONDS)
@@ -274,7 +278,6 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
                 $entries,
                 self::MAX_CALLBACKS
             );
-            $record['callbacks_truncated'] = count($entries) > self::MAX_CALLBACKS;
         }
         return $record;
     }
