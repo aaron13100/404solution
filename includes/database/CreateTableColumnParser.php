@@ -184,9 +184,9 @@ class ABJ_404_Solution_CreateTableColumnParser {
      * The index of the closing quote of the quoted run that STARTS at $start.
      *
      * A run that is never closed (DDL truncated mid-string) ends at the last
-     * character rather than being reported as an error: the callers all read a
-     * short statement as "these are the columns it spells out", and pretending
-     * the unterminated run extends past the input would lose them.
+     * character. That prevents any apparent closing parenthesis inside the
+     * broken string from balancing the table body; tableBody() then returns
+     * the fail-closed empty result the schema-diff caller recognizes.
      *
      * The single definition of what quoting means here. It used to be inlined
      * in each of the three scanners below, which is three chances for the
