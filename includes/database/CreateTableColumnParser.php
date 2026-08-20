@@ -259,10 +259,10 @@ class ABJ_404_Solution_CreateTableColumnParser {
      * the opening paren that follows the table name and its matching close.
      *
      * A statement with no balanced close (truncated DDL, a partial read) yields
-     * everything after the opening paren rather than nothing: the schema-diff
-     * caller reads an empty column list as "unparseable, do not touch this
-     * table", which is the right answer for garbage but the wrong one for a
-     * statement whose columns are all present and readable.
+     * nothing. There is no reliable way to prove that all column declarations
+     * arrived before the truncation point, and the schema-diff caller treats an
+     * empty list as the fail-closed "unparseable, do not touch this table"
+     * signal.
      *
      * @param string $createTableSql
      * @return string
@@ -298,7 +298,7 @@ class ABJ_404_Solution_CreateTableColumnParser {
             }
         }
 
-        return $bodyStart === -1 ? '' : substr($sql, $bodyStart);
+        return '';
     }
 
     /**
