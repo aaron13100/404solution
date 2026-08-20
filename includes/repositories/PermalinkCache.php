@@ -285,14 +285,49 @@ class ABJ_404_Solution_PermalinkCache {
     }
     
     /**
+     * Arm the next link of the deferred permalink-cache chain, unless the chain
+     * is already armed.
+     *
+     * The guard is the whole point of the method now. WordPress identifies a
+     * single event by hook AND arguments (md5(serialize($args))), and this
+     * chain's links carry `[$maxExecutionTime, $executionCount]` -- both of
+     * which move. So a link the previous cron tick queued as `[25, 7]` is NOT a
+     * duplicate of the `[55, 2]` a frontend 404 asks for, and without the probe
+     * WordPress dutifully queued a second pass beside the first. That is
+     * production report 295 (tv503.com, 7,568 posts + 81 pages): three `cron`
+     * option writes in two seconds, one per scanner 404, every one asking for
+     * `[55, 2]` because a foreground call always passes execution count 1. The
+     * chain was restarted from the front end rather than advanced, so
+     * MAX_EXECUTIONS never bounded anything, and the next cron spawn re-ran
+     * batches that were already queued to run.
+     *
+     * Asking the store rather than a known args tuple is deliberate: the budget
+     * is recomputed from ini_get() in whatever request arms the link, and a
+     * WP-Cron request routinely reports a different max_execution_time than a
+     * front-end one, so there is no tuple to probe for.
+     *
+     * Safe against wedging the chain, in both directions. WordPress removes a
+     * single event from the store BEFORE invoking its callback, so a pass
+     * re-arming its own successor sees nothing queued and advances normally;
+     * and if two links are somehow already queued, the first to run declines to
+     * add a third while the second is still there, which collapses the
+     * duplicates a pre-fix site accumulated instead of preserving them.
+     *
      * @param int $executionCount
      * @return void
      */
     function scheduleToRunAgain(int $executionCount): void {
+        $scheduler = abj_cron_scheduler();
+        if ($scheduler->hasAnyScheduledEvent(self::UPDATE_PERMALINK_CACHE_HOOK)) {
+            $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+                ": a permalink cache pass is already queued; not queueing another.");
+            return;
+        }
+
         $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
         $maxExecutionTime = max($maxExecutionTime, 25);
 
-        abj_cron_scheduler()->scheduleSingleAt(
+        $scheduler->scheduleSingleAt(
             ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
             1,
             array($maxExecutionTime, $executionCount)

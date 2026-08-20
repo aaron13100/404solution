@@ -53,6 +53,9 @@ class ABJ_404_Solution_CronScheduler {
     /** @var ABJ_404_Solution_CronWriteOutcome Decides what a refused write meant, and reports it. */
     private $outcome;
 
+    /** @var ABJ_404_Solution_ScheduledEventInspector Read side of the cron store. */
+    private $inspector;
+
     /**
      * @param ABJ_404_Solution_Clock $clock
      * @param ABJ_404_Solution_Logging|null $logger
@@ -64,10 +67,8 @@ class ABJ_404_Solution_CronScheduler {
         ?ABJ_404_Solution_ScheduledEventInspector $inspector = null
     ) {
         $this->clock = $clock;
-        $this->outcome = new ABJ_404_Solution_CronWriteOutcome(
-            $logger,
-            $inspector !== null ? $inspector : new ABJ_404_Solution_ScheduledEventInspector()
-        );
+        $this->inspector = $inspector !== null ? $inspector : new ABJ_404_Solution_ScheduledEventInspector();
+        $this->outcome = new ABJ_404_Solution_CronWriteOutcome($logger, $this->inspector);
     }
 
     /** @param callable(string,array<string,mixed>,callable):mixed|null $tracer */
@@ -103,6 +104,23 @@ class ABJ_404_Solution_CronScheduler {
                     : wp_next_scheduled($hook, $this->listArgs($args));
             }
         );
+    }
+
+    /**
+     * Whether anything at all is queued for a hook, whatever arguments it
+     * carries.
+     *
+     * The question {@see nextScheduled()} cannot answer: WordPress identifies
+     * an event by hook AND arguments, so a no-args probe is blind to every
+     * chain that carries a cursor or a counter in its args. Callers that arm a
+     * self-rescheduling chain ask this first, so they recognize their own
+     * in-flight link instead of queueing a second one beside it.
+     *
+     * @param string $hook
+     * @return bool
+     */
+    public function hasAnyScheduledEvent(string $hook): bool {
+        return $this->inspector->anyEventIsStored($hook);
     }
 
     /**

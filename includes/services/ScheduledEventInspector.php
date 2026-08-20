@@ -163,6 +163,56 @@ class ABJ_404_Solution_ScheduledEventInspector {
     }
 
     /**
+     * Answer whether the cron store holds an event for a hook under ANY
+     * arguments.
+     *
+     * The one cron question WordPress has no public API for. Every other read
+     * -- wp_next_scheduled(), wp_get_scheduled_event(), wp_get_schedule() --
+     * identifies an event by hook AND arguments, hashed as
+     * md5(serialize($args)), so none of them can see a chain whose links carry
+     * a cursor, an offset or an execution count in their args. Asking one of
+     * them anyway is how a self-rescheduling chain fails to recognize itself:
+     * ABJ_404_Solution_NGramCacheRebuildScheduler::armedRebuildTimestamp()
+     * documents the same trap from the other side, and worked around it by
+     * probing the two arg shapes that chain can hold.
+     *
+     * That workaround does not generalize. The permalink-cache chain's args are
+     * `[max_execution_time - 5, executionCount]`, and BOTH move: the execution
+     * count walks 2..15, and the budget is whatever ini_get() reports in the
+     * request that armed the link, which a WP-Cron request and a front-end
+     * request routinely disagree about. Enumerating the tuples would be
+     * guessing; reading the store is not.
+     *
+     * `_get_cron_array()` is core's own accessor for exactly this (it is what
+     * wp_next_scheduled() and wp_schedule_single_event() both read), but it is
+     * a private function, so a build that does not provide it -- or that
+     * answers with something other than an array -- falls back to the no-args
+     * probe. That fallback can only under-report, which leaves the caller
+     * asking WordPress for an event it may already hold: a benign duplicate
+     * refusal this class already settles, and the behaviour that shipped before
+     * this method existed. Failing the other way would strand a chain forever.
+     *
+     * Deliberately reads through the option cache rather than dropping it
+     * first, unlike requestedEventIsStored(): this runs BEFORE a write, on hot
+     * paths, and dropping the autoloaded `alloptions` blob to answer it would
+     * cost far more than the duplicate request a stale read can cause.
+     */
+    public function anyEventIsStored(string $hook): bool {
+        if (function_exists('_get_cron_array')) {
+            $crons = _get_cron_array();
+            if (is_array($crons)) {
+                foreach ($crons as $eventsByHook) {
+                    if (is_array($eventsByHook) && !empty($eventsByHook[$hook])) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        return $this->nextScheduledTimestamp($hook, array()) !== false;
+    }
+
+    /**
      * Answer whether the event a removal targeted is gone from the cron store.
      *
      * The mirror image of {@see requestedEventIsStored}: wp_unschedule_event()
