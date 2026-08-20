@@ -167,11 +167,21 @@ final class ABJ_404_Solution_HookCallbackRoster {
         $entries = array();
         ksort($callbacks, SORT_NUMERIC);
         foreach ($callbacks as $priority => $atPriority) {
-            if (!is_array($atPriority)) {
-                continue;
+            if ((!is_int($priority) && preg_match('/^-?[0-9]+$/', $priority) !== 1)
+                    || !is_array($atPriority)) {
+                throw new UnexpectedValueException(
+                    'Malformed WordPress hook callback priority bucket: ' . (string)$priority . '.'
+                );
             }
             foreach ($atPriority as $index => $entry) {
-                $function = is_array($entry) ? ($entry['function'] ?? null) : null;
+                if (!is_array($entry) || !array_key_exists('function', $entry)
+                        || !self::isDescribableCallable($entry['function'])) {
+                    throw new UnexpectedValueException(
+                        'Malformed WordPress hook callback entry at priority ' . (string)$priority
+                        . ' with registry key ' . (string)$index . '.'
+                    );
+                }
+                $function = $entry['function'];
                 $entries[] = array(
                     'priority' => (int)$priority,
                     'index' => (string)$index,
@@ -181,6 +191,30 @@ final class ABJ_404_Solution_HookCallbackRoster {
             }
         }
         return $entries;
+    }
+
+    /**
+     * Whether a registry value carries enough identity to be recorded without
+     * turning malformed data into an invented `unknown` callback.
+     *
+     * This checks shape, not callability: WordPress can retain a named callback
+     * whose class has not loaded yet, and that name is still truthful evidence.
+     *
+     * @param mixed $function
+     */
+    private static function isDescribableCallable($function): bool {
+        if (is_string($function) && $function !== '') {
+            return true;
+        }
+        if ($function instanceof Closure) {
+            return true;
+        }
+        if (is_object($function)) {
+            return true;
+        }
+        return is_array($function) && count($function) === 2
+            && (is_object($function[0]) || (is_string($function[0]) && $function[0] !== ''))
+            && is_string($function[1]) && $function[1] !== '';
     }
 
     /**

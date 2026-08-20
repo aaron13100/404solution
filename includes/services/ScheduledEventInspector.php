@@ -145,7 +145,8 @@ class ABJ_404_Solution_ScheduledEventInspector {
 
         if (function_exists('wp_get_scheduled_event')) {
             $event = wp_get_scheduled_event($hook, $this->listArgs($args), $timestamp);
-            if (is_object($event)) {
+            if ($event !== false) {
+                $this->assertExactEventShape($event, $hook, $timestamp);
                 return $recurrence === null
                     || (isset($event->schedule) && $event->schedule === $recurrence);
             }
@@ -156,7 +157,11 @@ class ABJ_404_Solution_ScheduledEventInspector {
             return false;
         }
         if ($recurrence !== null) {
-            return $this->scheduledRecurrenceMatches($hook, $args, $recurrence);
+            return (int)$next === $timestamp && $this->scheduledRecurrenceMatches(array(
+                'hook' => $hook,
+                'args' => $args,
+                'recurrence' => $recurrence,
+            ));
         }
         // WordPress itself refuses to add a second identical event inside its
         // duplicate window, so an event in that window satisfies the request
@@ -230,13 +235,21 @@ class ABJ_404_Solution_ScheduledEventInspector {
      * wp_unschedule_event() targets one exact timestamp, so absence means "no
      * event at THAT timestamp" and nothing weaker.
      *
-     * @param array<int, mixed> $args
+     * @param array{hook: string, args: array<int, mixed>, timestamp: int} $request
      */
-    public function requestedEventIsAbsent(string $hook, array $args, int $timestamp): bool {
+    public function requestedEventIsAbsent(array $request): bool {
+        $hook = $request['hook'];
+        $args = $request['args'];
+        $timestamp = $request['timestamp'];
         $this->forgetCachedCronOption();
 
         if (function_exists('wp_get_scheduled_event')) {
-            return !is_object(wp_get_scheduled_event($hook, $this->listArgs($args), $timestamp));
+            $event = wp_get_scheduled_event($hook, $this->listArgs($args), $timestamp);
+            if ($event === false) {
+                return true;
+            }
+            $this->assertExactEventShape($event, $hook, $timestamp);
+            return false;
         }
         return $this->nextScheduledTimestamp($hook, $args) !== $timestamp;
     }
@@ -255,9 +268,12 @@ class ABJ_404_Solution_ScheduledEventInspector {
     }
 
     /**
-     * @param array<int, mixed> $args
+     * @param array{hook: string, args: array<int, mixed>, recurrence: string} $request
      */
-    private function scheduledRecurrenceMatches(string $hook, array $args, string $recurrence): bool {
+    private function scheduledRecurrenceMatches(array $request): bool {
+        $hook = $request['hook'];
+        $args = $request['args'];
+        $recurrence = $request['recurrence'];
         if (!function_exists('wp_get_schedule')) {
             return false;
         }
@@ -265,6 +281,29 @@ class ABJ_404_Solution_ScheduledEventInspector {
             ? wp_get_schedule($hook)
             : wp_get_schedule($hook, $this->listArgs($args));
         return is_string($schedule) && $schedule === $recurrence;
+    }
+
+    /**
+     * Validate the contract of an exact-timestamp wp_get_scheduled_event()
+     * lookup before its answer is allowed to excuse a failed cron write.
+     *
+     * @param mixed $event
+     * @throws UnexpectedValueException when WordPress or a replacement returns
+     *   a shape that cannot prove the requested event exists.
+     */
+    private function assertExactEventShape($event, string $hook, int $timestamp): void {
+        if (!is_object($event) || !isset($event->timestamp) || !is_numeric($event->timestamp)) {
+            throw new UnexpectedValueException(
+                'wp_get_scheduled_event returned a malformed exact event for cron hook ' . $hook
+                . ' at timestamp ' . $timestamp . ': expected an object with a numeric timestamp.'
+            );
+        }
+        if ((int)$event->timestamp !== $timestamp) {
+            throw new UnexpectedValueException(
+                'wp_get_scheduled_event returned timestamp ' . (int)$event->timestamp
+                . ' for exact cron hook lookup ' . $hook . ' at timestamp ' . $timestamp . '.'
+            );
+        }
     }
 
     /**

@@ -213,6 +213,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 * Fixed the Confidence column on the Captured 404s tab reading as a dash for every row on every install. The match score was worked out when the 404 was captured and then thrown away, so the column, its tooltip and the two indexes that exist to sort by it had no value to work with. Captured 404s now record the score of their closest match.
 * Fixed apostrophes and quotes being stored with a backslash in front of them, so text typed as "didn't" was saved as "didn\'t". This affected support and uninstall feedback and other text saved from the admin screens. The redirect destination and 404 log search boxes had the same problem, so searching for a term containing an apostrophe matched nothing.
 * Fixed the plugin emailing "Failed to schedule cron hook" reports for scheduling requests that had not failed. WordPress refuses a request when an equivalent scheduled task already exists, and reports that the task list "could not be saved" when the list is written with no change; both are normal outcomes that mean the task is scheduled. One site received 18 copies of the same message, 14 of them inside one second.
+* Fixed the reverse scheduled-task check: a failed recurring schedule could be reported as successful when a different occurrence of the same task already existed. Exact schedule and removal checks now require the requested timestamp, and malformed WordPress cron responses are logged with their original context instead of being treated as success.
 * Fixed the plugin retrying forever when WordPress refused to remove one of its scheduled tasks. Nothing in the retry could make progress, so a deactivation or cleanup request kept asking until the server's time limit killed it. Security and scheduled-task manager plugins can refuse the removal, which is what made this reachable.
 * Fixed a code path that could wait for one of the plugin's internal locks with no time limit at all. On a read-only database replica, a full disk, or an unwritable uploads directory the wait could never succeed, so the request slept and retried until the server's time limit killed it.
 * Fixed the same internal lock being granted to two requests at once on sites with no persistent object cache. Ownership was decided by writing a value and reading it back, but WordPress answered the read from its own in-memory copy, so each competing request read back its own write and concluded it had won. Two database upgrades were seen starting in the same second on one site.
@@ -384,18 +385,4 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 **Improvements**
 
 * The plugin now self-detects unusual PHP and database hosting limits (memory limit, time limit, strict SQL modes, query packet size) at the start of each rebuild and adapts to work within them, instead of failing on restrictive hosts.
-
-= Version 4.1.16 (May 8, 2026) =
-
-**Bug Fixes**
-
-* Fixed the Captured 404s and Page Redirects admin pages getting stuck on "Creating build buffer (1/11)" forever on hosts with the standard 30-second PHP execution limit (the default on most shared hosting). The cache rebuild was yielding before inserting any rows because it was reserving more PHP time than the request actually had, so each rebuild request returned without making progress. The first batch of every rebuild step now always runs, so the rebuild reliably moves forward on a typical 30-second host.
-* Fixed Captured 404s and Page Redirects admin pages still failing to load when the database killed a single rebuild step (max statement time exceeded, lost connection, lock timeout): the entire rebuild used to give up, but it now resumes on the next request from where it left off, at every step.
-* Fixed brief network blips and intermittent 5xx responses during a long rebuild causing the admin page to show "Could not finish refreshing data" instead of continuing to wait. Transient errors are now treated as a no-progress tick and the page keeps polling.
-* Fixed the rebuild getting stuck retrying the same single-statement step (index build, hit-count update, or sort-index step) when the host's database statement timeout was shorter than that step needed to complete. Those steps used to retry with the same too-tight timeout forever; now the per-query timeout is extended for the retry so the step can finish.
-
-**Improvements**
-
-* The admin-table rebuild now adapts its batch size to the host. If a batch is killed by the database, the next attempt uses a smaller batch, and the smaller size is remembered for the rest of the rebuild so slow shared hosts converge on a size they can actually finish.
-* Per-query timeouts during the rebuild are now sized to the host's own statement timeout (MariaDB max_statement_time / MySQL max_execution_time), so a kill produces a clean classifiable error the rebuild can resume from rather than a dropped connection.
 

@@ -107,13 +107,20 @@ class ABJ_404_Solution_CronWriteOutcome {
                     . 'equivalent event for the hook',
             ));
         }
-        if ($this->inspector->requestedEventIsStored(array(
-            'hook' => $hook,
-            'args' => $args,
-            'timestamp' => $timestamp,
-            'recurrence' => null,
-            'now' => $now,
-        ))) {
+        $inspectionFailure = '';
+        try {
+            $stored = $this->inspector->requestedEventIsStored(array(
+                'hook' => $hook,
+                'args' => $args,
+                'timestamp' => $timestamp,
+                'recurrence' => null,
+                'now' => $now,
+            ));
+        } catch (Throwable $e) {
+            $stored = false;
+            $inspectionFailure = $this->inspectionFailureDetail($e);
+        }
+        if ($stored) {
             return $this->reportAlreadySatisfied(array(
                 'type' => 'single',
                 'hook' => $hook,
@@ -128,7 +135,7 @@ class ABJ_404_Solution_CronWriteOutcome {
             'timestamp' => $timestamp,
             'args' => $args,
             'errorCode' => $this->wpErrorCode($writeResult) ?: 'cron_write_returned_false',
-            'detail' => $this->writeFailureDetail($writeResult, 'wp_schedule_single_event'),
+            'detail' => $this->writeFailureDetail($writeResult, 'wp_schedule_single_event') . $inspectionFailure,
             'now' => $now,
         ));
         return false;
@@ -148,13 +155,20 @@ class ABJ_404_Solution_CronWriteOutcome {
         $timestamp = $request['timestamp'];
         $now = $request['now'];
 
-        if ($this->inspector->requestedEventIsStored(array(
-            'hook' => $hook,
-            'args' => $args,
-            'timestamp' => $timestamp,
-            'recurrence' => $recurrence,
-            'now' => $now,
-        ))) {
+        $inspectionFailure = '';
+        try {
+            $stored = $this->inspector->requestedEventIsStored(array(
+                'hook' => $hook,
+                'args' => $args,
+                'timestamp' => $timestamp,
+                'recurrence' => $recurrence,
+                'now' => $now,
+            ));
+        } catch (Throwable $e) {
+            $stored = false;
+            $inspectionFailure = $this->inspectionFailureDetail($e);
+        }
+        if ($stored) {
             return $this->reportAlreadySatisfied(array(
                 'type' => 'recurring',
                 'hook' => $hook,
@@ -169,7 +183,7 @@ class ABJ_404_Solution_CronWriteOutcome {
             'timestamp' => $timestamp,
             'args' => $args,
             'errorCode' => $this->wpErrorCode($writeResult) ?: 'cron_write_returned_false',
-            'detail' => $this->writeFailureDetail($writeResult, 'wp_schedule_event'),
+            'detail' => $this->writeFailureDetail($writeResult, 'wp_schedule_event') . $inspectionFailure,
             'now' => $now,
         ));
         return false;
@@ -188,7 +202,18 @@ class ABJ_404_Solution_CronWriteOutcome {
         $args = $request['args'];
         $timestamp = $request['timestamp'];
 
-        if ($this->inspector->requestedEventIsAbsent($hook, $args, $timestamp)) {
+        $inspectionFailure = '';
+        try {
+            $absent = $this->inspector->requestedEventIsAbsent(array(
+                'hook' => $hook,
+                'args' => $args,
+                'timestamp' => $timestamp,
+            ));
+        } catch (Throwable $e) {
+            $absent = false;
+            $inspectionFailure = $this->inspectionFailureDetail($e);
+        }
+        if ($absent) {
             return $this->reportAlreadySatisfied(array(
                 'type' => 'removal of',
                 'hook' => $hook,
@@ -197,7 +222,8 @@ class ABJ_404_Solution_CronWriteOutcome {
             ));
         }
         $errorCode = $this->wpErrorCode($writeResult) ?: 'cron_removal_returned_false';
-        $this->lastFailureDetail = $this->writeFailureDetail($writeResult, 'wp_unschedule_event');
+        $this->lastFailureDetail = $this->writeFailureDetail($writeResult, 'wp_unschedule_event')
+            . $inspectionFailure;
         $this->warn('Failed to unschedule cron hook ' . $hook . ' at timestamp ' . $timestamp
             . '. Error code: ' . $errorCode . '. Detail: ' . $this->lastFailureDetail
             . '. Recovery: inspect filters on wp_unschedule_event and the WordPress cron option, then retry.');
@@ -230,6 +256,12 @@ class ABJ_404_Solution_CronWriteOutcome {
         $this->warn('Cannot ' . $verb . ' cron hook ' . $hook . ': ' . $primitive
             . ' unavailable. Error code: cron_primitive_unavailable. Recovery: verify the WordPress core '
             . 'cron files are complete and the function is available, then retry.');
+    }
+
+    /** Preserve a cron-read exception as part of the write failure evidence. */
+    private function inspectionFailureDetail(Throwable $error): string {
+        return '; cron store verification failed (' . get_class($error) . ', code '
+            . $error->getCode() . '): ' . $error->getMessage();
     }
 
     /**

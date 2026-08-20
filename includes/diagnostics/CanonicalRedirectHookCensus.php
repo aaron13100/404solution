@@ -78,6 +78,12 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
      */
     const REFRESH_AFTER_SECONDS = 86400;
 
+    /** The database-arbitrated mutex used only while a stale reading refreshes. */
+    const REFRESH_LOCK_OPTION_NAME = 'abj404_canonical_hook_census_lock';
+
+    /** A crashed refresher cannot suppress diagnostics indefinitely. */
+    const REFRESH_LOCK_SECONDS = 60;
+
     /** The hook core's canonical redirect is registered on. */
     const HOOK_NAME = 'template_redirect';
 
@@ -154,7 +160,34 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
             if ($unchanged && $fresh) {
                 return;
             }
-            self::write(self::census($entries, $fingerprint, $now, $stored));
+
+            $lock = new ABJ_404_Solution_ExclusiveOptionRow();
+            $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue(
+                (string)($now + self::REFRESH_LOCK_SECONDS)
+            );
+            if (!self::claimRefreshLock($lock, $claimValue, $now)) {
+                return;
+            }
+            try {
+                // The first read happened before mutex acquisition. Another
+                // request may have refreshed the record while this one waited,
+                // so evict this request's option-cache copy and decide again
+                // from the now-current record before paying for reflection or
+                // issuing an UPDATE.
+                self::forgetCachedCensusOption();
+                $stored = self::read();
+                $unchanged = isset($stored['fingerprint']) && $stored['fingerprint'] === $fingerprint;
+                $fresh = ($now - self::intIn($stored, 'recorded_at', 0)) < self::REFRESH_AFTER_SECONDS;
+                if ($unchanged && $fresh) {
+                    return;
+                }
+                self::write(self::census($entries, $fingerprint, $now, $stored));
+            } finally {
+                $lock->releaseIfValueIs(array(
+                    'optionName' => self::REFRESH_LOCK_OPTION_NAME,
+                    'value' => $claimValue,
+                ));
+            }
         } catch (Throwable $e) {
             abj404_logPhpFallback('canonical-hook-census',
                 'canonical hook census failed (code ' . $e->getCode() . '): ' . $e->getMessage());
@@ -264,7 +297,48 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
                 'canonical hook census could not be encoded: ' . json_last_error_msg());
             return;
         }
-        update_option(self::OPTION_NAME, $encoded, false);
+        if (!update_option(self::OPTION_NAME, $encoded, false)) {
+            abj404_logPhpFallback('canonical-hook-census',
+                'canonical hook census option write was not persisted. Recovery: inspect the WordPress '
+                . 'options table and object-cache error logs, then retry from a front-end 404.');
+        }
+    }
+
+    /**
+     * Acquire the stale-reading refresh mutex, recovering a claim left behind
+     * by a request that terminated before its finally block ran.
+     */
+    private static function claimRefreshLock(
+        ABJ_404_Solution_ExclusiveOptionRow $lock,
+        string $claimValue,
+        int $now
+    ): bool {
+        $claim = array('optionName' => self::REFRESH_LOCK_OPTION_NAME, 'value' => $claimValue);
+        if ($lock->claim($claim)) {
+            return true;
+        }
+
+        $holder = $lock->valueOf(self::REFRESH_LOCK_OPTION_NAME);
+        $separator = strpos($holder, ':');
+        $expiresAt = (int)($separator === false ? $holder : substr($holder, 0, $separator));
+        if ($holder === '' || $expiresAt > $now) {
+            return false;
+        }
+
+        $lock->releaseIfValueIs(array(
+            'optionName' => self::REFRESH_LOCK_OPTION_NAME,
+            'value' => $holder,
+        ));
+        return $lock->claim($claim);
+    }
+
+    /** Drop only cached option values that can hide a concurrent refresh. */
+    private static function forgetCachedCensusOption(): void {
+        if (!function_exists('wp_cache_delete')) {
+            return;
+        }
+        wp_cache_delete(self::OPTION_NAME, 'options');
+        wp_cache_delete('notoptions', 'options');
     }
 
     /**
