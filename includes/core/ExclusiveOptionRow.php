@@ -64,19 +64,33 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 *   serving the request, which is what every non-network claim wants.
 	 */
 	public function __construct($scope = self::SCOPE_CURRENT_BLOG) {
-		$this->scope = $scope === self::SCOPE_NETWORK_MAIN_SITE
-			? self::SCOPE_NETWORK_MAIN_SITE
-			: self::SCOPE_CURRENT_BLOG;
+		if (!in_array($scope, array(self::SCOPE_CURRENT_BLOG, self::SCOPE_NETWORK_MAIN_SITE), true)) {
+			throw new InvalidArgumentException('Unknown exclusive option-row scope: ' . (string)$scope);
+		}
+		$this->scope = $scope;
+	}
+
+	/** Mint a process- and request-specific value for a claim.
+	 *
+	 * The caller-provided prefix may carry policy data such as an acquisition
+	 * or expiry timestamp. The suffix is what makes conditional release safe
+	 * even when two requests acquire the same row during the same clock tick.
+	 *
+	 * @param string $prefix
+	 * @return string
+	 */
+	public static function uniqueClaimValue($prefix) {
+		return $prefix . ':' . (string)getmypid() . ':' . uniqid('', true);
 	}
 
 	/** Take $optionName, but only if no row exists for it yet.
 	 *
-	 * @param string $optionName
-	 * @param string $value what to record in the row; the caller decides what
-	 *   it means (an owner id, an acquisition timestamp, an expiry).
+	 * @param array{optionName: string, value: string} $claim
 	 * @return bool true only if this call created the row.
 	 */
-	public function claim($optionName, $value) {
+	public function claim(array $claim) {
+		$optionName = $claim['optionName'];
+		$value = $claim['value'];
 		$wpdb = $this->wpdbOrNull();
 		$table = $wpdb === null ? '' : $this->optionsTable($wpdb);
 		if ($wpdb === null || $table === '') {
@@ -155,15 +169,6 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		return is_string($value) ? $value : '';
 	}
 
-	/** Give up $optionName unconditionally.
-	 *
-	 * @param string $optionName
-	 * @return bool true if a row was removed.
-	 */
-	public function release($optionName) {
-		return $this->deleteRow($optionName, null);
-	}
-
 	/** Give up $optionName, but only while it still records $value.
 	 *
 	 * Callers that mint a unique value per claim should prefer this: it makes
@@ -171,20 +176,20 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 * unlikely, which matters because every release decision is made on the
 	 * strength of a read that happened earlier.
 	 *
-	 * @param string $optionName
-	 * @param string $value
+	 * @param array{optionName: string, value: string} $claim
 	 * @return bool true if the row recording $value was removed.
 	 */
-	public function releaseIfValueIs($optionName, $value) {
-		return $this->deleteRow($optionName, (string)$value);
+	public function releaseIfValueIs(array $claim) {
+		return $this->deleteRow($claim);
 	}
 
 	/**
-	 * @param string $optionName
-	 * @param string|null $requiredValue null deletes whatever is there.
+	 * @param array{optionName: string, value: string} $claim
 	 * @return bool
 	 */
-	private function deleteRow($optionName, $requiredValue) {
+	private function deleteRow(array $claim) {
+		$optionName = $claim['optionName'];
+		$requiredValue = $claim['value'];
 		$wpdb = $this->wpdbOrNull();
 		$table = $wpdb === null ? '' : $this->optionsTable($wpdb);
 		if ($wpdb === null || $table === '') {
@@ -197,13 +202,11 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		}
 		$sql = "DELETE FROM `" . $table . "` WHERE option_name = " . $boundName;
 
-		if ($requiredValue !== null) {
-			$boundValue = $this->bind($wpdb, '%s', array($requiredValue));
-			if ($boundValue === '') {
-				return false;
-			}
-			$sql .= " AND option_value = " . $boundValue;
+		$boundValue = $this->bind($wpdb, '%s', array($requiredValue));
+		if ($boundValue === '') {
+			return false;
 		}
+		$sql .= " AND option_value = " . $boundValue;
 
 		// DAO-bypass-approved: releasing a lock must not itself need one, and this runs in finally blocks and on shutdown, after the DAO may already have been torn down.
 		$rowsDeleted = $wpdb->query($sql);

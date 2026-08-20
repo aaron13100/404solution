@@ -198,7 +198,7 @@ class ABJ_404_Solution_LockOwnerStore {
     		}
     	}
 
-    	return $this->optionRowFor($key)->claim($key, $uniqueID);
+		return $this->optionRowFor($key)->claim(array('optionName' => $key, 'value' => $uniqueID));
     }
 
     /**
@@ -262,7 +262,7 @@ class ABJ_404_Solution_LockOwnerStore {
     		return true;
     	}
 
-    	return $this->optionRowFor($key)->releaseIfValueIs($key, $owner);
+		return $this->optionRowFor($key)->releaseIfValueIs(array('optionName' => $key, 'value' => $owner));
     }
 
     /** The owner value recorded in the options table.

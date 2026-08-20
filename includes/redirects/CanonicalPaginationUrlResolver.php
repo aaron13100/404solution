@@ -116,7 +116,10 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
         $requestPath = (string)$userRequest->getPath();
         $requestQuery = (string)$userRequest->getQueryString();
 
-        if (!$this->pathsDescribeTheSameResource($requestPath, $this->pathOf($permalink))) {
+        if (!$this->pathsDescribeTheSameResource(array(
+            'requestPath' => $requestPath,
+            'permalinkPath' => $this->pathOf($permalink),
+        ))) {
             // The post WordPress resolved is not the resource that was asked
             // for. Redirecting there would invent a destination, which is the
             // bug this class exists to remove.
@@ -128,7 +131,10 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
         $remainingQuery = $this->queryWithoutPaginationVars($requestQuery);
         $canonicalUrl = $permalink . ($remainingQuery === '' ? '' : '?' . $remainingQuery);
 
-        if ($this->pathAndQuery($canonicalUrl) === $this->joinPathAndQuery($requestPath, $requestQuery)) {
+        if ($this->pathAndQuery($canonicalUrl) === $this->joinPathAndQuery(array(
+            'path' => $requestPath,
+            'query' => $requestQuery,
+        ))) {
             // Nothing to move to. Emitting this would ask the visitor to fetch
             // the URL that just 404'd.
             $this->logger->debugMessage('Canonical pagination redirect skipped: the canonical form of "' .
@@ -156,7 +162,7 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
      */
     private function requestIsSafeToCanonicalize(): bool {
         $method = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD'])
-            ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+            ? strtoupper($_SERVER['REQUEST_METHOD']) : '';
         if ($method !== 'GET' && $method !== 'HEAD') {
             return false;
         }
@@ -268,11 +274,12 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
      * plus a trailing pretty-pagination segment (`/a-post/5/`). Trailing
      * slashes are not significant for this comparison.
      *
-     * @param string $requestPath
-     * @param string $permalinkPath
+     * @param array{requestPath: string, permalinkPath: string} $paths
      * @return bool
      */
-    private function pathsDescribeTheSameResource(string $requestPath, string $permalinkPath): bool {
+    private function pathsDescribeTheSameResource(array $paths): bool {
+        $requestPath = $paths['requestPath'];
+        $permalinkPath = $paths['permalinkPath'];
         $request = $this->normalizePathForComparison($requestPath);
         $permalink = $this->normalizePathForComparison($permalinkPath);
 
@@ -311,15 +318,19 @@ class ABJ_404_Solution_CanonicalPaginationUrlResolver {
      */
     private function pathAndQuery(string $url): string {
         $query = parse_url($url, PHP_URL_QUERY);
-        return $this->joinPathAndQuery($this->pathOf($url), is_string($query) ? $query : '');
+        return $this->joinPathAndQuery(array(
+            'path' => $this->pathOf($url),
+            'query' => is_string($query) ? $query : '',
+        ));
     }
 
     /**
-     * @param string $path
-     * @param string $query
+     * @param array{path: string, query: string} $parts
      * @return string
      */
-    private function joinPathAndQuery(string $path, string $query): string {
+    private function joinPathAndQuery(array $parts): string {
+        $path = $parts['path'];
+        $query = $parts['query'];
         $normalizedPath = $this->normalizePathForComparison($path);
         return $query === '' ? $normalizedPath : $normalizedPath . '?' . $query;
     }

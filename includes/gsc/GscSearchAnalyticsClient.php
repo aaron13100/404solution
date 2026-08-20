@@ -27,6 +27,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
     /** @var ABJ_404_Solution_GscOAuthTokenStore */
     private $oauthStore;
 
+    /** @var string|null Exact row value acquired by this instance. */
+    private $fetchLockValue;
+
     /** @param ABJ_404_Solution_Logging $logger */
     public function __construct($logger, ABJ_404_Solution_GscOAuthTokenStore $oauthStore) {
         $this->logger = $logger;
@@ -109,8 +112,13 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
     private function claimFetchLock(): bool {
         $lockRow = $this->fetchLockRow();
         $now = abj_clock()->now();
+        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
 
-        if ($lockRow->claim(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, (string)$now)) {
+        if ($lockRow->claim(array(
+            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            'value' => $claimValue,
+        ))) {
+            $this->fetchLockValue = $claimValue;
             return true;
         }
 
@@ -119,14 +127,32 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             return false;
         }
 
-        $lockRow->releaseIfValueIs(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, $heldSince);
+        $lockRow->releaseIfValueIs(array(
+            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            'value' => $heldSince,
+        ));
 
-        return $lockRow->claim(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, (string)$now);
+        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
+        $claimed = $lockRow->claim(array(
+            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            'value' => $claimValue,
+        ));
+        if ($claimed) {
+            $this->fetchLockValue = $claimValue;
+        }
+        return $claimed;
     }
 
     /** @return void */
     private function releaseFetchLock(): void {
-        $this->fetchLockRow()->release(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
+        if ($this->fetchLockValue === null) {
+            return;
+        }
+        $this->fetchLockRow()->releaseIfValueIs(array(
+            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            'value' => $this->fetchLockValue,
+        ));
+        $this->fetchLockValue = null;
     }
 
     /** Whether a fetch is running right now.
@@ -149,15 +175,15 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return bool true when no live fetch can still be behind this record.
      */
     private function fetchLockHasAgedOut(string $heldSince, int $now): bool {
-        if ($heldSince === '' || !is_numeric($heldSince)) {
-            // Nothing writes a non-numeric value, so this is a row left by an
-            // older version (which stored '1') or a partial write. Treating it
-            // as aged out clears it; treating it as a holder would wedge every
-            // future fetch, because a value with no timestamp can never expire.
+        $timestampPart = explode(':', $heldSince, 2)[0];
+        if ($heldSince === '' || !is_numeric($timestampPart)) {
+            // A value with no timestamp is from an incompatible older version
+            // or a partial write. Treating it as aged out clears it; treating it
+            // as a holder would wedge every future fetch because it cannot expire.
             return true;
         }
 
-        return ($now - (int)$heldSince) > ABJ_404_Solution_GscConfig::LOCK_TTL;
+        return ($now - (int)$timestampPart) > ABJ_404_Solution_GscConfig::LOCK_TTL;
     }
 
     /** The lock row itself. Stateless, so a fresh instance costs nothing.

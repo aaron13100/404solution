@@ -30,6 +30,8 @@ class ABJ_404_Solution_RebuildHealthState {
     private $clock;
     /** @var ABJ_404_Solution_Logging|null */
     private $logger;
+    /** @var string|null Exact row value acquired by this instance. */
+    private $trialLockValue;
 
     /**
      * @param ABJ_404_Solution_Clock $clock
@@ -115,7 +117,14 @@ class ABJ_404_Solution_RebuildHealthState {
      * @return void
      */
     private function releaseTrialLock(): void {
-        (new ABJ_404_Solution_ExclusiveOptionRow())->release(self::TRIAL_LOCK_OPTION);
+        if ($this->trialLockValue === null) {
+            return;
+        }
+        (new ABJ_404_Solution_ExclusiveOptionRow())->releaseIfValueIs(array(
+            'optionName' => self::TRIAL_LOCK_OPTION,
+            'value' => $this->trialLockValue,
+        ));
+        $this->trialLockValue = null;
     }
 
     /** @return string|null */
@@ -129,10 +138,17 @@ class ABJ_404_Solution_RebuildHealthState {
         // lock still produce exactly one token.
         $lockRow = new ABJ_404_Solution_ExclusiveOptionRow();
         $existing = $lockRow->valueOf(self::TRIAL_LOCK_OPTION);
-        $existingExpires = is_numeric($existing) ? intval($existing) : 0;
-        if ($existingExpires > 0 && $existingExpires <= $now) { $lockRow->releaseIfValueIs(self::TRIAL_LOCK_OPTION, $existing); }
-        $added = $lockRow->claim(self::TRIAL_LOCK_OPTION, (string)($now + self::TRIAL_TTL_SECONDS));
+        $existingExpiryPart = explode(':', $existing, 2)[0];
+        $existingExpires = is_numeric($existingExpiryPart) ? intval($existingExpiryPart) : 0;
+        if ($existingExpires > 0 && $existingExpires <= $now) {
+            $lockRow->releaseIfValueIs(array('optionName' => self::TRIAL_LOCK_OPTION, 'value' => $existing));
+        }
+        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue(
+            (string)($now + self::TRIAL_TTL_SECONDS)
+        );
+        $added = $lockRow->claim(array('optionName' => self::TRIAL_LOCK_OPTION, 'value' => $claimValue));
         if (!$added) { return null; }
+        $this->trialLockValue = $claimValue;
         try {
             $token = bin2hex(random_bytes(8));
         } catch (\Throwable $t) {

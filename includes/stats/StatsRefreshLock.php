@@ -21,6 +21,9 @@ class ABJ_404_Solution_StatsRefreshLock {
     /** @var ABJ_404_Solution_DatabaseCoreInterface */
     private $dbCore;
 
+    /** @var array<string, string> Cache key to exact row value held by this instance. */
+    private $heldValues = array();
+
     /** @param ABJ_404_Solution_DatabaseCoreInterface $dbCore */
     public function __construct(ABJ_404_Solution_DatabaseCoreInterface $dbCore) {
         $this->dbCore = $dbCore;
@@ -30,8 +33,11 @@ class ABJ_404_Solution_StatsRefreshLock {
     public function acquire(string $cacheKey): bool {
         $lockKey = $this->getOptionName($cacheKey);
         $lockRow = $this->lockRow();
+        $now = abj_clock()->now();
+        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
 
-        if ($lockRow->claim($lockKey, (string)abj_clock()->now())) {
+        if ($lockRow->claim(array('optionName' => $lockKey, 'value' => $claimValue))) {
+            $this->heldValues[$cacheKey] = $claimValue;
             return true;
         }
 
@@ -42,13 +48,24 @@ class ABJ_404_Solution_StatsRefreshLock {
         // same expired lock still produce exactly one winner.
         $lockValue = $lockRow->valueOf($lockKey);
         if ($lockValue === '') {
-            return $lockRow->claim($lockKey, (string)abj_clock()->now());
+            $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
+            $claimed = $lockRow->claim(array('optionName' => $lockKey, 'value' => $claimValue));
+            if ($claimed) {
+                $this->heldValues[$cacheKey] = $claimValue;
+            }
+            return $claimed;
         }
 
-        $lockTs = is_numeric($lockValue) ? (int)$lockValue : 0;
-        if ($lockTs > 0 && (abj_clock()->now() - $lockTs) > self::REFRESH_LOCK_COOLDOWN_SECONDS) {
-            $lockRow->releaseIfValueIs($lockKey, $lockValue);
-            return $lockRow->claim($lockKey, (string)abj_clock()->now());
+        $timestampPart = explode(':', $lockValue, 2)[0];
+        $lockTs = is_numeric($timestampPart) ? (int)$timestampPart : 0;
+        if ($lockTs > 0 && ($now - $lockTs) > self::REFRESH_LOCK_COOLDOWN_SECONDS) {
+            $lockRow->releaseIfValueIs(array('optionName' => $lockKey, 'value' => $lockValue));
+            $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
+            $claimed = $lockRow->claim(array('optionName' => $lockKey, 'value' => $claimValue));
+            if ($claimed) {
+                $this->heldValues[$cacheKey] = $claimValue;
+            }
+            return $claimed;
         }
 
         return false;
@@ -56,7 +73,14 @@ class ABJ_404_Solution_StatsRefreshLock {
 
     /** @param string $cacheKey @return void */
     public function release(string $cacheKey): void {
-        $this->lockRow()->release($this->getOptionName($cacheKey));
+        if (!isset($this->heldValues[$cacheKey])) {
+            return;
+        }
+        $this->lockRow()->releaseIfValueIs(array(
+            'optionName' => $this->getOptionName($cacheKey),
+            'value' => $this->heldValues[$cacheKey],
+        ));
+        unset($this->heldValues[$cacheKey]);
     }
 
     /** The lock row itself. Stateless, so a fresh instance costs nothing.

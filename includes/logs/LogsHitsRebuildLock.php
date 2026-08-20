@@ -28,6 +28,9 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_LogsHitsRebuildLock {
 
+    /** @var string|null Exact row value acquired by this instance. */
+    private $heldValue;
+
     /** How long a holder may hold before a later request may displace it.
      *
      * This is the leak bound, not a budget: nothing expires an option row, so
@@ -61,7 +64,10 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
     public function acquire(): bool {
         $lockName = $this->optionName();
         $lockRow = $this->lockRow();
-        if ($lockRow->claim($lockName, (string)abj_clock()->now())) {
+        $now = abj_clock()->now();
+        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
+        if ($lockRow->claim(array('optionName' => $lockName, 'value' => $claimValue))) {
+            $this->heldValue = $claimValue;
             return true;
         }
 
@@ -72,12 +78,24 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
             return false;
         }
 
-        return $lockRow->claim($lockName, (string)abj_clock()->now());
+        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
+        $claimed = $lockRow->claim(array('optionName' => $lockName, 'value' => $claimValue));
+        if ($claimed) {
+            $this->heldValue = $claimValue;
+        }
+        return $claimed;
     }
 
     /** @return void */
     public function release(): void {
-        $this->lockRow()->release($this->optionName());
+        if ($this->heldValue === null) {
+            return;
+        }
+        $this->lockRow()->releaseIfValueIs(array(
+            'optionName' => $this->optionName(),
+            'value' => $this->heldValue,
+        ));
+        $this->heldValue = null;
     }
 
     /** Whether a live (non-expired) holder currently has the lock.
@@ -96,18 +114,19 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
             return false;
         }
 
-        if (!is_numeric($lockValue)) {
-            // Nothing writes a non-numeric value, so this is a row left by an
-            // older version or a partial write. Clearing it is the only safe
+        $timestampPart = explode(':', $lockValue, 2)[0];
+        if (!is_numeric($timestampPart)) {
+            // A value with no numeric timestamp is from an incompatible older
+            // version or a partial write. Clearing it is the only safe
             // reading: a value with no timestamp in it can never age out, so
             // treating it as a holder would wedge rebuilding permanently.
-            $lockRow->releaseIfValueIs($lockName, $lockValue);
+            $lockRow->releaseIfValueIs(array('optionName' => $lockName, 'value' => $lockValue));
             return false;
         }
 
-        $lockTimestamp = (int)$lockValue;
+        $lockTimestamp = (int)$timestampPart;
         if ($lockTimestamp > 0 && (abj_clock()->now() - $lockTimestamp) > self::TTL_SECONDS) {
-            $lockRow->releaseIfValueIs($lockName, $lockValue);
+            $lockRow->releaseIfValueIs(array('optionName' => $lockName, 'value' => $lockValue));
             return false;
         }
 
