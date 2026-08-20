@@ -62,18 +62,27 @@ class ABJ_404_Solution_RedirectLoopGuard {
     function terminatingDestination(array $request) {
         $finalDestination = $request['finalDestination'];
         $location = $request['location'];
-        $loopSafeDestination = $this->avoidInfiniteRedirect($finalDestination, $location);
+        $loopSafeDestination = $this->avoidInfiniteRedirect(array(
+            'finalDestination' => $finalDestination,
+            'location' => $location,
+        ));
         if ($loopSafeDestination === false) {
             return false;
         }
 
-        return $this->avoidSelfRedirect($loopSafeDestination, $location);
+        return $this->avoidSelfRedirect(array(
+            'finalDestination' => $loopSafeDestination,
+            'location' => $location,
+        ));
     }
 
     /**
+     * @param array{finalDestination: string, location: string} $request
      * @return string|false
      */
-    private function avoidInfiniteRedirect(string $finalDestination, string $location) {
+    private function avoidInfiniteRedirect(array $request) {
+        $finalDestination = $request['finalDestination'];
+        $location = $request['location'];
         $previousRequest = is_object($this->previousRequestCookieTracker)
             ? $this->previousRequestCookieTracker->readCookieWithPreviousRqeuestShort()
             : '';
@@ -123,14 +132,15 @@ class ABJ_404_Solution_RedirectLoopGuard {
      * one hop later; dropping the appended query fixes the loop and the scheme
      * in a single redirect.
      *
-     * @param string $finalDestination destination including the appended
-     *                                 comment-page/query parts.
-     * @param string $location         the resolved target before those parts
-     *                                 were appended.
+     * @param array{finalDestination: string, location: string} $request the
+     *        destination including appended comment-page/query parts and the
+     *        resolved target before those parts were appended.
      * @return string|false a destination that is not the current request, or
      *                      false when no redirect can terminate.
      */
-    private function avoidSelfRedirect(string $finalDestination, string $location) {
+    private function avoidSelfRedirect(array $request) {
+        $finalDestination = $request['finalDestination'];
+        $location = $request['location'];
         if ($finalDestination === '') {
             return $finalDestination;
         }
@@ -145,9 +155,18 @@ class ABJ_404_Solution_RedirectLoopGuard {
             return $finalDestination;
         }
 
-        $requestKey = $this->urlIdentityKey($requestUri, $requestAuthority);
-        $destinationIsRequest = ($this->urlIdentityKey($finalDestination, $requestAuthority) === $requestKey);
-        $targetIsRequest = ($location !== '' && $this->urlIdentityKey($location, $requestAuthority) === $requestKey);
+        $requestKey = $this->urlIdentityKey(array(
+            'url' => $requestUri,
+            'requestAuthority' => $requestAuthority,
+        ));
+        $destinationIsRequest = ($this->urlIdentityKey(array(
+            'url' => $finalDestination,
+            'requestAuthority' => $requestAuthority,
+        )) === $requestKey);
+        $targetIsRequest = ($location !== '' && $this->urlIdentityKey(array(
+            'url' => $location,
+            'requestAuthority' => $requestAuthority,
+        )) === $requestKey);
 
         if ($targetIsRequest || ($destinationIsRequest && $location === '')) {
             // The configured target IS the requested URL. Dropping the appended
@@ -185,12 +204,12 @@ class ABJ_404_Solution_RedirectLoopGuard {
      * parse_url() splits it into its own component, so comparing bare hosts
      * silently never matches on any site not served from port 80/443.
      *
-     * @param string $url
-     * @param string $requestAuthority normalized authority of the current
-     *                                 request (see normalizeAuthority), or ''.
+     * @param array{url: string, requestAuthority: string} $request
      * @return string comparison key; never treat it as a URL.
      */
-    private function urlIdentityKey(string $url, string $requestAuthority): string {
+    private function urlIdentityKey(array $request): string {
+        $url = $request['url'];
+        $requestAuthority = $request['requestAuthority'];
         $parts = parse_url($url);
         if (!is_array($parts)) {
             // Unparseable URLs are only ever equal to themselves.
