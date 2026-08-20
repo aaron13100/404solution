@@ -86,7 +86,10 @@ class ABJ_404_Solution_ShortcodeSuggestionsAdminNotePresenter {
     private function stateLine(float $bestScore, array $options): string {
         $threshold = ABJ_404_Solution_MinimumAutoRedirectScore::forDisplay($options);
         $thresholdValue = ABJ_404_Solution_MinimumAutoRedirectScore::asFloat($options);
-        $scoreText = $this->scoreText($bestScore, $thresholdValue);
+        $scoreText = $this->scoreText(array(
+            'score' => $bestScore,
+            'threshold' => $thresholdValue,
+        ));
 
         if ($bestScore < $thresholdValue) {
             return sprintf(
@@ -121,11 +124,13 @@ class ABJ_404_Solution_ShortcodeSuggestionsAdminNotePresenter {
      * the bar -- which is very nearly all of them -- comes back at two decimals,
      * exactly as the row above it reads.
      *
-     * @param float $score The best score among the displayed suggestions.
-     * @param float $threshold The score an automatic redirect has to clear.
+     * @param array{score: float, threshold: float} $comparison The best score
+     *        and the score an automatic redirect has to clear.
      * @return string
      */
-    private function scoreText(float $score, float $threshold): string {
+    private function scoreText(array $comparison): string {
+        $score = $comparison['score'];
+        $threshold = $comparison['threshold'];
         $isUnder = $score < $threshold;
 
         for ($decimals = 2; $decimals < 10; $decimals++) {

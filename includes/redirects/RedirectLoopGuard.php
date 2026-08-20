@@ -31,7 +31,7 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_RedirectLoopGuard {
 
     /** @var ABJ_404_Solution_Functions */
-    private $f;
+    private $functions;
 
     /** @var ABJ_404_Solution_Logging */
     private $logger;
@@ -45,7 +45,7 @@ class ABJ_404_Solution_RedirectLoopGuard {
      * @param ABJ_404_Solution_PreviousRequestCookieTracker|null $previousRequestCookieTracker
      */
     function __construct($functions = null, $logging = null, $previousRequestCookieTracker = null) {
-        $this->f = $functions !== null ? $functions : abj_service('functions');
+        $this->functions = $functions !== null ? $functions : abj_service('functions');
         $this->logger = $logging !== null ? $logging : abj_service('logging');
         $this->previousRequestCookieTracker = $previousRequestCookieTracker !== null
             ? $previousRequestCookieTracker
@@ -250,19 +250,19 @@ class ABJ_404_Solution_RedirectLoopGuard {
         if ($colonPos === false) {
             return $normalized;
         }
-        $port = $this->f->substr($normalized, $colonPos + 1);
+        $port = $this->functions->substr($normalized, $colonPos + 1);
         if ($port === '80' || $port === '443') {
-            return $this->f->substr($normalized, 0, $colonPos);
+            return $this->functions->substr($normalized, 0, $colonPos);
         }
         return $normalized;
     }
 
     private function redirectPathOnly(string $url): string {
-        $schemePos = $this->f->strpos($url, '://');
+        $schemePos = $this->functions->strpos($url, '://');
         $withoutHost = ($schemePos !== false)
-            ? $this->f->substr($url, $schemePos + 3) : $url;
-        $slashPos = $this->f->strpos($withoutHost, '/');
-        return ($slashPos !== false) ? $this->f->substr($withoutHost, $slashPos) : '/';
+            ? $this->functions->substr($url, $schemePos + 3) : $url;
+        $slashPos = $this->functions->strpos($withoutHost, '/');
+        return ($slashPos !== false) ? $this->functions->substr($withoutHost, $slashPos) : '/';
     }
 
 }

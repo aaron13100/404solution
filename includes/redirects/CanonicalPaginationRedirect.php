@@ -131,6 +131,10 @@ class ABJ_404_Solution_CanonicalPaginationRedirect {
             return;
         }
 
+        // DESIGN-AUDIT-OK: Redirect rows intentionally have no unique URL
+        // constraint because manual/regex rules may overlap. This best-effort
+        // evidence insert follows the same established capture contract;
+        // duplicate reconciliation is owned by the existing cleanup path.
         $existing = $this->redirectsRepository->getExistingRedirectForURL($requestedURL);
         $existingId = isset($existing['id']) && is_scalar($existing['id']) ? (int)$existing['id'] : 0;
         if ($existingId !== 0) {
@@ -180,8 +184,14 @@ class ABJ_404_Solution_CanonicalPaginationRedirect {
             abj404_benchmark_emit_headers();
         }
 
+        $redirectAccepted = wp_safe_redirect($canonicalUrl, self::REDIRECT_STATUS, ABJ404_NAME);
+        if ($redirectAccepted === false) {
+            $this->logger->warn('Canonical pagination redirect to "' . $canonicalUrl .
+                '" was rejected by WordPress; continuing normal 404 handling. Status: ' .
+                (string)self::REDIRECT_STATUS . ', source: ' . ABJ404_NAME . '.');
+            return false;
+        }
         $this->logger->debugMessage('WordPress canonical redirect: ' . $canonicalUrl);
-        wp_safe_redirect($canonicalUrl, self::REDIRECT_STATUS, ABJ404_NAME);
 
         if (!apply_filters('abj404_should_exit', true, array('source' => 'canonicalPaginationRedirect'))) {
             return true;

@@ -79,21 +79,44 @@ class ABJ_404_Solution_TableIndexWriter {
         $tryOnlineFirst = !array_key_exists('try_online_first', $options)
             || !empty($options['try_online_first']);
 
-        $statement = $this->buildAddIndexStatement($tableName, $spec, $tryOnlineFirst, $replaceExisting);
+        $statement = $this->buildAddIndexStatement(array(
+            'tableName' => $tableName,
+            'spec' => $spec,
+            'online' => $tryOnlineFirst,
+            'replaceExisting' => $replaceExisting,
+        ));
         $lastError = $this->runStatement($statement);
 
         if ($lastError !== '' && $tryOnlineFirst) {
-            if ($this->recordRedundantChange($tableName, $spec, $lastError)) {
+            if ($this->recordRedundantChange(array(
+                'tableName' => $tableName,
+                'spec' => $spec,
+                'lastError' => $lastError,
+            ))) {
+                return;
+            }
+            if (!$this->isOnlineDdlHintRejection($lastError)) {
+                $this->logger->errorMessage("Failed to add index {$spec['name']} to {$tableName}: " .
+                    $lastError . " (query: {$statement})");
                 return;
             }
             $this->logger->warn("Online index add for {$spec['name']} on {$tableName} failed; " .
                 "retrying without online DDL hints: " . $lastError . " (query: {$statement})");
-            $statement = $this->buildAddIndexStatement($tableName, $spec, false, $replaceExisting);
+            $statement = $this->buildAddIndexStatement(array(
+                'tableName' => $tableName,
+                'spec' => $spec,
+                'online' => false,
+                'replaceExisting' => $replaceExisting,
+            ));
             $lastError = $this->runStatement($statement);
         }
 
         if ($lastError !== '') {
-            if ($this->recordRedundantChange($tableName, $spec, $lastError)) {
+            if ($this->recordRedundantChange(array(
+                'tableName' => $tableName,
+                'spec' => $spec,
+                'lastError' => $lastError,
+            ))) {
                 return;
             }
             $this->logger->errorMessage("Failed to add index {$spec['name']} to {$tableName}: " .
@@ -115,6 +138,23 @@ class ABJ_404_Solution_TableIndexWriter {
     }
 
     /**
+     * Whether the engine rejected the optional online-DDL clauses themselves.
+     * Other failures (permissions, disk, connection, syntax) must not be
+     * repeated as a bare ALTER that cannot correct their cause.
+     *
+     * @param string $lastError What the engine said.
+     * @return bool
+     */
+    private function isOnlineDdlHintRejection(string $lastError): bool {
+        $lower = strtolower($lastError);
+        $namesOnlineClause = strpos($lower, 'lock=none') !== false
+            || strpos($lower, 'algorithm=inplace') !== false;
+        $rejectsClause = strpos($lower, 'not supported') !== false
+            || strpos($lower, 'unsupported') !== false;
+        return $namesOnlineClause && $rejectsClause;
+    }
+
+    /**
      * Whether the statement failed only because the change had already been
      * made and -- when it had -- what the table actually ended up carrying.
      *
@@ -124,14 +164,15 @@ class ABJ_404_Solution_TableIndexWriter {
      * stops here, and what gets recorded is what the schema now says, read
      * back rather than assumed.
      *
-     * @param string $tableName
-     * @param array{name: string, columns: string, unique: bool} $spec
-     * @param string $lastError What the engine said.
+     * @param array{tableName: string, spec: array{name: string, columns: string, unique: bool},
+     *        lastError: string} $request
      * @return bool True when the change was already applied and the caller must stop.
      */
-    private function recordRedundantChange(string $tableName, array $spec, string $lastError): bool {
-        if (!$this->dbCore->errorClassifier()->taxonomy()->schema()
-                ->isRedundantSchemaChangeError($lastError)) {
+    private function recordRedundantChange(array $request): bool {
+        $tableName = $request['tableName'];
+        $spec = $request['spec'];
+        $lastError = $request['lastError'];
+        if (!$this->dbCore->sqlErrorReporter()->isRedundantSchemaChangeError($lastError)) {
             return false;
         }
 
@@ -167,17 +208,17 @@ class ABJ_404_Solution_TableIndexWriter {
     /**
      * Build a valid ALTER TABLE ... ADD INDEX statement for THIS server.
      *
-     * @param string $tableName
-     * @param array{name: string, columns: string, unique: bool} $spec
-     * @param bool $online Whether to append ALGORITHM=INPLACE, LOCK=NONE.
-     * @param bool $replaceExisting Emit "drop index `n`, add ..." so a drifted index is
-     *        swapped in ONE statement: the table is never left without it, and the engine
-     *        makes a single pass. IF NOT EXISTS is suppressed here -- the index provably
-     *        exists, and pairing it with the drop in one ALTER is ambiguous across engines.
+     * @param array{tableName: string, spec: array{name: string, columns: string, unique: bool},
+     *        online: bool, replaceExisting: bool} $request The table/index definition and
+     *        statement policy. replaceExisting emits "drop index `n`, add ..." so a drifted
+     *        index is swapped in one statement.
      * @return string
      */
-    private function buildAddIndexStatement(string $tableName, array $spec, bool $online,
-            bool $replaceExisting): string {
+    private function buildAddIndexStatement(array $request): string {
+        $tableName = $request['tableName'];
+        $spec = $request['spec'];
+        $online = $request['online'];
+        $replaceExisting = $request['replaceExisting'];
         global $wpdb;
         /** @var \wpdb $wpdb */
         $serverVersion = is_object($wpdb) && method_exists($wpdb, 'db_version') ? ($wpdb->db_version() ?: '') : '';
