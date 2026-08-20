@@ -151,6 +151,7 @@ function abj_service($name) {
  *     $name is 'view' ? ABJ_404_Solution_View|null : (
  *     $name is 'database_upgrades' ? ABJ_404_Solution_DatabaseUpgradesEtc|null : (
  *     $name is 'cron_scheduler' ? ABJ_404_Solution_CronScheduler|null : (
+ *     $name is 'cron_recurrence_migration' ? ABJ_404_Solution_CronRecurrenceMigration|null : (
  *     $name is 'clock' ? ABJ_404_Solution_Clock|null : (
  *     $name is 'not_found_response' ? ABJ_404_Solution_NotFoundResponseService|null : (
  *     $name is 'request_ignore_normalizer' ? ABJ_404_Solution_RequestIgnoreNormalizer|null : (
@@ -160,7 +161,7 @@ function abj_service($name) {
  *     $name is 'view_read_service' ? ABJ_404_Solution_ViewReadService|null : (
  *     $name is 'rebuild_health' ? ABJ_404_Solution_RebuildHealthState|null :
  *     mixed|null
- * )))))))))))))))
+ * ))))))))))))))))
  */
 function abj_service_optional($name) {
     $container = ABJ_404_Solution_ServiceContainer::getInstance();
