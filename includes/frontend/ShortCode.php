@@ -216,9 +216,13 @@ class ABJ_404_Solution_ShortCode {
             'no_suggestions_text' => __('No suggestions. :/ ', '404-solution')
         ));
 
-        // Enqueue loading CSS. See note above on ABJ404_URL vs. plugin_dir_url.
+        // Enqueue the front-end suggestions CSS (loading skeleton + the
+        // admin-only note the finished list carries). See note above on
+        // ABJ404_URL vs. plugin_dir_url. The handle comes from the note
+        // presenter, which enqueues the same sheet on the synchronous path,
+        // so the two can never drift into two <link> tags for one file.
         wp_enqueue_style(
-            'abj404-suggestions-loading',
+            ABJ_404_Solution_ShortcodeSuggestionsAdminNotePresenter::STYLE_HANDLE,
             ABJ404_URL . 'includes/css/suggestions-loading.css',
             array(),
             ABJ404_VERSION

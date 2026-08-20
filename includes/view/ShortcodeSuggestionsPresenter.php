@@ -35,7 +35,8 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
 
         $rowResult = $this->renderSuggestionRows($permalinkSuggestions, $rowType, $options,
             $showExtraAdminData, $adminDebugModal, $adminDebugPresenter, $extraDataById, $adminDebugData);
-        $body = $rowResult['body'] . $this->renderResultFooter($rowResult['displayed'], $options);
+        $body = $rowResult['body'] . $this->renderResultFooter($rowResult['displayed'], $options)
+            . $this->renderAdminNote($showExtraAdminData, $rowResult, $requestedURL, $options);
 
         $content = $this->fillTemplate('shortcodeSuggestionsContainer.html', array(
             'title' => wp_kses_post(
@@ -61,7 +62,7 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
      * @param ABJ_404_Solution_ShortcodeSuggestionAdminDebugPresenter $adminDebugPresenter
      * @param array<string, array<string, mixed>> $extraDataById
      * @param array<int, array<string, mixed>> $adminDebugData
-     * @return array{body: string, displayed: int}
+     * @return array{body: string, displayed: int, bestScore: float}
      */
     private function renderSuggestionRows(array $permalinkSuggestions, string $rowType, array $options,
             bool $showExtraAdminData, bool $adminDebugModal,
@@ -69,6 +70,7 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
             array $extraDataById, array &$adminDebugData): array {
         $body = '';
         $displayed = 0;
+        $bestScore = 0.0;
         $currentSlug = $this->currentSlug(abj_service('plugin_logic'), abj_service('functions'));
         $commentPartRaw = abj_service('not_found_response')->getCommentPartAndQueryPartOfRequest();
         $commentPartAndQueryPart = is_string($commentPartRaw) ? $commentPartRaw : '';
@@ -87,13 +89,16 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
             if ($row['debugData'] !== null) {
                 $adminDebugData[] = $row['debugData'];
             }
+            if ($displayed == 0 || $row['score'] > $bestScore) {
+                $bestScore = $row['score'];
+            }
             $displayed++;
             if ($displayed >= $this->suggestionLimit($options)) {
                 break;
             }
         }
 
-        return array('body' => $body, 'displayed' => $displayed);
+        return array('body' => $body, 'displayed' => $displayed, 'bestScore' => $bestScore);
     }
 
     /**
@@ -107,7 +112,7 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
      * @param bool $adminDebugModal
      * @param ABJ_404_Solution_ShortcodeSuggestionAdminDebugPresenter $adminDebugPresenter
      * @param array<string, array<string, mixed>> $extraDataById
-     * @return array{html: string, debugData: array<string, mixed>|null}|null
+     * @return array{html: string, debugData: array<string, mixed>|null, score: float}|null
      */
     private function renderSuggestionRow(string $idAndTypeStr, $linkScore, string $rowType, array $options,
             string $currentSlug, string $commentPartAndQueryPart, bool $showExtraAdminData,
@@ -141,7 +146,7 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
             'title_text' => esc_attr($permTitle),
             'score_html' => $scoreHtml,
             'entry_after' => wp_kses_post($this->optionString($options, 'suggest_entryafter')),
-        )) . "\n", 'debugData' => $debugData);
+        )) . "\n", 'debugData' => $debugData, 'score' => $permScore);
     }
 
     /**
@@ -190,6 +195,31 @@ class ABJ_404_Solution_ShortcodeSuggestionsPresenter {
             $this->replaceSuggestionTemplateToken($this->optionString($options, 'suggest_noresults'),
                 'suggest_noresults_text', __('No suggestions. :/ ', '404-solution'))
         );
+    }
+
+    /**
+     * The admin-only block that explains the scores above it: what the best
+     * match scored, what an automatic redirect has to clear, and the two ways
+     * to act on that. Empty string for everyone else, so a logged-out visitor
+     * sees nothing new.
+     *
+     * Sits below the whole list rather than beside each row on purpose: one
+     * block reads as a note, one sentence per suggestion reads as noise.
+     *
+     * @param bool $showExtraAdminData
+     * @param array{body: string, displayed: int, bestScore: float} $rowResult
+     * @param string $requestedURL
+     * @param array<string, mixed> $options
+     * @return string
+     */
+    private function renderAdminNote(bool $showExtraAdminData, array $rowResult, string $requestedURL,
+            array $options): string {
+        if (!$showExtraAdminData) {
+            return '';
+        }
+        $notePresenter = new ABJ_404_Solution_ShortcodeSuggestionsAdminNotePresenter();
+        return $notePresenter->render($rowResult['displayed'] >= 1, $rowResult['bestScore'],
+            $requestedURL, $options);
     }
 
     /**

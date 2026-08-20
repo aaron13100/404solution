@@ -121,22 +121,15 @@ class ABJ_404_Solution_View_SimpleSettings extends ABJ_404_Solution_ViewComponen
      * matcher will actually apply rather than the shipped 90, so an admin who
      * already changed it is not told the wrong number.
      *
+     * Delegates to MinimumAutoRedirectScore so this screen and the admin-only
+     * note on the front-end suggestions page can never quote different numbers
+     * for the same setting.
+     *
      * @param array<string, mixed> $options The plugin options.
      * @return string The configured score, or the shipped default when the
      *   stored value is missing, blank, or not a number.
      */
     private function getMinimumMatchScoreForDisplay($options) {
-        $defaults = ABJ_404_Solution_PluginLogicDefaults::defaults();
-        $shippedDefault = '90';
-        if (isset($defaults['auto_score']) && is_scalar($defaults['auto_score'])) {
-            $shippedDefault = (string)$defaults['auto_score'];
-        }
-
-        $configured = $this->optionsPresenter->optStr($options, 'auto_score', $shippedDefault);
-        if (!is_numeric($configured)) {
-            return $shippedDefault;
-        }
-
-        return $configured;
+        return ABJ_404_Solution_MinimumAutoRedirectScore::forDisplay($options);
     }
 }

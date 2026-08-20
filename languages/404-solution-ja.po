@@ -4263,3 +4263,28 @@ msgstr "レポートを送信できませんでした。しばらくしてから
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "移行ツールの設定を読み込めませんでした。このページを再読み込みしてやり直してください。"
+
+msgid "No suggested match was scored for this URL"
+msgstr "この URL に対して評価された候補はありません"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "このリダイレクトには信頼度スコアが記録されていません"
+
+msgid "No score"
+msgstr "スコアなし"
+
+msgid "Redirect this URL"
+msgstr "この URL をリダイレクト"
+
+msgid "Change the minimum score"
+msgstr "最低スコアを変更"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution、管理者のみ表示: 候補として提示できるほどのスコアに達したページはサイト内にありません。"
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution、管理者のみ表示: 最良の候補は %1$s で、自動リダイレクトに必要な %2$s に達していません。"
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution、管理者のみ表示: 最良の候補は %1$s で、自動リダイレクトに必要な %2$s 以上です。"
+

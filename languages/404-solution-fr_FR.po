@@ -4258,3 +4258,28 @@ msgstr "Impossible d'envoyer le rapport. Veuillez réessayer plus tard."
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "Impossible de charger la configuration de l'outil de migration. Rechargez cette page et réessayez."
+
+msgid "No suggested match was scored for this URL"
+msgstr "Aucune correspondance suggérée n'a été notée pour cette URL"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "Aucun indice de confiance n'a été enregistré pour cette redirection"
+
+msgid "No score"
+msgstr "Aucun score"
+
+msgid "Redirect this URL"
+msgstr "Rediriger cette URL"
+
+msgid "Change the minimum score"
+msgstr "Modifier le score minimum"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution, administrateurs uniquement : aucun contenu du site n'a obtenu un score suffisant pour être suggéré."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution, administrateurs uniquement : meilleure correspondance %1$s, en dessous des %2$s requis pour rediriger automatiquement."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution, administrateurs uniquement : meilleure correspondance %1$s, égale ou supérieure aux %2$s requis pour rediriger automatiquement."
+

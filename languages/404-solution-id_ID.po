@@ -4260,3 +4260,28 @@ msgstr "Tidak dapat mengirim laporan. Silakan coba lagi nanti."
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "Tidak dapat memuat konfigurasi alat migrasi. Muat ulang halaman ini dan coba lagi."
+
+msgid "No suggested match was scored for this URL"
+msgstr "Tidak ada kecocokan yang disarankan yang dinilai untuk URL ini"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "Tidak ada skor keyakinan yang dicatat untuk pengalihan ini"
+
+msgid "No score"
+msgstr "Tidak ada skor"
+
+msgid "Redirect this URL"
+msgstr "Alihkan URL ini"
+
+msgid "Change the minimum score"
+msgstr "Ubah skor minimum"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution, hanya untuk admin: tidak ada di situs ini yang memperoleh skor cukup tinggi untuk disarankan."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution, hanya untuk admin: kecocokan terbaik %1$s, di bawah %2$s yang diperlukan untuk mengalihkan secara otomatis."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution, hanya untuk admin: kecocokan terbaik %1$s, sama dengan atau di atas %2$s yang diperlukan untuk mengalihkan secara otomatis."
+

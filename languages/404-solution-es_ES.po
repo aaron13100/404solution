@@ -4254,3 +4254,28 @@ msgstr "No se pudo enviar el informe. Inténtelo de nuevo más tarde."
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "No se pudo cargar la configuración de la herramienta de migración. Recargue esta página e inténtelo de nuevo."
+
+msgid "No suggested match was scored for this URL"
+msgstr "No se puntuó ninguna coincidencia sugerida para esta URL"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "No se registró ninguna puntuación de confianza para esta redirección"
+
+msgid "No score"
+msgstr "Sin puntuación"
+
+msgid "Redirect this URL"
+msgstr "Redirigir esta URL"
+
+msgid "Change the minimum score"
+msgstr "Cambiar la puntuación mínima"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution, solo para administradores: nada del sitio obtuvo una puntuación suficiente para sugerirlo."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution, solo para administradores: mejor coincidencia %1$s, por debajo de los %2$s necesarios para redirigir automáticamente."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution, solo para administradores: mejor coincidencia %1$s, igual o superior a los %2$s necesarios para redirigir automáticamente."
+

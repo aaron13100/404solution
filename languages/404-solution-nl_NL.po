@@ -4262,3 +4262,28 @@ msgstr "Kan het rapport niet versturen. Probeer het later opnieuw."
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "Kan de configuratie van het migratiehulpmiddel niet laden. Herlaad deze pagina en probeer het opnieuw."
+
+msgid "No suggested match was scored for this URL"
+msgstr "Er is geen voorgestelde overeenkomst beoordeeld voor deze URL"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "Er is geen betrouwbaarheidsscore vastgelegd voor deze omleiding"
+
+msgid "No score"
+msgstr "Geen score"
+
+msgid "Redirect this URL"
+msgstr "Deze URL omleiden"
+
+msgid "Change the minimum score"
+msgstr "De minimumscore wijzigen"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution, alleen voor beheerders: niets op de site scoorde hoog genoeg om voor te stellen."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution, alleen voor beheerders: beste overeenkomst %1$s, onder de %2$s die nodig is om automatisch om te leiden."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution, alleen voor beheerders: beste overeenkomst %1$s, gelijk aan of hoger dan de %2$s die nodig is om automatisch om te leiden."
+

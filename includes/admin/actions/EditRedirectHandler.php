@@ -363,11 +363,7 @@ class ABJ_404_Solution_EditRedirectHandler {
      */
     private function getMenuParentScript(): string {
         $options = abj_service('options_repository')->getOptions(true);
-        $menuLocation = 'underSettings';
-        if (is_array($options) && isset($options['menuLocation']) && is_string($options['menuLocation'])) {
-            $menuLocation = $options['menuLocation'];
-        }
-        return $menuLocation === 'settingsLevel' ? 'admin.php' : 'options-general.php';
+        return ABJ_404_Solution_AdminPageUrlBuilder::pageFile(is_array($options) ? $options : array());
     }
 
     /**

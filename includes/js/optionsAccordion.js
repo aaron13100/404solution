@@ -71,6 +71,53 @@ function abj404RestoreCardState() {
 }
 
 /**
+ * Reveal the element named by location.hash, expanding its card if needed.
+ *
+ * Card open/closed state is restored from localStorage, so a deep link to a
+ * specific field (options-general.php?...#auto_score) can land on a field
+ * inside a card the admin collapsed on a previous visit, with nothing on
+ * screen. Expanding the card, persisting that, and re-scrolling makes the
+ * link land where it promised: the browser's own anchor jump already happened
+ * before the card was opened, so it has to be redone here.
+ */
+function abj404RevealHashTarget() {
+    var hash = window.location.hash;
+    if (!hash || hash.length < 2) {
+        return;
+    }
+
+    var target = null;
+    try {
+        target = document.getElementById(decodeURIComponent(hash.slice(1)));
+    } catch (e) {
+        // A malformed percent-escape in the fragment is not an error worth
+        // surfacing: there is simply nothing to reveal.
+        console.log('404 Solution: unreadable URL fragment, nothing to reveal (' + e.message + ')');
+        return;
+    }
+    if (!target) {
+        return;
+    }
+
+    var card = target.closest ? target.closest('.abj404-card') : null;
+    if (card && !card.classList.contains('expanded')) {
+        card.classList.add('expanded');
+        var header = card.querySelector('.abj404-card-header');
+        if (header) {
+            header.setAttribute('aria-expanded', 'true');
+        }
+        abj404SaveCardState();
+    }
+
+    if (typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ block: 'center' });
+    }
+    if (typeof target.focus === 'function') {
+        target.focus();
+    }
+}
+
+/**
  * Show toast notification
  * @param {string} message The message to display
  * @param {string} type 'success' or 'error'
@@ -112,6 +159,9 @@ function abj404ShowToast(message, type) {
 
         // Restore saved card state from localStorage
         abj404RestoreCardState();
+
+        // Deep links (#auto_score) must win over a card the admin left collapsed.
+        abj404RevealHashTarget();
 
         // Initialize card keyboard navigation
         initCardKeyboardNav();

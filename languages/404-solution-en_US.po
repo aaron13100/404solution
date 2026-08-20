@@ -4295,3 +4295,28 @@ msgstr "Could not send report. Please try again later."
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "Could not load the migration tool configuration. Reload this page and try again."
+
+msgid "No suggested match was scored for this URL"
+msgstr "No suggested match was scored for this URL"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "No confidence score was recorded for this redirect"
+
+msgid "No score"
+msgstr "No score"
+
+msgid "Redirect this URL"
+msgstr "Redirect this URL"
+
+msgid "Change the minimum score"
+msgstr "Change the minimum score"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution, admin only: nothing on the site scored close enough to suggest."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+

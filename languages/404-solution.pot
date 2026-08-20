@@ -3703,3 +3703,37 @@ msgstr ""
 #: includes/js/toolsMigratePlugin.js:28
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr ""
+
+#: includes/admin/RedirectRowPresenter.php:287
+msgid "No suggested match was scored for this URL"
+msgstr ""
+
+#: includes/admin/RedirectRowPresenter.php:290
+msgid "No confidence score was recorded for this redirect"
+msgstr ""
+
+#: includes/view/View_ListTableChrome.php:85
+#: includes/view/View_Stats.php:186
+msgid "No score"
+msgstr ""
+
+#: includes/view/ShortcodeSuggestionsAdminNotePresenter.php:49
+msgid "Redirect this URL"
+msgstr ""
+
+#: includes/view/ShortcodeSuggestionsAdminNotePresenter.php:67
+msgid "Change the minimum score"
+msgstr ""
+
+#: includes/view/ShortcodeSuggestionsAdminNotePresenter.php:53
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr ""
+
+#: includes/view/ShortcodeSuggestionsAdminNotePresenter.php:92
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr ""
+
+#: includes/view/ShortcodeSuggestionsAdminNotePresenter.php:99
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr ""
+

@@ -37,10 +37,13 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
         $options = $this->optionsPresenter->getOptionsWithDefaults();
         $link = wp_nonce_url($this->formUrl($tableOptions), 'abj404addRedirect');
         $urlPlaceholder = parse_url(get_home_url(), PHP_URL_PATH) . '/example';
+        $prefilledUrl = $this->prefilledUrl();
 
         return $this->fillTpl('viewRedirectsTableAddModal.html', array(
             '{modal_title}' => esc_html__('Add Manual Redirect', '404-solution'),
             '{form_action}' => esc_url($link),
+            '{modal_active_class}' => $prefilledUrl === '' ? '' : ' active',
+            '{url_value}' => esc_attr($prefilledUrl),
             '{url_label}' => esc_html__('URL', '404-solution'),
             '{url_placeholder}' => esc_attr($urlPlaceholder),
             '{url_help}' => esc_html__('The URL path that should be redirected (without domain)', '404-solution'),
@@ -56,6 +59,31 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
             '{cancel_label}' => esc_html__('Cancel', '404-solution'),
             '{add_redirect_label}' => esc_html__('Add', '404-solution'),
         ));
+    }
+
+    /**
+     * The URL an inbound "redirect this URL" link asked us to pre-fill.
+     *
+     * The admin-only note on the front-end suggestions page links here with
+     * the path that 404'd, so the admin lands on the form with the URL
+     * already in it rather than having to retype what they were just looking
+     * at. Only a site-relative path is accepted; anything else (an absolute
+     * URL, a scheme, a stray fragment) is reduced to its path component or
+     * dropped, so the query arg cannot seed the form with an off-site value.
+     *
+     * @return string Empty when the request carries no usable path, which
+     *   also leaves the modal closed.
+     */
+    private function prefilledUrl(): string {
+        $raw = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'abj404_add_url');
+        if ($raw === '') {
+            return '';
+        }
+        $path = parse_url($raw, PHP_URL_PATH);
+        if (!is_string($path) || $path === '') {
+            return '';
+        }
+        return $path[0] === '/' ? $path : '/' . $path;
     }
 
     /**

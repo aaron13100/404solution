@@ -38,7 +38,7 @@ $abj404ClassesByDirectory = array(
         'RedirectDestinationWarningPolicy', 'RedirectDestinationWarningContext',
         'RedirectDestinationLinkResolver', 'RedirectRowActionsPresenter', 'RedirectRowPresenter',
         'RedirectAddModalPresenter', 'RedirectsTablePagePresenter', 'AdminActionsDependencies',
-        'AdminThemeManager', 'AdminRuntimeErrorNotice',
+        'AdminThemeManager', 'AdminRuntimeErrorNotice', 'AdminPageUrlBuilder',
     ),
     'admin/actions' => array(
         'AdminActionHandlerInterface', 'AdminActionRegistry', 'UpdateOptionsHandler',
@@ -212,7 +212,7 @@ $abj404ClassesByDirectory = array(
     'matching' => array(
         'EngineProfileSaveRequest', 'MatchingEngineOrchestrator', 'RedirectCandidateEvaluator',
         'WordPressGuessFallback', 'EngineProfileResolver', 'MatchingEngine', 'MatchRequest',
-        'MatchResult', 'NearMissMatch', 'NearMissRecorder',
+        'MatchResult', 'MinimumAutoRedirectScore', 'NearMissMatch', 'NearMissRecorder',
         'OldPermalinkStructureResolver', 'PermalinkStructureCompiler',
         'OldPermalinkCandidateStructureProvider', 'OldPermalinkPostResolver',
     ),
@@ -278,7 +278,8 @@ $abj404ClassesByDirectory = array(
         'CronRecurrenceMigration', 'RequestInputNormalizer',
         'RedirectDestinationSuggestionService', 'RedirectEngineLabeler', 'StatsRepositoryResolver',
         'RestApiRequestParser', 'FrontendSuggestionLocaleScope', 'ShortcodeRequestedUrlResolver',
-        'ShortcodeUrlBarUpdater', 'SettingsModePreference', 'NotFoundResponseService',
+        'ShortcodeUrlBarUpdater', 'SettingsModePreference', 'SettingsModeDeepLink',
+        'NotFoundResponseService',
         'NotFoundResponseDependencies', 'PreviousRequestCookieTracker', 'RequestIgnoreNormalizer',
         'RequestIgnoreNormalizerDependencies', 'ErrorDiagnosticsReporter',
         'AdminFatalErrorResponder', 'AjaxFatalErrorResponder', 'FatalErrorProcessor',
@@ -320,6 +321,7 @@ $abj404ClassesByDirectory = array(
         'View_AdminChrome', 'OptionsSectionView', 'View_OptionsPresenter', 'View_Settings',
         'View_SettingsSections', 'View_Shared', 'View_SimpleSettings', 'View_Stats', 'View_Tools',
         'View_UI', 'ShortcodeSuggestionAdminDebugPresenter', 'ShortcodeSuggestionsPresenter',
+        'ShortcodeSuggestionsAdminNotePresenter',
         'View', 'View_Suggestions',
     ),
     'view-build' => array(

@@ -4260,3 +4260,28 @@ msgstr "Det gick inte att skicka rapporten. Försök igen senare."
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "Det gick inte att ladda konfigurationen för migreringsverktyget. Ladda om sidan och försök igen."
+
+msgid "No suggested match was scored for this URL"
+msgstr "Ingen föreslagen träff poängsattes för den här URL:en"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "Inget tillförlitlighetsvärde registrerades för den här omdirigeringen"
+
+msgid "No score"
+msgstr "Inget värde"
+
+msgid "Redirect this URL"
+msgstr "Omdirigera den här URL:en"
+
+msgid "Change the minimum score"
+msgstr "Ändra minimipoängen"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution, endast för administratörer: inget på webbplatsen fick tillräckligt hög poäng för att föreslås."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution, endast för administratörer: bästa träff %1$s, under de %2$s som krävs för att omdirigera automatiskt."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution, endast för administratörer: bästa träff %1$s, lika med eller över de %2$s som krävs för att omdirigera automatiskt."
+

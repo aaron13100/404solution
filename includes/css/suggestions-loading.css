@@ -1,6 +1,12 @@
 /**
- * Loading skeleton animation for async 404 suggestions.
- * Displays placeholder animation while suggestions are being computed.
+ * Front-end styles for the 404 suggestions block: the loading skeleton shown
+ * while suggestions are being computed, and the admin-only note rendered
+ * below the finished list.
+ *
+ * Kept as one stylesheet, under its original filename, because both live
+ * inside the same block and the async path already loads it before the AJAX
+ * response arrives -- an AJAX response cannot enqueue anything, so the admin
+ * note has to be styled by a sheet that is already on the page.
  *
  * This stylesheet is enqueued by the [abj404] shortcode on the user-facing
  * (front-end) site. The plugin's admin theme variables (--abj404-*) defined
@@ -80,5 +86,40 @@
     .abj404-no-suggestions {
         /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; light gray reads on dark host themes. */
         color: #aaa;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Admin-only note below the suggestion list. Deliberately quiet: no box, no
+ * colour fill, no icon. A hairline rule on the left and small grey text, so
+ * it reads as an aside on someone else's theme rather than as plugin chrome.
+ * ------------------------------------------------------------------------ */
+.abj404-admin-note {
+    font-size: 13px;
+    line-height: 1.5;
+    /* allow-hardcoded-color: frontend shortcode CSS; admin theme vars are not loaded on the user site, and this grey has to read on any host theme. */
+    color: #646970;
+    margin: 10px 0 0;
+    padding-left: 10px;
+    /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; matches the WordPress admin hairline grey. */
+    border-left: 3px solid #dcdcde;
+}
+
+.abj404-admin-note a {
+    /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; WordPress admin link blue, readable on light host themes. */
+    color: #2271b1;
+}
+
+@media (prefers-color-scheme: dark) {
+    .abj404-admin-note {
+        /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; light grey reads on dark host themes. */
+        color: #a7aaad;
+        /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; dark-mode hairline. */
+        border-left-color: #4f5255;
+    }
+
+    .abj404-admin-note a {
+        /* allow-hardcoded-color: frontend shortcode CSS, theme vars unavailable; WordPress admin light-blue link for dark backgrounds. */
+        color: #72aee6;
     }
 }

@@ -4257,3 +4257,28 @@ msgstr "无法发送报告。请稍后重试。"
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "无法加载迁移工具配置。请重新加载此页面后重试。"
+
+msgid "No suggested match was scored for this URL"
+msgstr "没有为此 URL 评分的建议匹配项"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "此重定向未记录置信度分数"
+
+msgid "No score"
+msgstr "无分数"
+
+msgid "Redirect this URL"
+msgstr "重定向此 URL"
+
+msgid "Change the minimum score"
+msgstr "更改最低分数"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution，仅管理员可见：站点上没有任何内容的评分足以作为建议。"
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution，仅管理员可见：最佳匹配为 %1$s，低于自动重定向所需的 %2$s。"
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution，仅管理员可见：最佳匹配为 %1$s，达到或超过自动重定向所需的 %2$s。"
+

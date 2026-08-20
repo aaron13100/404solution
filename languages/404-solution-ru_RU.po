@@ -4259,3 +4259,28 @@ msgstr "Не удалось отправить отчет. Повторите п
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "Не удалось загрузить конфигурацию инструмента миграции. Перезагрузите эту страницу и повторите попытку."
+
+msgid "No suggested match was scored for this URL"
+msgstr "Для этого URL не оценено ни одного предложенного совпадения"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "Для этого перенаправления не записан показатель достоверности"
+
+msgid "No score"
+msgstr "Нет оценки"
+
+msgid "Redirect this URL"
+msgstr "Перенаправить этот URL"
+
+msgid "Change the minimum score"
+msgstr "Изменить минимальную оценку"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution, только для администраторов: ничто на сайте не набрало достаточно баллов, чтобы быть предложенным."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution, только для администраторов: лучшее совпадение %1$s, ниже %2$s, необходимых для автоматического перенаправления."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution, только для администраторов: лучшее совпадение %1$s, не ниже %2$s, необходимых для автоматического перенаправления."
+

@@ -4284,3 +4284,28 @@ msgstr "تعذر إرسال التقرير. يرجى المحاولة مرة أ�
 
 msgid "Could not load the migration tool configuration. Reload this page and try again."
 msgstr "تعذر تحميل إعدادات أداة الترحيل. أعد تحميل هذه الصفحة وحاول مرة أخرى."
+
+msgid "No suggested match was scored for this URL"
+msgstr "لم يتم تسجيل أي تطابق مقترح لهذا الرابط"
+
+msgid "No confidence score was recorded for this redirect"
+msgstr "لم يتم تسجيل درجة ثقة لإعادة التوجيه هذه"
+
+msgid "No score"
+msgstr "لا توجد درجة"
+
+msgid "Redirect this URL"
+msgstr "إعادة توجيه هذا الرابط"
+
+msgid "Change the minimum score"
+msgstr "تغيير الحد الأدنى للدرجة"
+
+msgid "404 Solution, admin only: nothing on the site scored close enough to suggest."
+msgstr "404 Solution، للمسؤولين فقط: لم يحصل أي محتوى في الموقع على درجة كافية لاقتراحه."
+
+msgid "404 Solution, admin only: best match %1$s, under the %2$s needed to redirect automatically."
+msgstr "404 Solution، للمسؤولين فقط: أفضل تطابق %1$s، أقل من %2$s المطلوبة لإعادة التوجيه تلقائيًا."
+
+msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
+msgstr "404 Solution، للمسؤولين فقط: أفضل تطابق %1$s، مساوٍ أو أعلى من %2$s المطلوبة لإعادة التوجيه تلقائيًا."
+
