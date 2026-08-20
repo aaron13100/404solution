@@ -151,15 +151,16 @@ class ABJ_404_Solution_CronScheduler {
      */
     public function scheduleSingleAt(string $hook, int $timestamp, array $args = array()): bool {
         if (!function_exists('wp_schedule_single_event')) {
-            $this->outcome->reportScheduleFailure(
-                'single',
-                $hook,
-                null,
-                $timestamp,
-                $args,
-                'wp_schedule_single_event unavailable',
-                $this->clock->now()
-            );
+            $this->outcome->reportScheduleFailure(array(
+                'type' => 'single',
+                'hook' => $hook,
+                'recurrence' => null,
+                'timestamp' => $timestamp,
+                'args' => $args,
+                'errorCode' => 'cron_primitive_unavailable',
+                'detail' => 'wp_schedule_single_event unavailable',
+                'now' => $this->clock->now(),
+            ));
             return false;
         }
         $scheduled = self::traceStatusCountOperation(
@@ -173,7 +174,13 @@ class ABJ_404_Solution_CronScheduler {
             )
         );
         if ($this->outcome->reportsFailure($scheduled)) {
-            return $this->outcome->resolveSingleWrite($scheduled, $hook, $args, $timestamp, $this->clock->now());
+            return $this->outcome->resolveSingleWrite(array(
+                'writeResult' => $scheduled,
+                'hook' => $hook,
+                'args' => $args,
+                'timestamp' => $timestamp,
+                'now' => $this->clock->now(),
+            ));
         }
         return true;
     }
@@ -221,14 +228,23 @@ class ABJ_404_Solution_CronScheduler {
      */
     public function unscheduleAt(int $timestamp, string $hook, array $args, int $expectedNextTimestamp): bool {
         if (!function_exists('wp_unschedule_event')) {
-            $this->outcome->reportUnavailablePrimitive('unschedule', $hook, 'wp_unschedule_event');
+            $this->outcome->reportUnavailablePrimitive(array(
+                'verb' => 'unschedule',
+                'hook' => $hook,
+                'primitive' => 'wp_unschedule_event',
+            ));
             return false;
         }
         $result = empty($args)
             ? wp_unschedule_event($timestamp, $hook, array(), true)
             : wp_unschedule_event($timestamp, $hook, $this->listArgs($args), true);
         if ($this->outcome->reportsFailure($result)) {
-            return $this->outcome->resolveRemoval($result, $hook, $args, $timestamp);
+            return $this->outcome->resolveRemoval(array(
+                'writeResult' => $result,
+                'hook' => $hook,
+                'args' => $args,
+                'timestamp' => $timestamp,
+            ));
         }
         if ($result === null && $this->nextScheduled($hook, $args) !== $expectedNextTimestamp) {
             return $this->outcome->reportRemovalNotVerified($hook, $timestamp);
@@ -266,15 +282,16 @@ class ABJ_404_Solution_CronScheduler {
         try {
             $timestamp = (new DateTimeImmutable('today ' . $timeForEvent, ABJ_404_Solution_SiteTimezone::resolve()))->getTimestamp();
         } catch (Exception $e) {
-            $this->outcome->reportScheduleFailure(
-                'recurring',
-                $hook,
-                'daily',
-                0,
-                array(),
-                'failed to calculate daily schedule timestamp: ' . $e->getMessage(),
-                $this->clock->now()
-            );
+            $this->outcome->reportScheduleFailure(array(
+                'type' => 'recurring',
+                'hook' => $hook,
+                'recurrence' => 'daily',
+                'timestamp' => 0,
+                'args' => array(),
+                'errorCode' => 'schedule_timestamp_calculation_failed',
+                'detail' => 'failed to calculate daily schedule timestamp: ' . $e->getMessage(),
+                'now' => $this->clock->now(),
+            ));
             return false;
         }
         if ($this->nextScheduled($hook) !== false) {
@@ -289,7 +306,11 @@ class ABJ_404_Solution_CronScheduler {
      */
     public function clearHook(string $hook, array $args = array()): void {
         if (!function_exists('wp_clear_scheduled_hook')) {
-            $this->outcome->reportUnavailablePrimitive('clear', $hook, 'wp_clear_scheduled_hook');
+            $this->outcome->reportUnavailablePrimitive(array(
+                'verb' => 'clear',
+                'hook' => $hook,
+                'primitive' => 'wp_clear_scheduled_hook',
+            ));
             return;
         }
         empty($args) ? wp_clear_scheduled_hook($hook) : wp_clear_scheduled_hook($hook, $this->listArgs($args));
@@ -301,7 +322,11 @@ class ABJ_404_Solution_CronScheduler {
      */
     public function unscheduleAllOccurrences(string $hook, array $args = array()): void {
         if (!function_exists('wp_unschedule_event')) {
-            $this->outcome->reportUnavailablePrimitive('unschedule', $hook, 'wp_unschedule_event');
+            $this->outcome->reportUnavailablePrimitive(array(
+                'verb' => 'unschedule',
+                'hook' => $hook,
+                'primitive' => 'wp_unschedule_event',
+            ));
             return;
         }
         $timestamp = $this->nextScheduled($hook, $args);
@@ -317,7 +342,12 @@ class ABJ_404_Solution_CronScheduler {
             // the `pre_unschedule_event` filter can short-circuit it without
             // removing anything.
             if ($this->outcome->reportsFailure($result)) {
-                $this->outcome->resolveRemoval($result, $hook, $args, $timestamp);
+                $this->outcome->resolveRemoval(array(
+                    'writeResult' => $result,
+                    'hook' => $hook,
+                    'args' => $args,
+                    'timestamp' => $timestamp,
+                ));
                 return;
             }
 
@@ -383,27 +413,28 @@ class ABJ_404_Solution_CronScheduler {
      */
     public function scheduleRecurringAt(string $hook, string $recurrence, int $timestamp, array $args = array()): bool {
         if (!function_exists('wp_schedule_event')) {
-            $this->outcome->reportScheduleFailure(
-                'recurring',
-                $hook,
-                $recurrence,
-                $timestamp,
-                $args,
-                'wp_schedule_event unavailable',
-                $this->clock->now()
-            );
+            $this->outcome->reportScheduleFailure(array(
+                'type' => 'recurring',
+                'hook' => $hook,
+                'recurrence' => $recurrence,
+                'timestamp' => $timestamp,
+                'args' => $args,
+                'errorCode' => 'cron_primitive_unavailable',
+                'detail' => 'wp_schedule_event unavailable',
+                'now' => $this->clock->now(),
+            ));
             return false;
         }
         $scheduled = wp_schedule_event($timestamp, $recurrence, $hook, $this->listArgs($args), true);
         if ($this->outcome->reportsFailure($scheduled)) {
-            return $this->outcome->resolveRecurringWrite(
-                $scheduled,
-                $hook,
-                $recurrence,
-                $args,
-                $timestamp,
-                $this->clock->now()
-            );
+            return $this->outcome->resolveRecurringWrite(array(
+                'writeResult' => $scheduled,
+                'hook' => $hook,
+                'recurrence' => $recurrence,
+                'args' => $args,
+                'timestamp' => $timestamp,
+                'now' => $this->clock->now(),
+            ));
         }
         return true;
     }
