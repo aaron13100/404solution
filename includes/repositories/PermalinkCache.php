@@ -213,17 +213,25 @@ class ABJ_404_Solution_PermalinkCache {
      * starting a 500-post PHP batch after that point would make the deadline a
      * decorative hint instead of a real request bound.
      *
+     * Both early exits (budget spent, batch cap reached) mean "we stopped
+     * before finding out", which is NOT the same question as "is there more to
+     * do" -- so they ask, rather than assume. Assuming is production report 296
+     * (urbanseed.info): a frontend 404 calls this with a one-second budget, the
+     * set-based work above spends it before batch zero, and a site whose 73
+     * published posts all had keywords already re-armed the cron chain on every
+     * single 404. Fifty duplicate-event refusals a day for a pass with nothing
+     * in it.
+     *
      * @param float $deadline Epoch seconds (microsecond precision) after which
      *   no further batch may start.
-     * @return bool True when the pass stopped with work still pending (budget
-     *   or batch cap reached), so the caller should reschedule. False when the
-     *   corpus converged -- a batch came back with nothing left to do.
+     * @return bool True when keyword work is genuinely still pending, so the
+     *   caller should reschedule. False when the corpus has converged.
      */
     private function populateContentKeywordsWithinBudget(float $deadline): bool {
         $clock = abj_clock();
         for ($batch = 0; $batch < self::MAX_KEYWORD_BATCHES_PER_RUN; $batch++) {
             if ($clock->nowFloat() >= $deadline) {
-                return true;
+                return $this->keywordWorkRemains();
             }
             if ($this->populateContentKeywords() === 0) {
                 // Nothing left needing keywords: the corpus is converged, so
@@ -231,7 +239,27 @@ class ABJ_404_Solution_PermalinkCache {
                 return false;
             }
         }
-        return true;
+        return $this->keywordWorkRemains();
+    }
+
+    /**
+     * Whether any published post still lacks content keywords.
+     *
+     * Deliberately a one-row existence probe rather than a batch: it runs
+     * precisely when the caller's budget is already spent (or its batch
+     * allowance used up), so fetching 500 post bodies to answer a yes/no
+     * question would turn the deadline back into the decorative hint that
+     * bounding this pass exists to prevent.
+     *
+     * A repository that cannot answer -- the content_keywords column is still
+     * missing mid-migration, or the query failed -- returns no rows and is read
+     * as "nothing to do". That is the same answer the batch path already gives
+     * for the same condition (populateContentKeywords() returns 0), and it is
+     * the safe one: the alternative queues a cron pass that runs the identical
+     * failing query and re-arms itself forever.
+     */
+    private function keywordWorkRemains(): bool {
+        return $this->getPostsNeedingContentKeywords(1) !== array();
     }
 
     /** @return void */
