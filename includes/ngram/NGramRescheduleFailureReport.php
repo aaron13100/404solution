@@ -58,12 +58,40 @@ class ABJ_404_Solution_NGramRescheduleFailureReport {
     /**
      * Record that the chain could not be re-armed.
      *
+     * The cron ARGS and the requested TIMESTAMP are handed in rather than
+     * rebuilt here, because a diagnostic that re-derives the request it is
+     * describing describes a request nobody made. Both fields did exactly that
+     * and both were wrong on the multisite path (production report 294,
+     * urbanseed.info, 4.3.3):
+     *
+     *   - `Already scheduled` was probed with `array($offset)` while three of
+     *     the four reschedule call sites -- every multisite one -- enqueue the
+     *     next link with NO args. WP-Cron identifies an event by hook AND args,
+     *     so the probe asked about an event the chain never schedules and
+     *     answered "no" whatever the cron store actually held.
+     *   - `Schedule time` was a hardcoded `now() + 10`, the base cadence, while
+     *     the delay actually asked for comes from
+     *     {@see ABJ_404_Solution_NGramRebuildRetryPolicy} and is up to 120
+     *     seconds once the chain has backed off.
+     *
+     * Those two fields are half the evidence the line exists to carry, so a
+     * refusal that WAS a duplicate of a queued event read as an unexplained
+     * stall.
+     *
      * @param string $hookName Hook the chain reschedules itself on.
      * @param int $offset Offset the chain would have resumed from.
      * @param float $progressPercent Percent complete at the point of failure.
+     * @param array<int, mixed> $args The cron args the refused write used.
+     * @param int $requestedTimestamp The second the refused write asked for.
      * @return void
      */
-    public function report(string $hookName, int $offset, float $progressPercent): void {
+    public function report(
+        string $hookName,
+        int $offset,
+        float $progressPercent,
+        array $args,
+        int $requestedTimestamp
+    ): void {
         // WP-Cron switched off entirely is a configuration answer, not a
         // failure to diagnose: say so plainly and skip the evidence dump.
         if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {
@@ -77,7 +105,7 @@ class ABJ_404_Solution_NGramRescheduleFailureReport {
 
         global $wpdb;
 
-        $alreadyScheduled = $this->cronScheduler->nextScheduled($hookName, [$offset]);
+        $alreadyScheduled = $this->cronScheduler->nextScheduled($hookName, $args);
         $dbError = (is_object($wpdb) && !empty($wpdb->last_error)) ? (string)$wpdb->last_error : 'none';
 
         $errorMsg = sprintf(
@@ -86,7 +114,7 @@ class ABJ_404_Solution_NGramRescheduleFailureReport {
             . "Progress: %.1f%%, Multisite: %s, Blog ID: %d",
             $offset,
             $hookName,
-            $this->cronScheduler->now() + 10,
+            $requestedTimestamp,
             $this->cronScheduler->now(),
             // wp_date, not date: date() renders in whatever timezone the host
             // process happens to default to, so the same event read differently

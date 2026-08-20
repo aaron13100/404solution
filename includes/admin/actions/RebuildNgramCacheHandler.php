@@ -39,16 +39,20 @@ class ABJ_404_Solution_RebuildNgramCacheHandler implements ABJ_404_Solution_Admi
         set_transient($transientKey, abj_clock()->now(), 10);
 
         $dbUpgrades = abj_service('database_upgrades');
-        $scheduled = $dbUpgrades->components()->nGramUpgrade()->scheduleNGramCacheRebuild();
+        $nGramUpgrade = $dbUpgrades->components()->nGramUpgrade();
+        $scheduled = $nGramUpgrade->scheduleNGramCacheRebuild();
 
         if ($scheduled) {
             return __('N-gram cache rebuild has been scheduled and will run in the background. This may take several minutes on large sites. You can continue using the plugin normally.', '404-solution');
         }
 
-        $nextScheduled = abj_cron_scheduler()->nextScheduled(
-            ABJ_404_Solution_CronScheduler::HOOK_REBUILD_NGRAM_CACHE
-        );
-        if ($nextScheduled) {
+        // Asked of the component that owns the chain rather than probed here.
+        // WP-Cron identifies an event by hook AND args, and an in-flight
+        // single-site chain reschedules itself carrying its offset as an
+        // argument, so the bare no-args probe this used to make answered "not
+        // queued" for a rebuild that was queued -- telling the admin to go and
+        // check a WP-Cron configuration that was working.
+        if ($nGramUpgrade->nGramRebuildIsArmed()) {
             return __('N-gram cache rebuild is already scheduled or in progress. Please wait for it to complete.', '404-solution');
         }
         return __('Failed to schedule N-gram cache rebuild. Please try again or check your WordPress cron configuration.', '404-solution');

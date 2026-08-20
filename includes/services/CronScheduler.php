@@ -390,7 +390,20 @@ class ABJ_404_Solution_CronScheduler {
         return true;
     }
 
-    private function timestampAfter(int $delaySeconds): int {
+    /**
+     * The wall-clock second a delay of $delaySeconds lands on, measured against
+     * the same clock every write here uses.
+     *
+     * Public so a caller that has to SAY which timestamp it asked for can hold
+     * the one value and hand it to both {@see scheduleSingleAt()} and its own
+     * diagnostics, rather than re-deriving it. A diagnostic that recomputes the
+     * request it is describing is free to describe a request nobody made, which
+     * is how a stalled n-gram rebuild reported a schedule time ten seconds out
+     * while the chain had actually backed off (production report 294).
+     *
+     * @param int $delaySeconds Negative delays are clamped to now.
+     */
+    public function timestampAfter(int $delaySeconds): int {
         return $this->clock->now() + max(0, $delaySeconds);
     }
 

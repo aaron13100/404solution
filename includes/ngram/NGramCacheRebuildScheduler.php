@@ -30,6 +30,14 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
     /** WP-Cron hook this scheduler enqueues. */
     const REBUILD_CRON_HOOK = 'abj404_rebuild_ngram_cache_hook';
 
+    /**
+     * How far out the first tick of a chain is queued. Named rather than
+     * repeated as a literal because it is quoted back to the admin and used in
+     * the failure diagnostic, and three copies of a number that has to agree is
+     * three chances for them not to.
+     */
+    const START_DELAY_SECONDS = 30;
+
     /** @var ABJ_404_Solution_DatabaseCore */
     private $dbCore;
 
@@ -76,13 +84,17 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
      *              false when WP-Cron rejected the schedule call.
      */
     public function scheduleRebuild() {
-        $rawCurrentOffset = $this->optionStore->getOption('abj404_ngram_rebuild_offset', 0);
-        $currentOffset = is_scalar($rawCurrentOffset) ? (int)$rawCurrentOffset : 0;
+        $currentOffset = $this->currentRebuildOffset();
 
         $hookName = self::REBUILD_CRON_HOOK;
-        $armedAt = $this->armedRebuildTimestamp($hookName, $currentOffset);
+        $armedAt = $this->armedRebuildTimestamp();
         if ($armedAt !== false) {
-            $this->logger->debugMessage("N-gram cache rebuild already scheduled for " . date('Y-m-d H:i:s', $armedAt));
+            // wp_date, not date: date() renders in whatever timezone the host
+            // process happens to default to, so the same event reads
+            // differently on two hosts and the line cannot be compared against
+            // anything else in the log.
+            $this->logger->debugMessage(
+                "N-gram cache rebuild already scheduled for " . wp_date('Y-m-d H:i:s T', $armedAt));
             return true;
         }
 
@@ -101,11 +113,16 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
             $this->optionStore->updateOption('abj404_ngram_rebuild_offset', 0);
         }
 
-        $scheduleTime = $this->cronScheduler->now() + 30;
+        // Resolved to an absolute second ONCE, then used both to ask and to
+        // report. Computing it twice against the clock let the reported
+        // schedule time differ from the requested one whenever the two reads
+        // straddled a second boundary.
+        $scheduleTime = $this->cronScheduler->timestampAfter(self::START_DELAY_SECONDS);
         // Resumed events carry the offset as their cron argument, exactly like
         // the chain's own reschedules, so armedRebuildTimestamp() recognizes
         // them and a second caller cannot start a parallel chain.
-        $scheduled = $this->cronScheduler->scheduleSingle($hookName, 30, $resuming ? [$currentOffset] : []);
+        $scheduled = $this->cronScheduler->scheduleSingleAt(
+            $hookName, $scheduleTime, $resuming ? [$currentOffset] : []);
 
         if ($scheduled === false) {
             $this->reportScheduleFailure($hookName, $scheduleTime);
@@ -113,7 +130,8 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         }
 
         $context = is_multisite() ? ' (network-wide)' : '';
-        $this->logger->infoMessage("N-gram cache rebuild scheduled to start in 30 seconds{$context}.");
+        $this->logger->infoMessage(
+            "N-gram cache rebuild scheduled to start in " . self::START_DELAY_SECONDS . " seconds{$context}.");
         return true;
     }
 
@@ -129,15 +147,23 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
      * probe alone cannot see an in-flight chain, so it would report every
      * healthy mid-walk rebuild as unarmed and spawn a second chain beside it.
      *
-     * @param string $hookName
-     * @param int $currentOffset
+     * Public, and reading the offset itself rather than taking it as a
+     * parameter, because it is the ONE place that knows how this chain is
+     * identified in the cron store. Every other "is a rebuild queued?" question
+     * -- the failure diagnostic below, the Tools-tab rebuild button -- routes
+     * through here instead of issuing its own probe. Each private copy of that
+     * question was a single no-args probe, and each therefore answered "not
+     * queued" for a healthy in-flight single-site chain.
+     *
      * @return int|false
      */
-    private function armedRebuildTimestamp(string $hookName, int $currentOffset) {
+    public function armedRebuildTimestamp() {
+        $hookName = self::REBUILD_CRON_HOOK;
         $nextScheduled = $this->cronScheduler->nextScheduled($hookName);
         if ($nextScheduled !== false) {
             return $nextScheduled;
         }
+        $currentOffset = $this->currentRebuildOffset();
         if ($currentOffset > 0) {
             $nextForOffset = $this->cronScheduler->nextScheduled($hookName, [$currentOffset]);
             if ($nextForOffset !== false) {
@@ -145,6 +171,16 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
             }
         }
         return false;
+    }
+
+    /**
+     * The rebuild cursor as stored, coerced to an offset.
+     *
+     * @return int
+     */
+    private function currentRebuildOffset(): int {
+        $raw = $this->optionStore->getOption('abj404_ngram_rebuild_offset', 0);
+        return is_scalar($raw) ? (int)$raw : 0;
     }
 
     /**
@@ -191,7 +227,13 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
         global $wpdb;
 
         $cronDisabled = defined('DISABLE_WP_CRON') && DISABLE_WP_CRON;
-        $alreadyScheduled = $this->cronScheduler->nextScheduled($hookName);
+        // Asked through the armed check rather than probed directly: WP-Cron
+        // identifies an event by hook AND args, and a resumed chain carries its
+        // offset as an argument, so a bare no-args probe here reported
+        // "Already scheduled: no" for a hook that had an event queued. Same
+        // defect, same hook, as production report 294 on the batch runner's own
+        // refusal report.
+        $alreadyScheduled = $this->armedRebuildTimestamp();
         $dbError = !empty($wpdb->last_error) ? $wpdb->last_error : 'none';
         $rawRebuildOffset = $this->optionStore->getOption('abj404_ngram_rebuild_offset', 'not set');
         $rebuildOffset = is_scalar($rawRebuildOffset) ? (string)$rawRebuildOffset : 'not set';
@@ -205,7 +247,10 @@ class ABJ_404_Solution_NGramCacheRebuildScheduler {
             $hookName,
             $scheduleTime,
             $this->cronScheduler->now(),
-            $alreadyScheduled ? date('Y-m-d H:i:s', $alreadyScheduled) : 'no',
+            // wp_date, not date, for the same reason the batch runner's refusal
+            // report uses it: date() renders in the host process's default
+            // timezone, so the same event reads differently on two hosts.
+            $alreadyScheduled ? (string)wp_date('Y-m-d H:i:s T', (int)$alreadyScheduled) : 'no',
             $cronDisabled ? 'yes' : 'no',
             $dbError,
             $rebuildOffset,

@@ -185,9 +185,15 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
      * @return void
      */
     private function rescheduleChain(int $delaySeconds, array $args, float $progress): void {
-        if ($this->cronScheduler->scheduleSingle(self::REBUILD_CRON_HOOK, $delaySeconds, $args) === false) {
+        // Resolved to an absolute second here, then used TWICE: once to ask for
+        // the event and once to say what was asked for. The report used to
+        // rebuild both this timestamp and these args from what it could reach,
+        // and got both wrong on the multisite path -- see
+        // ABJ_404_Solution_NGramRescheduleFailureReport::report().
+        $timestamp = $this->cronScheduler->timestampAfter($delaySeconds);
+        if ($this->cronScheduler->scheduleSingleAt(self::REBUILD_CRON_HOOK, $timestamp, $args) === false) {
             $this->rescheduleFailureReport->report(
-                self::REBUILD_CRON_HOOK, $this->progress->cursor(), $progress);
+                self::REBUILD_CRON_HOOK, $this->progress->cursor(), $progress, $args, $timestamp);
         }
     }
 

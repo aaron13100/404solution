@@ -90,6 +90,21 @@ class ABJ_404_Solution_DatabaseUpgradeNGram extends ABJ_404_Solution_DatabaseUpg
     }
 
     /**
+     * Whether the rebuild cron chain currently has an event queued.
+     *
+     * Exposed so callers outside the n-gram package (the Tools-tab rebuild
+     * button) can ask the question instead of probing WP-Cron themselves: the
+     * chain is identified by hook AND args, and only
+     * {@see ABJ_404_Solution_NGramCacheRebuildScheduler::armedRebuildTimestamp()}
+     * knows which args a given moment's chain carries.
+     *
+     * @return bool
+     */
+    function nGramRebuildIsArmed(): bool {
+        return $this->newScheduler()->armedRebuildTimestamp() !== false;
+    }
+
+    /**
      * WP-Cron callback. Acquires the shared 'ngram_rebuild' lock so
      * its INSERTs cannot race with a concurrent TRUNCATE from the
      * sync rebuilder, then delegates to the scheduler's batch driver.
