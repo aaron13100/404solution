@@ -16,6 +16,8 @@ if (!defined('ABSPATH')) {
  * browser understands -- a `#fragment` in particular. Any link that has to
  * land on a specific field therefore has to be built against the right admin
  * file in the first place, which is what this class is for.
+ *
+ * // allow-no-test-found: exercised by SuggestionsPageAdminNoteLinkTargetsTest
  */
 class ABJ_404_Solution_AdminPageUrlBuilder {
 

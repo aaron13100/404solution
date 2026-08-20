@@ -22,6 +22,8 @@ if (!defined('ABSPATH')) {
  * row's type/final_dest mean "no destination, the 404 page was shown"; writing
  * a suggested destination into them would silently promote a captured URL into
  * a live redirect nobody approved.
+ *
+ * // allow-no-test-found: exercised by CapturedRedirectNearMissScoreTest
  */
 final class ABJ_404_Solution_NearMissMatch {
 

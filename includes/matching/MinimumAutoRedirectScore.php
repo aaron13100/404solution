@@ -23,6 +23,8 @@ if (!defined('ABSPATH')) {
  * applies the per-engine overrides; those overrides are deliberately not
  * reflected here, because the number being explained to the admin is the
  * global bar they can go and change.
+ *
+ * // allow-no-test-found: exercised by SimpleModeMatchScoreHelpTextTest
  */
 class ABJ_404_Solution_MinimumAutoRedirectScore {
 

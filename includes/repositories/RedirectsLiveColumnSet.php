@@ -23,6 +23,8 @@ if (!defined('ABSPATH')) {
  * answers "yes" for every column: an install we cannot introspect is assumed
  * current, which keeps writes working rather than silently dropping columns on
  * a healthy table.
+ *
+ * // allow-no-test-found: exercised by DataAccessSchemaDriftTest
  */
 class ABJ_404_Solution_RedirectsLiveColumnSet {
 

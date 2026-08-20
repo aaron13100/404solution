@@ -20,6 +20,8 @@ if (!defined('ABSPATH')) {
  * remedies: redirect this one URL by hand, or change the score an automatic
  * redirect has to clear. It renders only for plugin admins (the same gate
  * that already controls the inline score), so no visitor ever sees it.
+ *
+ * // allow-no-test-found: exercised by SuggestionsPageAdminNoteTest
  */
 class ABJ_404_Solution_ShortcodeSuggestionsAdminNotePresenter {
 

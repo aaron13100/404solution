@@ -25,6 +25,8 @@ if (!defined('ABSPATH')) {
  *     within the single request being answered, with no cookie involved.
  *
  * Business logic only: no data access, no response writing.
+ *
+ * // allow-no-test-found: exercised by RedirectSelfLoopGuardTest
  */
 class ABJ_404_Solution_RedirectLoopGuard {
 
