@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_AjaxAdminEndpointRegistrar {
 
     /** Compiled marker for mixed-generation comparison at AJAX dispatch. */
-    const DIAGNOSTIC_BUILD_ID = '8e645b8e68dfb2347bd2b252ef69a2763942a8a8';
+    const DIAGNOSTIC_BUILD_ID = 'b04c36a22562771eea5453fa839e18cf3ad0248c';
 
     /**
      * Wire each admin-table AJAX action to its handler. Safe to call once
