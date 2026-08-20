@@ -238,6 +238,17 @@ class ABJ_404_Solution_ScheduledEventInspector {
         $hook = $request['hook'];
         $args = $request['args'];
         $timestamp = $request['timestamp'];
+        if (function_exists('_get_cron_array')) {
+            $crons = _get_cron_array();
+            if (!is_array($crons)) {
+                throw new UnexpectedValueException(
+                    '_get_cron_array returned malformed data while verifying removal of cron hook '
+                    . $hook . ' at timestamp ' . $timestamp . '.'
+                );
+            }
+            $argsKey = md5(serialize($this->listArgs($args)));
+            return !isset($crons[$timestamp][$hook][$argsKey]);
+        }
         if (function_exists('wp_get_scheduled_event')) {
             $event = wp_get_scheduled_event($hook, $this->listArgs($args), $timestamp);
             if ($event === false) {
@@ -246,7 +257,9 @@ class ABJ_404_Solution_ScheduledEventInspector {
             $this->assertExactEventShape($event, $hook, $timestamp);
             return false;
         }
-        return $this->nextScheduledTimestamp($hook, $args) !== $timestamp;
+        // WordPress 5.0 has _get_cron_array(); an environment that removes both
+        // exact-read APIs cannot prove an exact removal succeeded.
+        return false;
     }
 
     /**

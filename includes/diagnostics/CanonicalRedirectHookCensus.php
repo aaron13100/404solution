@@ -50,7 +50,7 @@ if (!defined('ABSPATH')) {
 final class ABJ_404_Solution_CanonicalRedirectHookCensus {
 
     /** The option holding the latest reading. Non-autoloaded; read on demand. */
-    const OPTION_NAME = 'abj404_canonical_hook_census';
+    const OPTION_NAME = ABJ_404_Solution_CanonicalHookCensusStore::OPTION_NAME;
 
     /** The record format. Additive changes only; a reader tolerates unknown keys. */
     const RECORD_VERSION = 1;
@@ -178,8 +178,9 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
                 // so evict this request's option-cache copy and decide again
                 // from the now-current record before paying for reflection or
                 // issuing an UPDATE.
-                self::forgetCachedCensusOption();
-                $stored = self::read();
+                $store = self::store();
+                $store->refreshReads();
+                $stored = $store->read();
                 $unchanged = isset($stored['fingerprint']) && $stored['fingerprint'] === $fingerprint;
                 $fresh = ($now - self::intIn($stored, 'recorded_at', 0)) < self::REFRESH_AFTER_SECONDS;
                 if ($unchanged && $fresh) {
@@ -206,21 +207,7 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
      * @return array<string, mixed>
      */
     public static function read(): array {
-        try {
-            if (!function_exists('get_option')) {
-                return array();
-            }
-            $raw = get_option(self::OPTION_NAME, '');
-            if (!is_string($raw) || $raw === '') {
-                return array();
-            }
-            $decoded = json_decode($raw, true);
-            return is_array($decoded) ? $decoded : array();
-        } catch (Throwable $e) {
-            abj404_logPhpFallback('canonical-hook-census',
-                'canonical hook census read failed (code ' . $e->getCode() . '): ' . $e->getMessage());
-            return array();
-        }
+        return self::store()->read();
     }
 
     /**
@@ -238,7 +225,13 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
         // The SECOND way canonicalization stops. A plugin can leave the hook
         // attached and return false from the `redirect_canonical` filter, which
         // a hook-attachment reading alone would report as a healthy site.
-        $filterEntries = ABJ_404_Solution_HookCallbackRoster::forHook(self::CORE_CANONICAL_CALLBACK) ?? array();
+        $filterEntries = ABJ_404_Solution_HookCallbackRoster::forHook(self::CORE_CANONICAL_CALLBACK);
+        if ($filterEntries === null) {
+            throw new UnexpectedValueException(
+                'The WordPress hook registry became unreadable while inspecting '
+                . self::CORE_CANONICAL_CALLBACK . '.'
+            );
+        }
 
         $suppression = array();
         if ($corePriority === null) {
@@ -291,20 +284,7 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
      * @return void
      */
     private static function write(array $record): void {
-        if (!function_exists('update_option')) {
-            return;
-        }
-        $encoded = json_encode($record);
-        if (!is_string($encoded)) {
-            abj404_logPhpFallback('canonical-hook-census',
-                'canonical hook census could not be encoded: ' . json_last_error_msg());
-            return;
-        }
-        if (!update_option(self::OPTION_NAME, $encoded, false)) {
-            abj404_logPhpFallback('canonical-hook-census',
-                'canonical hook census option write was not persisted. Recovery: inspect the WordPress '
-                . 'options table and object-cache error logs, then retry from a front-end 404.');
-        }
+        self::store()->write($record);
     }
 
     /**
@@ -335,13 +315,9 @@ final class ABJ_404_Solution_CanonicalRedirectHookCensus {
         return $lock->claim($claim);
     }
 
-    /** Drop only cached option values that can hide a concurrent refresh. */
-    private static function forgetCachedCensusOption(): void {
-        if (!function_exists('wp_cache_delete')) {
-            return;
-        }
-        wp_cache_delete(self::OPTION_NAME, 'options');
-        wp_cache_delete('notoptions', 'options');
+    /** Persistence adapter for the census record. */
+    private static function store(): ABJ_404_Solution_CanonicalHookCensusStore {
+        return new ABJ_404_Solution_CanonicalHookCensusStore();
     }
 
     /**

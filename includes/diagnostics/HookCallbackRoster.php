@@ -142,14 +142,22 @@ final class ABJ_404_Solution_HookCallbackRoster {
      */
     private static function hookCallbacks(string $hookName): ?array {
         $wpFilter = $GLOBALS['wp_filter'] ?? null;
-        $hook = is_array($wpFilter) ? ($wpFilter[$hookName] ?? null) : null;
+        if (!is_array($wpFilter)) {
+            return null;
+        }
+        if (!array_key_exists($hookName, $wpFilter)) {
+            return array();
+        }
+        $hook = $wpFilter[$hookName];
         if (is_object($hook) && isset($hook->callbacks) && is_array($hook->callbacks)) {
             return $hook->callbacks;
         }
         if (is_array($hook)) {
             return $hook;
         }
-        return null;
+        throw new UnexpectedValueException(
+            'Malformed WordPress hook registry entry for hook ' . $hookName . '.'
+        );
     }
 
     /**

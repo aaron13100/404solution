@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = 'a96009bcc3cfea577c9900bea6ddf03025669606';
+    const DIAGNOSTIC_BUILD_ID = 'c1c4cfa82dabd8b844ea4d4b5d91040b590981ef';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;

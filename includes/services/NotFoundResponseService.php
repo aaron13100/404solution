@@ -219,7 +219,10 @@ class ABJ_404_Solution_NotFoundResponseService {
             $finalDestination = (string)$location . $this->getCommentPartAndQueryPartOfRequest();
         }
 
-        $terminatingDestination = $this->loopGuard->terminatingDestination($finalDestination, $location);
+        $terminatingDestination = $this->loopGuard->terminatingDestination(array(
+            'finalDestination' => $finalDestination,
+            'location' => $location,
+        ));
         if ($terminatingDestination === false) {
             return false;
         }

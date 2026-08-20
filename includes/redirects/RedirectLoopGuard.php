@@ -55,14 +55,13 @@ class ABJ_404_Solution_RedirectLoopGuard {
     /**
      * Reduce a destination to one that terminates.
      *
-     * @param string $finalDestination destination including the comment-page and
-     *                                 query parts appended from the request.
-     * @param string $location         the resolved target before those parts
-     *                                 were appended.
+     * @param array{finalDestination: string, location: string} $request
      * @return string|false a destination that does not loop, or false when no
      *                      redirect can terminate and none should be sent.
      */
-    function terminatingDestination(string $finalDestination, string $location) {
+    function terminatingDestination(array $request) {
+        $finalDestination = $request['finalDestination'];
+        $location = $request['location'];
         $loopSafeDestination = $this->avoidInfiniteRedirect($finalDestination, $location);
         if ($loopSafeDestination === false) {
             return false;
