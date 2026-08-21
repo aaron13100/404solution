@@ -457,12 +457,41 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		return is_string($value) ? $value : null;
 	}
 
-	/** Reduce a resolved table name to characters legal in an identifier.
+	/** Accept a resolved table name only when every character is legal in an
+	 * identifier. Rewriting is unsafe: deleting one invalid character can turn
+	 * a malformed name into the name of a different, real table.
 	 *
 	 * @param string $table
-	 * @return string
+	 * @return string the unchanged identifier, or '' when invalid
 	 */
 	private function asIdentifier($table) {
-		return (string)preg_replace('/[^A-Za-z0-9_]/', '', $table);
+		if ($table === '' || preg_match('/\A[A-Za-z0-9_]+\z/D', $table) !== 1) {
+			$this->logInvalidTableIdentifier($table);
+			return '';
+		}
+
+		return $table;
+	}
+
+	/** Report a database table name that cannot safely be put into SQL.
+	 *
+	 * @param string $table
+	 * @return void
+	 */
+	private function logInvalidTableIdentifier($table) {
+		$visibleTable = substr(str_replace(array("\r", "\n"), array('\\r', '\\n'), $table), 0, 200);
+		$message = 'Refusing to use an invalid options-table identifier: "' . $visibleTable . '".';
+
+		if (function_exists('abj_service')) {
+			$logger = abj_service('logging');
+			if (is_object($logger) && method_exists($logger, 'warn')) {
+				$logger->warn($message);
+				return;
+			}
+		}
+
+		if (function_exists('abj404_logPhpFallback')) {
+			abj404_logPhpFallback('service-resolution-fallback', $message);
+		}
 	}
 }
