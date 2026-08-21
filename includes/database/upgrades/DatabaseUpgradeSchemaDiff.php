@@ -268,19 +268,24 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 			$this->logger->infoMessage("I added a column: " . $createColStatement);
 		}
 
-		$this->runAddedColumnBackfill($tableName, $colName);
+		$this->runAddedColumnBackfill(array(
+			'tableName' => $tableName,
+			'colName' => $colName,
+		));
 	}
     }
 
-    /** @return void */
-    private function runAddedColumnBackfill(string $tableName, string $colName) {
+    /**
+     * @param array{tableName: string, colName: string} $context
+     * @return void
+     */
+    private function runAddedColumnBackfill(array $context) {
 	// min_log_id is drained once per verification by runPendingBackfills(),
 	// including on later requests after the column already exists.
-	if ($colName === 'min_log_id') {
+	if ($context['colName'] === 'min_log_id') {
 		return;
 	}
-	$this->upgrades()->addedColumnBackfillUpgrade()->runBackfillsForAddedColumn(
-		array('tableName' => $tableName, 'colName' => $colName));
+	$this->upgrades()->addedColumnBackfillUpgrade()->runBackfillsForAddedColumn($context);
     }
 
     /** Create table DDL is returned without SQL comments of any kind.
