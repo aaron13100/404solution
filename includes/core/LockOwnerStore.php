@@ -348,7 +348,11 @@ class ABJ_404_Solution_LockOwnerStore {
      * @return bool True if network-activated, false otherwise
      */
     private function isNetworkActivated() {
-        if (!is_multisite()) {
+        // Synchronizer shutdown recovery can run from a deliberately minimal
+        // bootstrap (and some hosts invoke shutdown handlers after WordPress
+        // has only partially loaded). A missing multisite API means this
+        // cannot be a network-wide lock; do not turn recovery into a fatal.
+        if (!function_exists('is_multisite') || !is_multisite()) {
             return false;
         }
 
