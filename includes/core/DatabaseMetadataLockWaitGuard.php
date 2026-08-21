@@ -128,8 +128,15 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
      * @return mixed
      */
     private function connectionOf($wpdb) {
-        $property = $this->readProperty($wpdb, 'dbh');
-        return $property['found'] ? $property['value'] : null;
+        // PDO-backed wpdb adapters commonly keep the live session in a private
+        // pdo field instead of exposing WordPress's mysqli-oriented dbh field.
+        foreach (array('dbh', 'pdo') as $propertyName) {
+            $property = $this->readProperty($wpdb, $propertyName);
+            if ($property['found'] && $property['value'] !== null) {
+                return $property['value'];
+            }
+        }
+        return null;
     }
 
     /** @param mixed $connection */
