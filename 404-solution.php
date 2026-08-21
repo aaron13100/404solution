@@ -49,7 +49,7 @@ if (!defined('ABJ404_PATH')) {
 // Content-addressed release marker compiled into the earliest boot file.
 // DiagnosticModuleManifestTest recomputes it from every covered PHP module.
 if (!defined('ABJ404_DIAGNOSTIC_BUILD_ID')) {
-define('ABJ404_DIAGNOSTIC_BUILD_ID', '11bc6a9f1285effa0ee17e01f273788c349559b9');
+define('ABJ404_DIAGNOSTIC_BUILD_ID', 'ad3e05522799cade6d6c121bc640d533c1ae0d4c');
 }
 
 // The plugin version is read from this file's own header (single source of
