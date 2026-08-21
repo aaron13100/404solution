@@ -133,6 +133,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return void
      */
     public function scheduleBackgroundRefresh(): void {
+        $this->fetchLock->prepare();
         if ($this->fetchLock->isHeld()) {
             return;
         }

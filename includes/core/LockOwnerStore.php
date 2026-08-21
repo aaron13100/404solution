@@ -60,6 +60,8 @@ class ABJ_404_Solution_LockOwnerStore {
 	/** A prefix for keys used for synchronization methods.
 	 * @var string */
 	const SYNC_KEY_PREFIX = 'SYNC_';
+	const NETWORK_ATOMIC_READY_OPTION = 'abj404_network_lock_atomic_ready_at';
+	const NETWORK_ATOMIC_MIGRATION_DELAY = 86400;
 
 	/**
 	 * Test seam: clear the cached file-vs-options latch so the next call
@@ -184,6 +186,9 @@ class ABJ_404_Solution_LockOwnerStore {
     function claimOwner(array $claim) {
 		$key = $claim['key'];
 		$uniqueID = $claim['owner'];
+		if (!$this->networkAtomicStorageReady($key, true)) {
+			return false;
+		}
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		try {
@@ -207,6 +212,9 @@ class ABJ_404_Solution_LockOwnerStore {
      * @return string
      */
     function readOwner($key) {
+		if (!$this->networkAtomicStorageReady($key, false)) {
+			return '';
+		}
     	$owner = '';
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
@@ -254,6 +262,9 @@ class ABJ_404_Solution_LockOwnerStore {
     function deleteOwner(array $release) {
 		$key = $release['key'];
 		$owner = $release['owner'];
+		if (!$this->networkAtomicStorageReady($key, false)) {
+			return false;
+		}
 		if ($this->isFileMode()) {
 			$fileSync = ABJ_404_Solution_FileSync::getInstance();
 			return $fileSync->releaseLock($release);
@@ -273,12 +284,10 @@ class ABJ_404_Solution_LockOwnerStore {
 
     /** The exclusive options row that holds $key's owner record.
      *
-     * Network-wide locks (the N-gram rebuild pair, when the plugin is network
-     * activated) contend on the network's main site rather than per blog, which
-     * is what makes them network-wide. Lock records are created and deleted
-     * within a single request, so nothing had to migrate when that storage
-     * moved off sitemeta; a record left there by an older version simply stops
-     * being consulted.
+     * Network-wide locks contend on the network's main site. Acquisitions pause
+     * for a drain window before this store is used, and remain paused while a
+     * legacy sitemeta owner exists, so deployment cannot split one lock across
+     * the old and new stores.
      *
      * @param string $key
      * @return ABJ_404_Solution_ExclusiveOptionRow
@@ -287,6 +296,33 @@ class ABJ_404_Solution_LockOwnerStore {
     	return new ABJ_404_Solution_ExclusiveOptionRow($this->shouldUseNetworkStorage($key)
     		? ABJ_404_Solution_ExclusiveOptionRow::SCOPE_NETWORK_MAIN_SITE
     		: ABJ_404_Solution_ExclusiveOptionRow::SCOPE_CURRENT_BLOG);
+    }
+
+    /** Pause network locks while old sitemeta-based requests drain. */
+    private function networkAtomicStorageReady(string $key, bool $initialize): bool {
+		if (!$this->shouldUseNetworkStorage($key)) {
+			return true;
+		}
+		$readyAt = get_site_option(self::NETWORK_ATOMIC_READY_OPTION, false);
+		if ($readyAt === false || !is_numeric($readyAt)) {
+			if ($initialize) {
+				$stored = update_site_option(self::NETWORK_ATOMIC_READY_OPTION,
+					(string)(abj_clock()->now() + self::NETWORK_ATOMIC_MIGRATION_DELAY));
+				if (!$stored && function_exists('abj_service')) {
+					$logger = abj_service('logging');
+					if (is_object($logger) && method_exists($logger, 'warn')) {
+						$logger->warn('Could not persist the network lock migration deadline; network lock work remains paused.');
+					}
+				}
+			}
+			return false;
+		}
+		if (abj_clock()->now() < (int)$readyAt) {
+			return false;
+		}
+		// An old request still owns the legacy site option. Stay paused until
+		// that owner releases it instead of opening a cross-store overlap.
+		return get_site_option($key, false) === false;
     }
 
     /** Record a storage failure that cost the caller a lock.

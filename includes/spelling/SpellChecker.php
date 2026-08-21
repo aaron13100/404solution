@@ -399,11 +399,11 @@ class ABJ_404_Solution_SpellChecker {
 			// URL (nothing in the frontend pipeline does) fall back to the slug,
 			// which simply will not match at read time: no score, never a wrong
 			// one.
-			abj_service('near_miss_recorder')->record(
-				$fullRequestedURL !== null ? $fullRequestedURL : $requestedURL,
-				is_numeric($permalink['score']) ? (float)$permalink['score'] : 0.0,
-				ABJ_404_Solution_SpellingMatchingEngine::engineName()
-			);
+			abj_service('near_miss_recorder')->record(array(
+				'requestedURL' => $fullRequestedURL !== null ? $fullRequestedURL : $requestedURL,
+				'score' => is_numeric($permalink['score']) ? (float)$permalink['score'] : 0.0,
+				'engineName' => ABJ_404_Solution_SpellingMatchingEngine::engineName(),
+			));
 
 			if ($fullRequestedURL !== null) {
 				$this->suggestionPublisher->cacheComputedSuggestionsForShortcode(

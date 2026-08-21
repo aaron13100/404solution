@@ -51,14 +51,16 @@ class ABJ_404_Solution_NearMissRecorder {
      * threshold. Out-of-band scores are dropped, so every engine can call this
      * unconditionally on its reject branch without vetting the number first.
      *
-     * @param string $requestedURL The URL being resolved, as the frontend
+     * @param array{requestedURL: string, score: float, engineName: string} $match
+     *        requestedURL is the URL being resolved, as the frontend
      *        pipeline spells it (MatchRequest::getRequestedURL(), which is the
      *        same string NotFoundResponseService::sendTo404Page() receives).
-     * @param float $score Match confidence on the 0-100 scale.
-     * @param string $engineName Name of the engine that scored it.
      * @return void
      */
-    public function record(string $requestedURL, float $score, string $engineName): void {
+    public function record(array $match): void {
+        $requestedURL = $match['requestedURL'];
+        $score = $match['score'];
+        $engineName = $match['engineName'];
         if (!self::isRecordableScore($score)) {
             return;
         }

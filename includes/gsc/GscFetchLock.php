@@ -1,5 +1,7 @@
 <?php
 
+// allow-no-test-found: exercised by GscFetchPipelineTest contention and migration scenarios
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -16,15 +18,29 @@ final class ABJ_404_Solution_GscFetchLock {
     /** @var ABJ_404_Solution_GscFetchLease|null */
     private $lease;
 
+    /** @var int|null */
+    private $atomicReadyAt;
+
     /** @param ABJ_404_Solution_Logging $logger */
     public function __construct($logger) {
         $this->logger = $logger;
     }
 
+    /** Initialize persistent migration state at an explicit mutation boundary. */
+    public function prepare(): void {
+        if ($this->atomicReadyAt === null) {
+            $this->atomicReadyAt = $this->initializeAtomicReadyAt();
+        }
+    }
+
     public function claim(): bool {
+        $this->prepare();
         $now = abj_clock()->now();
-        if ($this->mustUseLegacyLockDuringMigration($now)) {
-            return $this->claimLegacy($now);
+        $readyAt = $this->atomicReadyAt === null ? PHP_INT_MAX : $this->atomicReadyAt;
+        if ($now < $readyAt
+            || get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false
+        ) {
+            return false;
         }
         $row = $this->row();
         $value = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
@@ -52,21 +68,23 @@ final class ABJ_404_Solution_GscFetchLock {
         if ($this->lease === null) {
             return;
         }
-        if ($this->lease->mode() === ABJ_404_Solution_GscFetchLease::MODE_ATOMIC_OPTION) {
-            $this->row()->releaseIfValueIs(array(
-                'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-                'value' => $this->lease->value(),
-            ));
-        } elseif (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) === $this->lease->value()) {
-            delete_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
-        }
+        $this->row()->releaseIfValueIs(array(
+            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            'value' => $this->lease->value(),
+        ));
         $this->lease = null;
     }
 
     public function isHeld(): bool {
+        if ($this->atomicReadyAt === null) {
+            return true;
+        }
         $now = abj_clock()->now();
-        if ($this->mustUseLegacyLockDuringMigration($now)) {
-            return get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false;
+        if ($now < $this->atomicReadyAt) {
+            return true;
+        }
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
+            return true;
         }
         $heldSince = $this->row()->valueOf(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
         return $heldSince !== '' && !$this->hasAgedOut($heldSince, $now);
@@ -81,18 +99,6 @@ final class ABJ_404_Solution_GscFetchLock {
             return true;
         }
         $replacement = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
-        if ($this->lease->mode() === ABJ_404_Solution_GscFetchLease::MODE_LEGACY_TRANSIENT) {
-            // allow-cache-empty: uniqueClaimValue() always returns a non-empty lease token.
-            if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== $this->lease->value()
-                || !set_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, $replacement,
-                    ABJ_404_Solution_GscConfig::LOCK_TTL)
-            ) {
-                $this->logger->warn('Lost the legacy GSC fetch lock while renewing it; stopping the fetch.');
-                return false;
-            }
-            $this->lease = $this->lease->renewed($replacement, $now);
-            return true;
-        }
         if (!$this->row()->replaceValueIfMatches(array(
             'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
             'currentValue' => $this->lease->value(),
@@ -105,35 +111,17 @@ final class ABJ_404_Solution_GscFetchLock {
         return true;
     }
 
-    private function mustUseLegacyLockDuringMigration(int $now): bool {
+    private function initializeAtomicReadyAt(): int {
         $rawReadyAt = get_option(ABJ_404_Solution_GscConfig::ATOMIC_LOCK_READY_OPTION, false);
         if ($rawReadyAt === false || !is_numeric($rawReadyAt)) {
-            $readyAt = $now + ABJ_404_Solution_GscConfig::ATOMIC_LOCK_MIGRATION_DELAY;
+            $readyAt = abj_clock()->now() + ABJ_404_Solution_GscConfig::ATOMIC_LOCK_MIGRATION_DELAY;
             if (!update_option(ABJ_404_Solution_GscConfig::ATOMIC_LOCK_READY_OPTION, (string)$readyAt, false)) {
-                $this->logger->warn('Could not persist the GSC atomic-lock migration deadline; retaining the legacy lock.');
+                $this->logger->warn('Could not persist the GSC atomic-lock migration deadline; GSC fetches remain paused.');
+                return PHP_INT_MAX;
             }
-            return true;
+            return $readyAt;
         }
-        return $now < (int)$rawReadyAt;
-    }
-
-    private function claimLegacy(int $now): bool {
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
-            return false;
-        }
-        $value = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
-        // allow-cache-empty: the unique legacy lease token is always non-empty.
-        if (!set_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY, $value,
-            ABJ_404_Solution_GscConfig::LOCK_TTL)) {
-            $this->logger->warn('Could not persist the legacy GSC fetch lock; fetch skipped.');
-            return false;
-        }
-        $this->lease = ABJ_404_Solution_GscFetchLease::fromState(array(
-            'mode' => ABJ_404_Solution_GscFetchLease::MODE_LEGACY_TRANSIENT,
-            'value' => $value,
-            'renewedAt' => $now,
-        ));
-        return true;
+        return max(0, (int)$rawReadyAt);
     }
 
     private function hasAgedOut(string $value, int $now): bool {
@@ -144,7 +132,6 @@ final class ABJ_404_Solution_GscFetchLock {
 
     private function atomicLease(string $value, int $now): ABJ_404_Solution_GscFetchLease {
         return ABJ_404_Solution_GscFetchLease::fromState(array(
-            'mode' => ABJ_404_Solution_GscFetchLease::MODE_ATOMIC_OPTION,
             'value' => $value,
             'renewedAt' => $now,
         ));

@@ -228,8 +228,9 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
                 // the best candidate lost only on the threshold, and that score is
                 // what tells the admin why the URL was captured instead of
                 // redirected. Record it before phase 1 falls through and drops it.
-                abj_service('near_miss_recorder')->record(
-                    $request->getRequestedURL(), (float)$bestScore, $this->getName());
+                abj_service('near_miss_recorder')->record(array(
+                    'requestedURL' => $request->getRequestedURL(), 'score' => (float)$bestScore,
+                    'engineName' => $this->getName()));
             }
         }
 
@@ -306,8 +307,9 @@ class ABJ_404_Solution_CategoryTagMatchingEngine implements ABJ_404_Solution_Mat
             // the best candidate lost only on the threshold, and that score is
             // what tells the admin why the URL was captured instead of
             // redirected. Record it before the reject branch discards it.
-            abj_service('near_miss_recorder')->record(
-                $request->getRequestedURL(), (float)$bestScore, $this->getName());
+            abj_service('near_miss_recorder')->record(array(
+                'requestedURL' => $request->getRequestedURL(), 'score' => (float)$bestScore,
+                'engineName' => $this->getName()));
             return null;
         }
 
