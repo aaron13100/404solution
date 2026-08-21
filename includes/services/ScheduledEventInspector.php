@@ -143,9 +143,12 @@ class ABJ_404_Solution_ScheduledEventInspector {
                 if (!is_array($event)) {
                     throw new UnexpectedValueException('WordPress returned a malformed event for cron hook ' . $hook . '.');
                 }
-                $eventArgs = isset($event['args']) && is_array($event['args'])
-                    ? $this->listArgs($event['args'])
-                    : array();
+                if (!isset($event['args']) || !is_array($event['args'])) {
+                    throw new UnexpectedValueException(
+                        'WordPress returned an event with malformed args for cron hook ' . $hook . '.'
+                    );
+                }
+                $eventArgs = $this->listArgs($event['args']);
                 if ($eventArgs !== $targetArgs) {
                     continue;
                 }

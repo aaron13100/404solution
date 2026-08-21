@@ -184,6 +184,36 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	}
 
 	/**
+	 * Replace an owned row without opening a delete/reclaim gap.
+	 *
+	 * @param array{optionName: string, currentValue: string, replacementValue: string} $replacement
+	 * @return bool true only when the row still held currentValue and was renewed.
+	 */
+	public function replaceValueIfMatches(array $replacement) {
+		$wpdb = $this->wpdbOrNull();
+		$table = $wpdb === null ? '' : $this->optionsTable($wpdb);
+		if ($wpdb === null || $table === '') {
+			return false;
+		}
+
+		$boundReplacement = $this->bind($wpdb, '%s', array($replacement['replacementValue']));
+		$boundName = $this->bind($wpdb, '%s', array($replacement['optionName']));
+		$boundCurrent = $this->bind($wpdb, '%s', array($replacement['currentValue']));
+		if ($boundReplacement === '' || $boundName === '' || $boundCurrent === '') {
+			return false;
+		}
+
+		// DAO-bypass-approved: renewing the coordination lease must remain available while the DAO itself is rebuilding tables.
+		$rowsUpdated = $wpdb->query("UPDATE `" . $table . "` SET option_value = " . $boundReplacement
+			. " WHERE option_name = " . $boundName . " AND option_value = " . $boundCurrent);
+		if ($rowsUpdated === false) {
+			$this->logStorageFailure('renew the options row "' . $replacement['optionName'] . '"', $wpdb);
+			return false;
+		}
+		return ((int)$rowsUpdated) === 1;
+	}
+
+	/**
 	 * @param array{optionName: string, value: string} $claim
 	 * @return bool
 	 */

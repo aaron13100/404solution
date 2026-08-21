@@ -135,7 +135,7 @@ class ABJ_404_Solution_CronRecurrenceMigration {
         ))) {
             return false;
         }
-        $allStaleRemoved = true;
+        $removedCount = 0;
         foreach ($events as $event) {
             if (!$this->scheduler->unscheduleAt(array(
                 'timestamp' => $event['timestamp'],
@@ -143,12 +143,19 @@ class ABJ_404_Solution_CronRecurrenceMigration {
                 'args' => $args,
                 'expectedNextTimestamp' => $replacementTimestamp,
             ))) {
-                $allStaleRemoved = false;
                 break;
             }
+            $removedCount++;
         }
-        if ($allStaleRemoved) {
+        if ($removedCount === count($events)) {
             return true;
+        }
+
+        if ($removedCount > 0) {
+            $this->logWarning('[CRON_PARTIAL_MIGRATION] Removed ' . $removedCount . ' stale event(s) for ' . $hook
+                . ' before a later removal failed. The daily replacement was retained so the hook remains '
+                . 'scheduled. Recovery: the next migration run will remove the remaining stale event(s).');
+            return false;
         }
 
         if (!$this->scheduler->unscheduleAt(array(

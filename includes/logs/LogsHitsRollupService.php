@@ -103,7 +103,8 @@ class ABJ_404_Solution_LogsHitsRollupService implements ABJ_404_Solution_LogsHit
             $this->dbCore,
             $this->logger,
             $this->rebuildHealth,
-            $this->joinHelper
+            $this->joinHelper,
+            array($this->rebuildLock, 'renew')
         );
     }
 

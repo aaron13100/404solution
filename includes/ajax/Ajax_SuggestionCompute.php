@@ -118,11 +118,12 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             wp_die('Invalid token');
         }
 
-        if (!self::claimPendingWork(array(
+        $workerStartedAt = self::claimPendingWork(array(
             'transientKey' => $transientKey,
             'normalizedURL' => $normalizedURL,
             'providedToken' => $storedToken,
-        ))) {
+        ));
+        if ($workerStartedAt === null) {
             wp_die();
         }
 
@@ -132,7 +133,9 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             array(__CLASS__, 'handleComputationCrash'),
             $transientKey,
             $storedToken,
-            $requestedURL
+            $requestedURL,
+            null,
+            $workerStartedAt
         );
 
         // Get dependencies
@@ -173,6 +176,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             'transientKey' => $transientKey,
             'requestedURL' => $requestedURL,
             'storedToken' => $storedToken,
+            'workerStartedAt' => $workerStartedAt,
             'suggestionsPacket' => is_array($suggestionsPacket) ? $suggestionsPacket : [],
             'logger' => $logger,
         ));
@@ -190,7 +194,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
      *
      * @param array{transientKey: string, normalizedURL: string, providedToken: string} $claim
      */
-    private static function claimPendingWork(array $claim): bool {
+    private static function claimPendingWork(array $claim): ?int {
         $lockKey = ABJ_404_Solution_SuggestionTransient::lockKeyForNormalizedUrl($claim['normalizedURL']);
         $synchronizer = abj_service('sync_utils');
         $owner = $synchronizer->synchronizerAcquireLockTry($lockKey);
@@ -198,7 +202,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             abj404_logPhpFallback('suggestion-claim-lock-unavailable',
                 '[SUGGESTION_CLAIM_LOCK_UNAVAILABLE] Another worker owns the claim for ' .
                 $claim['transientKey'] . '. Recovery: that worker will compute or polling will retry.');
-            return false;
+            return null;
         }
 
         try {
@@ -208,11 +212,11 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             if ($current === null || $current->isComplete()
                 || $current->getToken() !== $claim['providedToken']
             ) {
-                return false;
+                return null;
             }
             $now = self::clock()->now();
             if ($current->isPending() && $current->isClaimed() && !$current->isWorkerStuck($now)) {
-                return false;
+                return null;
             }
 
             $existingCreated = $current->getCreatedAt() > 0 ? $current->getCreatedAt() : $now;
@@ -231,7 +235,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
                     '[SUGGESTION_CLAIM_WRITE_FAILED] Could not persist the worker claim for ' .
                     $claim['transientKey'] . '. Recovery: polling will fall back after the worker timeout.');
             }
-            return $claimStored;
+            return $claimStored ? $now : null;
         } finally {
             $synchronizer->synchronizerReleaseLock($owner, $lockKey);
         }
@@ -241,7 +245,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
      * Persist a completed packet or terminate after recording the storage
      * failure; a success response must never claim an unstored result.
      *
-     * @param array{transientKey: string, requestedURL: string, storedToken: string, suggestionsPacket: array<int, mixed>, logger: ABJ_404_Solution_Logging} $result
+     * @param array{transientKey: string, requestedURL: string, storedToken: string, workerStartedAt: int, suggestionsPacket: array<int, mixed>, logger: ABJ_404_Solution_Logging} $result
      */
     private static function storeCompletedResultOrDie(array $result): void {
         $normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($result['requestedURL']);
@@ -258,6 +262,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             $current = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($result['transientKey']));
             if ($current === null || $current->isComplete()
                 || $current->getToken() !== $result['storedToken']
+                || $current->getStartedAt() !== $result['workerStartedAt']
             ) {
                 $result['logger']->debugMessage('Skipped stale async suggestion result for ' .
                     esc_html($result['requestedURL']) . ' because state ownership changed.');
@@ -273,7 +278,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
                     self::clock()->now(),
                     $result['storedToken']
                 ),
-                ABJ_404_Solution_SuggestionTransient::PENDING_TTL_SECONDS
+                ABJ_404_Solution_SuggestionTransient::COMPLETE_TTL_SECONDS
             );
             if (!$completedStored) {
                 $result['logger']->errorMessage(
@@ -306,9 +311,16 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
      * @param string $token The security token for this computation
      * @param string $requestedURL The URL being processed (for logging)
      * @param array{type: int, message: string, file: string, line: int}|null $error
+     * @param int|null $workerStartedAt Exact claim timestamp registered by this worker.
      * @return void
      */
-    public static function handleComputationCrash(string $transientKey, string $token, string $requestedURL, $error = null): void {
+    public static function handleComputationCrash(
+        string $transientKey,
+        string $token,
+        string $requestedURL,
+        $error = null,
+        ?int $workerStartedAt = null
+    ): void {
         // Use provided error for testing, otherwise get from PHP
         if ($error === null) {
             $error = error_get_last();
@@ -325,6 +337,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             'transientKey' => $transientKey,
             'token' => $token,
             'requestedURL' => $requestedURL,
+            'workerStartedAt' => $workerStartedAt,
         ));
 
         // Log detailed error info for debugging (not exposed to frontend)
@@ -353,7 +366,7 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
     /**
      * Store a fatal-worker marker only while that worker still owns the state.
      *
-     * @param array{transientKey: string, token: string, requestedURL: string} $crash
+     * @param array{transientKey: string, token: string, requestedURL: string, workerStartedAt: int|null} $crash
      */
     private static function storeCrashMarker(array $crash): void {
         $normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($crash['requestedURL']);
@@ -369,7 +382,10 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
 
         try {
             $existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($crash['transientKey']));
-            if ($existing === null || $existing->isComplete() || $existing->getToken() !== $crash['token']) {
+            if ($existing === null || $existing->isComplete() || $existing->getToken() !== $crash['token']
+                || ($crash['workerStartedAt'] !== null
+                    && $existing->getStartedAt() !== $crash['workerStartedAt'])
+            ) {
                 return;
             }
 

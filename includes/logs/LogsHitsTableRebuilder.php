@@ -53,17 +53,22 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
     /** @var ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper */
     private $joinHelper;
 
+    /** @var callable():bool|null */
+    private $leaseRenewer;
+
     /**
      * @param ABJ_404_Solution_DatabaseCore $dbCore
      * @param ABJ_404_Solution_Logging $logger
      * @param ABJ_404_Solution_RebuildHealthState|null $rebuildHealth
      * @param ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper $joinHelper
+     * @param callable():bool|null $leaseRenewer
      */
     public function __construct(
         ABJ_404_Solution_DatabaseCore $dbCore,
         $logger,
         $rebuildHealth,
-        ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper $joinHelper
+        ABJ_404_Solution_LogsHitsCanonicalUrlJoinHelper $joinHelper,
+        $leaseRenewer = null
     ) {
         $this->dbCore = $dbCore;
         $this->logger = $logger;
@@ -71,6 +76,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             ? $rebuildHealth
             : null;
         $this->joinHelper = $joinHelper;
+        $this->leaseRenewer = is_callable($leaseRenewer) ? $leaseRenewer : null;
     }
 
     /**
@@ -103,6 +109,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
             $idRange = $maxLogId - $minLogId;
             $chunkSize = $this->getHitsRebuildChunkSize($idRange);
+            $this->renewLeaseOrThrow();
             if ($idRange <= self::HITS_TABLE_DIRECT_PATH_THRESHOLD) { $results = $this->hitsTableInsertDirect($tempDestTable); } else { $results = $this->hitsTableInsertChunked($tempDestTable, $preAggTable, $minLogId, $maxLogId, $chunkSize); }
             if ($results === false || !empty($results['timed_out']) || !empty($results['last_error'])) {
                 $rawLastError = is_array($results) && isset($results['last_error']) && is_string($results['last_error']) ? $results['last_error'] : '';
@@ -117,6 +124,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             $rawElapsed = $results['elapsed_time'] ?? 0;
             $elapsedTime = is_numeric($rawElapsed) ? (float)$rawElapsed : 0.0;
             $comment = $elapsedTime . '|' . $maxLogId;
+            $this->renewLeaseOrThrow();
             // @utf8-audit: opt-out - rebuild table comment is synthesized from numeric timing and ID values.
             $comment = substr(esc_sql($comment), 0, 2048);
             $this->dbCore->queryAndGetResults(sprintf("ALTER TABLE %s COMMENT '%s'", $tempDestTable, $comment));
@@ -186,6 +194,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
         $this->dbCore->queryAndGetResults($createPreAggQuery);
         $logsv2CanonicalExpr = $this->joinHelper->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
+            $this->renewLeaseOrThrow();
             $end = $start + $chunkSize;
             $chunkQuery = "/* abj404:src=LogsHitsTableRebuilder::hitsTableInsertChunked#phase1Chunk */ INSERT INTO " . $preAggTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT " . $logsv2CanonicalExpr . ", MIN(id), MAX(timestamp), COUNT(*), SUM(CASE WHEN dest_url = '' OR dest_url IS NULL THEN 1 ELSE 0 END) FROM " . $logsv2Table . " WHERE id >= %d AND id < %d GROUP BY " . $logsv2CanonicalExpr;
             $chunkResult = $this->dbCore->queryAndGetResults($chunkQuery, array('log_too_slow' => false, 'timeout' => 10, 'query_params' => array($start, $end)));
@@ -196,11 +205,21 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
         // rebuild under the host's 60s max_statement_time on Bruno-class
         // data (i359). See LogsHitsCanonicalUrlJoinHelper::buildPhase2JoinRhs.
         $joinRhs = $this->joinHelper->buildPhase2JoinRhs($resolvedCollation);
+        $this->renewLeaseOrThrow();
         $phase2Query = "/* abj404:src=LogsHitsTableRebuilder::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = " . $joinRhs . " GROUP BY a.requested_url";
         $results = $this->dbCore->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
         $results['elapsed_time'] = round(abj_clock()->nowFloat() - $startTime, 3);
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         return $results;
+    }
+
+    /** Abort before another request can run beside a worker that lost its lease. */
+    private function renewLeaseOrThrow(): void {
+        if ($this->leaseRenewer !== null && !call_user_func($this->leaseRenewer)) {
+            throw new RuntimeException(
+                'The logs-hits rebuild lost its exclusive lease; aborting before staging-table work can overlap.'
+            );
+        }
     }
 
     /** @param int $idRange @return int */

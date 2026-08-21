@@ -98,6 +98,25 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
         $this->heldValue = null;
     }
 
+    /** Refresh the lease only while this instance still owns the row. */
+    public function renew(): bool {
+        if ($this->heldValue === null) {
+            return false;
+        }
+        $replacementValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue(
+            (string)abj_clock()->now()
+        );
+        $renewed = $this->lockRow()->replaceValueIfMatches(array(
+            'optionName' => $this->optionName(),
+            'currentValue' => $this->heldValue,
+            'replacementValue' => $replacementValue,
+        ));
+        if ($renewed) {
+            $this->heldValue = $replacementValue;
+        }
+        return $renewed;
+    }
+
     /** Whether a live (non-expired) holder currently has the lock.
      * This observation is deliberately side-effect free; stale-row cleanup is
      * part of acquire(), the operation that needs to replace such a row.
@@ -112,17 +131,7 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
             return false;
         }
 
-        $timestampPart = explode(':', $lockValue, 2)[0];
-        if (!is_numeric($timestampPart)) {
-            return false;
-        }
-
-        $lockTimestamp = (int)$timestampPart;
-        if ($lockTimestamp > 0 && (abj_clock()->now() - $lockTimestamp) > self::TTL_SECONDS) {
-            return false;
-        }
-
-        return true;
+        return !$this->isStaleValue($lockValue);
     }
 
     /**
@@ -138,11 +147,7 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
             return true;
         }
 
-        $timestampPart = explode(':', $lockValue, 2)[0];
-        $isStale = !is_numeric($timestampPart)
-            || (int)$timestampPart <= 0
-            || (abj_clock()->now() - (int)$timestampPart) > self::TTL_SECONDS;
-        if (!$isStale) {
+        if (!$this->isStaleValue($lockValue)) {
             return false;
         }
 
@@ -150,6 +155,14 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
             'optionName' => $lockName,
             'value' => $lockValue,
         ));
+    }
+
+    /** One liveness rule shared by observation and stale-holder eviction. */
+    private function isStaleValue(string $lockValue): bool {
+        $timestampPart = explode(':', $lockValue, 2)[0];
+        return !is_numeric($timestampPart)
+            || (int)$timestampPart <= 0
+            || (abj_clock()->now() - (int)$timestampPart) > self::TTL_SECONDS;
     }
 
     /** The option row that holds the lock. Stateless, so a fresh instance
