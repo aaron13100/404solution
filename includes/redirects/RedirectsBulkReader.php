@@ -99,8 +99,8 @@ class ABJ_404_Solution_RedirectsBulkReader {
         }
     }
 
-    /** @return array<int, array<string, mixed>> */
-    public function getRedirectsWithRegEx(): array {
+    /** @return iterable<int, array<string, mixed>> */
+    public function getRedirectsWithRegEx(): iterable {
         $cached = ABJ_404_Solution_RedirectsRepository::getRegexRedirectsCache();
         $disabled = ABJ_404_Solution_RedirectsRepository::isRegexCacheDisabled();
 
@@ -109,7 +109,7 @@ class ABJ_404_Solution_RedirectsBulkReader {
         }
 
         if ($disabled) {
-            return $this->queryAllRegexRedirectsInBatches();
+            return $this->iterateAllRegexRedirectsInBatches();
         }
 
         $results = $this->queryBuilder->queryRegexRedirects(ABJ_404_Solution_RedirectsRepository::REGEX_CACHE_MAX_COUNT + 1);
@@ -118,23 +118,26 @@ class ABJ_404_Solution_RedirectsBulkReader {
             ABJ_404_Solution_RedirectsRepository::setRegexRedirectsCache($results);
         } else {
             ABJ_404_Solution_RedirectsRepository::setRegexCacheDisabled(true);
-            return $this->queryAllRegexRedirectsInBatches($results);
+            return $this->iterateAllRegexRedirectsInBatches($results);
         }
 
         return $results;
     }
 
     /**
-     * Complete a regex redirect read without allowing a SQL result set to grow
-     * without bound. The optional leading rows are the cache-threshold probe
-     * and are reused so the common 51+ path does not reread them.
+     * Stream a complete regex redirect read without allowing either a SQL
+     * result set or the PHP row collection to grow without bound. The optional
+     * leading rows are the cache-threshold probe and are reused so the common
+     * 51+ path does not reread them.
      *
      * @param array<int, array<string, mixed>> $leadingRows
-     * @return array<int, array<string, mixed>>
+     * @return iterable<int, array<string, mixed>>
      */
-    private function queryAllRegexRedirectsInBatches(array $leadingRows = array()): array {
-        $rows = $leadingRows;
+    private function iterateAllRegexRedirectsInBatches(array $leadingRows = array()): iterable {
         $afterId = $this->greatestRedirectId($leadingRows);
+        foreach ($leadingRows as $row) {
+            yield $row;
+        }
 
         do {
             $page = $this->queryBuilder->queryRegexRedirectsPage(array(
@@ -152,11 +155,11 @@ class ABJ_404_Solution_RedirectsBulkReader {
                 );
             }
 
-            $rows = array_merge($rows, $page);
+            foreach ($page as $row) {
+                yield $row;
+            }
             $afterId = $nextAfterId;
         } while (count($page) === self::REGEX_READ_BATCH_SIZE);
-
-        return $rows;
     }
 
     /**

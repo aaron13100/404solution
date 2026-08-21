@@ -157,7 +157,7 @@ final class ABJ_404_Solution_RestApiReadService {
      */
     private function findMatchedRegexRedirect(string $normalizedUrl) {
         $regexRedirects = $this->viewRead->getRedirectsWithRegEx();
-        if (!is_array($regexRedirects)) {
+        if (!is_iterable($regexRedirects)) {
             return null;
         }
 

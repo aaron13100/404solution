@@ -369,7 +369,7 @@ class ABJ_404_Solution_ViewReadService implements ABJ_404_Solution_ViewReadServi
         $this->redirectsBulkReader->doRedirectsExport($tempFile);
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return iterable<int, array<string, mixed>> */
     function getRedirectsWithRegEx() {
         return $this->redirectsBulkReader->getRedirectsWithRegEx();
     }

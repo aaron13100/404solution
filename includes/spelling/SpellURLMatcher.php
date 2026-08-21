@@ -46,13 +46,13 @@ class ABJ_404_Solution_SpellURLMatcher {
 		$this->custom404PageID = $custom404PageID;
 	}
 
-    /** @return array<int, array<string, mixed>> */
-	private function getRedirectsWithRegEx(): array {
+    /** @return iterable<int, array<string, mixed>> */
+    private function getRedirectsWithRegEx(): iterable {
 		if (!is_object($this->viewReadService) || !is_callable(array($this->viewReadService, 'getRedirectsWithRegEx'))) {
 			return array();
 		}
 		$rows = call_user_func(array($this->viewReadService, 'getRedirectsWithRegEx'));
-		return $this->normalizeRows($rows);
+		return is_iterable($rows) ? $rows : array();
 	}
 
 	/** @return array<int, array<string, mixed>> */
@@ -95,8 +95,8 @@ class ABJ_404_Solution_SpellURLMatcher {
 		$regexURLsRows = $this->getRedirectsWithRegEx();
 
 		$manualWithMetachars = $this->getManualRedirectsWithRegexMetachars();
+		$filtered = array();
 		if (!empty($manualWithMetachars)) {
-			$filtered = array();
 			foreach ($manualWithMetachars as $manualRow) {
 				$manualUrl = isset($manualRow['url']) && is_string($manualRow['url']) ? $manualRow['url'] : '';
 				if (!ABJ_404_Solution_RegexAutoPromote::looksLikeUnambiguousRegex($manualUrl)) {
@@ -113,9 +113,9 @@ class ABJ_404_Solution_SpellURLMatcher {
 						" MANUAL row(s) with regex metachars against URL: " . $requestedURL
 					);
 				}
-				$regexURLsRows = array_merge($regexURLsRows, $filtered);
 			}
 		}
+		$regexURLsRows = $this->appendRegexFallbackRows($regexURLsRows, $filtered);
 
 		foreach ($regexURLsRows as $row) {
 			$regexURL = $row['url'];
@@ -175,6 +175,20 @@ class ABJ_404_Solution_SpellURLMatcher {
 		}
 
 		return null;
+	}
+
+	/**
+	 * @param iterable<int, array<string, mixed>> $regexRows
+	 * @param array<int, array<string, mixed>> $fallbackRows
+	 * @return iterable<int, array<string, mixed>>
+	 */
+	private function appendRegexFallbackRows(iterable $regexRows, array $fallbackRows): iterable {
+		foreach ($regexRows as $row) {
+			yield $row;
+		}
+		foreach ($fallbackRows as $row) {
+			yield $row;
+		}
 	}
 
 	/**

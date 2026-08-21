@@ -101,7 +101,7 @@ interface ABJ_404_Solution_ViewReadServiceInterface {
     /** @param string $tempFile @return void */
     public function doRedirectsExport(string $tempFile): void;
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return iterable<int, array<string, mixed>> */
     public function getRedirectsWithRegEx();
 
     /** @return array<int, array<string, mixed>> */
