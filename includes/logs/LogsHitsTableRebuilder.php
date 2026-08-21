@@ -250,14 +250,14 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
     }
 
     /** Never let a superseded worker drop a replacement worker's scratch table. */
-    private function dropScratchTableIfLeaseOwned(string $table): void {
+    private function dropScratchTableIfLeaseOwned(string $scratchTable): void {
         if (!$this->renewLease()) {
             $this->logger->debugMessage(
-                __FUNCTION__ . " skipped cleanup after lease ownership was lost: " . $table
+                __FUNCTION__ . " skipped cleanup after lease ownership was lost: " . $scratchTable
             );
             return;
         }
-        $this->dbCore->queryAndGetResults("drop table if exists " . $table);
+        $this->dbCore->queryAndGetResults("drop table if exists " . $scratchTable);
     }
 
     /** @param int $idRange @return int */
