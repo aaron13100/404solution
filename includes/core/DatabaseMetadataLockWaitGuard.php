@@ -175,10 +175,10 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
                     'error' => $result === false && isset($error[2]) ? (string)$error[2] : '',
                 );
             }
-        } catch (Throwable $exception) {
+        } catch (Throwable $t) {
             return array(
                 'success' => false,
-                'error' => get_class($exception) . ': ' . $exception->getMessage(),
+                'error' => get_class($t) . ': ' . $t->getMessage(),
             );
         }
 
