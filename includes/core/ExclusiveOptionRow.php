@@ -1,6 +1,4 @@
 <?php
-
-
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -80,6 +78,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 *
 	 * @param string $prefix
 	 * @return string
+	 * @phpstan-impure
 	 */
 	public static function uniqueClaimValue($prefix) {
 		return $prefix . ':' . (string)getmypid() . ':' . uniqid('', true);
@@ -89,6 +88,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 *
 	 * @param array{optionName: string, value: string} $claim
 	 * @return bool true only if this call created the row.
+	 * @phpstan-impure
 	 */
 	public function claim(array $claim) {
 		$optionName = $claim['optionName'];
@@ -141,6 +141,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 *
 	 * @param string $optionName
 	 * @return string '' when no row exists, or when the storage cannot answer.
+	 * @phpstan-impure
 	 */
 	public function valueOf($optionName) {
 		$wpdb = $this->wpdbOrNull();
@@ -190,6 +191,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 *
 	 * @param array{optionName: string, value: string} $claim
 	 * @return bool true if the row recording $value was removed.
+	 * @phpstan-impure
 	 */
 	public function releaseIfValueIs(array $claim) {
 		return $this->deleteRow($claim);
@@ -200,6 +202,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 *
 	 * @param array{optionName: string, currentValue: string, replacementValue: string} $replacement
 	 * @return bool true only when the row still held currentValue and was renewed.
+	 * @phpstan-impure
 	 */
 	public function replaceValueIfMatches(array $replacement) {
 		$wpdb = $this->wpdbOrNull();

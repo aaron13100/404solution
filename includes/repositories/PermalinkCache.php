@@ -5,6 +5,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/PermalinkCacheScheduleLock.php';
+
 /* Functions in this class should only be for plugging into WordPress listeners (filters, actions, etc).  */
 
 class ABJ_404_Solution_PermalinkCache {
@@ -312,26 +314,42 @@ class ABJ_404_Solution_PermalinkCache {
      * and if two links are somehow already queued, the first to run declines to
      * add a third while the second is still there, which collapses the
      * duplicates a pre-fix site accumulated instead of preserving them.
+     * The hook probe and WordPress's cron-option write are not atomic by
+     * themselves, so one expiring options-row claim encloses both. Otherwise
+     * two requests can inspect the same empty store and both add links whose
+     * different arguments bypass WordPress's exact-event de-duplication.
      *
      * @param int $executionCount
      * @return void
      */
     function scheduleToRunAgain(int $executionCount): void {
-        $scheduler = abj_cron_scheduler();
-        if ($scheduler->hasAnyScheduledEvent(self::UPDATE_PERMALINK_CACHE_HOOK)) {
+        $scheduleLock = new ABJ_404_Solution_PermalinkCacheScheduleLock();
+        $lockValue = $scheduleLock->acquire();
+        if ($lockValue === null) {
             $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
-                ": a permalink cache pass is already queued; not queueing another.");
+                ": another request is deciding whether to queue a permalink cache pass.");
             return;
         }
 
-        $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
-        $maxExecutionTime = max($maxExecutionTime, 25);
+        $scheduler = abj_cron_scheduler();
+        try {
+            if ($scheduler->hasAnyScheduledEvent(self::UPDATE_PERMALINK_CACHE_HOOK)) {
+                $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
+                    ": a permalink cache pass is already queued; not queueing another.");
+                return;
+            }
 
-        $scheduler->scheduleSingleAt(
-            ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
-            1,
-            array($maxExecutionTime, $executionCount)
-        );
+            $maxExecutionTime = (int)ini_get('max_execution_time') - 5;
+            $maxExecutionTime = max($maxExecutionTime, 25);
+
+            $scheduler->scheduleSingleAt(
+                ABJ_404_Solution_PermalinkCache::UPDATE_PERMALINK_CACHE_HOOK,
+                1,
+                array($maxExecutionTime, $executionCount)
+            );
+        } finally {
+            $scheduleLock->release($lockValue);
+        }
     }
 
     /** Maximum unique keywords to store per post. */

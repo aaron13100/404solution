@@ -268,7 +268,8 @@ $abj404ClassesByDirectory = array(
         'RedirectLookupRepository', 'RedirectRegexCacheStore', 'RedirectsLiveColumnSet',
         'RedirectWriteService',
         'RedirectsRepository', 'ContentKeywordsRepository', 'PluginUpdateMetadataRepository',
-        'PermalinkCache', 'ReviewStateRepository', 'NetworkSitesRepository', 'NextNetworkSite',
+        'PermalinkCache', 'PermalinkCacheScheduleLock', 'ReviewStateRepository',
+        'NetworkSitesRepository', 'NextNetworkSite',
     ),
     'rest' => array(
         'RestApiResponsePresenter', 'RestApiRedirectMutationService', 'RestApiReadService',
