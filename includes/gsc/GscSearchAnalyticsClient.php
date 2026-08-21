@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/GscConfig.php';
+require_once __DIR__ . '/GscFetchLock.php';
 
 /**
  * Owns Google Search Console Search Analytics requests, cache writes, fetch
@@ -27,16 +28,14 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
     /** @var ABJ_404_Solution_GscOAuthTokenStore */
     private $oauthStore;
 
-    /** @var string|null Exact row value acquired by this instance. */
-    private $fetchLockValue;
-
-    /** @var int Acquisition/renewal timestamp carried by fetchLockValue. */
-    private $fetchLockRenewedAt = 0;
+    /** @var ABJ_404_Solution_GscFetchLock */
+    private $fetchLock;
 
     /** @param ABJ_404_Solution_Logging $logger */
     public function __construct($logger, ABJ_404_Solution_GscOAuthTokenStore $oauthStore) {
         $this->logger = $logger;
         $this->oauthStore = $oauthStore;
+        $this->fetchLock = new ABJ_404_Solution_GscFetchLock($logger);
     }
 
     /**
@@ -57,7 +56,8 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             return $cachedRows;
         }
 
-        $allRows = $this->doFetchFromApi($urls, $days);
+        $fetchResult = $this->doFetchFromApi($urls, $days);
+        $allRows = $fetchResult['rows'];
         // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
         set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
         update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, abj_clock()->now(), false);
@@ -74,203 +74,23 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             return;
         }
 
-        if (!$this->claimFetchLock()) {
+        if (!$this->fetchLock->claim()) {
             return;
         }
 
         try {
             $urls = $this->getUrlsToQuery();
-            $allRows = $this->doFetchFromApi($urls);
+            $fetchResult = $this->doFetchFromApi($urls);
+            if (!$fetchResult['completed']) {
+                return;
+            }
+            $allRows = $fetchResult['rows'];
             // allow-cache-empty: empty GSC result sets are valid recent fetches and drive the explicit no-data UI state.
             set_transient(ABJ_404_Solution_GscConfig::TRANSIENT_KEY, $allRows, ABJ_404_Solution_GscConfig::TRANSIENT_TTL);
             update_option(ABJ_404_Solution_GscConfig::LAST_FETCH_OPTION_KEY, abj_clock()->now(), false);
         } finally {
-            $this->releaseFetchLock();
+            $this->fetchLock->release();
         }
-    }
-
-    /**
-     * Take the fetch lock, so exactly one request talks to Google.
-     *
-     * The lock used to be a transient tested with `if (get_transient(...))
-     * return;` followed by a set. That is a read and then a write, and
-     * WordPress answers the read from the object cache (a transient with no
-     * persistent cache installed is an option row, read through get_option),
-     * so two requests arriving together both saw no lock and both went to the
-     * API: duplicate calls against a quota'd external service, and two writers
-     * racing to cache the answer. It is the same defect that handed two
-     * requests the 'update_db_version' lock in error report 270, in a
-     * different storage.
-     *
-     * What replaces it is one INSERT that UNIQUE(option_name) can satisfy only
-     * once. The stored value is the acquisition time so a fetch that died
-     * mid-flight (a fatal, a killed cron) does not hold the lock forever: the
-     * next attempt displaces a holder older than LOCK_TTL, conditionally on
-     * the exact value it read, and then races for the row like anybody else.
-     * A plain option row does not expire on its own the way the transient did,
-     * so that displacement is what now bounds a leaked lock.
-     *
-     * @return bool true only if this request holds the lock.
-     */
-    private function claimFetchLock(): bool {
-        // During a rolling upgrade, older plugin code still coordinates with
-        // this transient. Respect it before touching the new atomic row.
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
-            return false;
-        }
-        $lockRow = $this->fetchLockRow();
-        $now = abj_clock()->now();
-        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
-
-        if ($lockRow->claim(array(
-            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            'value' => $claimValue,
-        ))) {
-            return $this->publishClaimToLegacyLock($claimValue, $now);
-        }
-
-        $heldSince = $lockRow->valueOf(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
-        if (!$this->fetchLockHasAgedOut($heldSince, $now)) {
-            return false;
-        }
-
-        $lockRow->releaseIfValueIs(array(
-            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            'value' => $heldSince,
-        ));
-
-        $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
-        $claimed = $lockRow->claim(array(
-            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            'value' => $claimValue,
-        ));
-        if ($claimed) {
-            return $this->publishClaimToLegacyLock($claimValue, $now);
-        }
-        return false;
-    }
-
-    /**
-     * Mirror the atomic claim into the legacy transient so an older plugin
-     * process running during an upgrade does not start a second fetch.
-     */
-    private function publishClaimToLegacyLock(string $claimValue, int $now): bool {
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
-            $this->fetchLockRow()->releaseIfValueIs(array(
-                'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-                'value' => $claimValue,
-            ));
-            return false;
-        }
-        // allow-cache-empty: uniqueClaimValue() is always non-empty; this transient is coordination state, not cached API data.
-        if (!set_transient(
-            ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            $claimValue,
-            ABJ_404_Solution_GscConfig::LOCK_TTL
-        )) {
-            $this->fetchLockRow()->releaseIfValueIs(array(
-                'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-                'value' => $claimValue,
-            ));
-            $this->logger->warn('Could not publish the GSC fetch lock to the legacy transient; fetch skipped.');
-            return false;
-        }
-        $this->fetchLockValue = $claimValue;
-        $this->fetchLockRenewedAt = $now;
-        return true;
-    }
-
-    /** @return void */
-    private function releaseFetchLock(): void {
-        if ($this->fetchLockValue === null) {
-            return;
-        }
-        $this->fetchLockRow()->releaseIfValueIs(array(
-            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            'value' => $this->fetchLockValue,
-        ));
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) === $this->fetchLockValue) {
-            delete_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
-        }
-        $this->fetchLockValue = null;
-        $this->fetchLockRenewedAt = 0;
-    }
-
-    /** Whether a fetch is running right now.
-     *
-     * Reads the row rather than the option cache for the same reason the claim
-     * does, and applies the TTL so a leaked lock cannot suppress background
-     * refreshes forever.
-     *
-     * @return bool
-     */
-    private function isFetchLockHeld(): bool {
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
-            return true;
-        }
-        $heldSince = $this->fetchLockRow()->valueOf(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
-
-        return $heldSince !== '' && !$this->fetchLockHasAgedOut($heldSince, abj_clock()->now());
-    }
-
-    /**
-     * @param string $heldSince the value recorded when the lock was taken
-     * @param int $now
-     * @return bool true when no live fetch can still be behind this record.
-     */
-    private function fetchLockHasAgedOut(string $heldSince, int $now): bool {
-        $timestampPart = explode(':', $heldSince, 2)[0];
-        if ($heldSince === '' || !is_numeric($timestampPart)) {
-            // A value with no timestamp is from an incompatible older version
-            // or a partial write. Treating it as aged out clears it; treating it
-            // as a holder would wedge every future fetch because it cannot expire.
-            return true;
-        }
-
-        return ($now - (int)$timestampPart) > ABJ_404_Solution_GscConfig::LOCK_TTL;
-    }
-
-    /** The lock row itself. Stateless, so a fresh instance costs nothing.
-     * @return ABJ_404_Solution_ExclusiveOptionRow */
-    private function fetchLockRow(): ABJ_404_Solution_ExclusiveOptionRow {
-        return new ABJ_404_Solution_ExclusiveOptionRow();
-    }
-
-    /** Renew a long-running fetch lease before another network request. */
-    private function renewFetchLockIfDue(): bool {
-        if ($this->fetchLockValue === null) {
-            return true;
-        }
-        $now = abj_clock()->now();
-        if (($now - $this->fetchLockRenewedAt) < intdiv(ABJ_404_Solution_GscConfig::LOCK_TTL, 3)) {
-            return true;
-        }
-        $replacement = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
-        if (!$this->fetchLockRow()->replaceValueIfMatches(array(
-            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            'currentValue' => $this->fetchLockValue,
-            'replacementValue' => $replacement,
-        ))) {
-            $this->logger->warn('Lost the GSC fetch lock while renewing it; stopping the fetch before another API request.');
-            return false;
-        }
-        $previousValue = $this->fetchLockValue;
-        $this->fetchLockValue = $replacement;
-        $this->fetchLockRenewedAt = $now;
-        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== $previousValue) {
-            $this->logger->warn('Lost the legacy GSC fetch lock while renewing it; stopping the fetch.');
-            return false;
-        }
-        // allow-cache-empty: the replacement lease token is always non-empty and must be mirrored for old-version workers.
-        if (!set_transient(
-            ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
-            $replacement,
-            ABJ_404_Solution_GscConfig::LOCK_TTL
-        )) {
-            $this->logger->warn('Could not renew the legacy GSC fetch lock; stopping the fetch.');
-            return false;
-        }
-        return true;
     }
 
     /**
@@ -313,7 +133,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return void
      */
     public function scheduleBackgroundRefresh(): void {
-        if ($this->isFetchLockHeld()) {
+        if ($this->fetchLock->isHeld()) {
             return;
         }
         abj_cron_scheduler()->scheduleSingleIfMissing(
@@ -343,14 +163,14 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      *
      * @param string[] $urls Relative or absolute URLs to query.
      * @param int $days Number of days to look back.
-     * @return array<int, array<string, mixed>>
+     * @return array{rows: array<int, array<string, mixed>>, completed: bool}
      */
     private function doFetchFromApi(array $urls, int $days = 90): array {
         $s = $this->oauthStore->getSettings();
         $token = get_option(ABJ_404_Solution_GscConfig::TOKEN_OPTION_KEY, false);
         $accessToken = $this->tokenAccessToken($token);
         if ($accessToken === '') {
-            return array();
+            return array('rows' => array(), 'completed' => true);
         }
 
         $siteUrl = $s['site_url'];
@@ -364,8 +184,8 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
         $allRows = array();
 
         foreach ($urls as $url) {
-            if (!$this->renewFetchLockIfDue()) {
-                break;
+            if (!$this->fetchLock->renewIfDue()) {
+                return array('rows' => $allRows, 'completed' => false);
             }
             $absoluteUrl = (strpos($url, 'http') === 0) ? $url : rtrim(home_url('/'), '/') . '/' . ltrim($url, '/');
             $body = array(
@@ -427,7 +247,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             return $b['clicks'] - $a['clicks'];
         });
 
-        return $allRows;
+        return array('rows' => $allRows, 'completed' => true);
     }
 
     /**

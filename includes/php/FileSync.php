@@ -16,6 +16,9 @@ class ABJ_404_Solution_FileSync {
 	 * @var int */
 	const EMPTY_OWNER_FILE_GRACE_SECONDS = 5;
 
+	/** Upper bound for contention on the per-key mutation guard. */
+	const OWNER_MUTATION_GUARD_WAIT_MICROSECONDS = 250000;
+
 	/** @var self|null */
 	private static $instance = null;
 	/**
@@ -111,13 +114,19 @@ class ABJ_404_Solution_FileSync {
 		$uniqueID = $claim['owner'];
 		$filePath = $this->getSyncFilePath($key);
 		return $this->withOwnerMutationGuard($filePath, function () use ($filePath, $uniqueID): bool {
-			if ($this->createOwnerFileExclusively($filePath, $uniqueID)) {
+			if ($this->createOwnerFileExclusively(array(
+				'filePath' => $filePath,
+				'owner' => $uniqueID,
+			))) {
 				return true;
 			}
 			if (!$this->reclaimAbandonedEmptyOwnerFile($filePath)) {
 				return false;
 			}
-			return $this->createOwnerFileExclusively($filePath, $uniqueID);
+			return $this->createOwnerFileExclusively(array(
+				'filePath' => $filePath,
+				'owner' => $uniqueID,
+			));
 		});
 	}
 
@@ -125,11 +134,12 @@ class ABJ_404_Solution_FileSync {
 	 * One O_CREAT|O_EXCL attempt. Leaves no file behind on any failure path, so
 	 * a caller that gets false can trust that it created nothing.
 	 *
-	 * @param string $filePath
-	 * @param string $uniqueID
+	 * @param array{filePath: string, owner: string} $claim
 	 * @return bool
 	 */
-	private function createOwnerFileExclusively(string $filePath, string $uniqueID): bool {
+	private function createOwnerFileExclusively(array $claim): bool {
+		$filePath = $claim['filePath'];
+		$uniqueID = $claim['owner'];
 		$handle = @fopen($filePath, 'xb');
 		if ($handle === false) {
 			return false;
@@ -214,8 +224,12 @@ class ABJ_404_Solution_FileSync {
 			throw new RuntimeException('Could not open lock-owner mutation guard: ' . $guardPath);
 		}
 		try {
-			if (!@flock($guard, LOCK_EX)) {
-				throw new RuntimeException('Could not acquire lock-owner mutation guard: ' . $guardPath);
+			$deadline = microtime(true) + (self::OWNER_MUTATION_GUARD_WAIT_MICROSECONDS / 1000000);
+			while (!@flock($guard, LOCK_EX | LOCK_NB)) {
+				if (microtime(true) >= $deadline) {
+					throw new RuntimeException('Timed out acquiring lock-owner mutation guard: ' . $guardPath);
+				}
+				usleep(10000);
 			}
 			return $operation();
 		} finally {

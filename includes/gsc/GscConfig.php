@@ -23,6 +23,8 @@ class ABJ_404_Solution_GscConfig {
     const BACKGROUND_REFRESH_HOOK = 'abj404_gsc_background_refresh';
     const LOCK_TRANSIENT_KEY      = 'abj404_gsc_fetch_lock';
     const LOCK_TTL                = 900;
+    const ATOMIC_LOCK_READY_OPTION = 'abj404_gsc_atomic_lock_ready_at';
+    const ATOMIC_LOCK_MIGRATION_DELAY = 86400;
     const LAST_FETCH_OPTION_KEY   = 'abj404_gsc_last_fetch_time';
     const STALE_THRESHOLD         = 72000;
 
