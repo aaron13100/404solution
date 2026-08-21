@@ -88,7 +88,25 @@ class ABJ_404_Solution_SettingsModeDeepLink {
         if (!is_object($preference) || !method_exists($preference, 'setMode')) {
             return false;
         }
-        $preference->setMode(ABJ_404_Solution_SettingsModePreference::MODE_ADVANCED);
+        $writeResult = $preference->setMode(
+            ABJ_404_Solution_SettingsModePreference::MODE_ADVANCED
+        );
+        if ($writeResult === false) {
+            self::reportModeWriteFailure();
+            return false;
+        }
         return true;
+    }
+
+    private static function reportModeWriteFailure(): void {
+        $message = 'Advanced-settings deep link could not persist the current user mode.';
+        $logger = function_exists('abj_service_optional')
+            ? abj_service_optional('logging')
+            : null;
+        if (is_object($logger) && method_exists($logger, 'warn')) {
+            $logger->warn($message);
+            return;
+        }
+        error_log('404 Solution: ' . $message);
     }
 }
