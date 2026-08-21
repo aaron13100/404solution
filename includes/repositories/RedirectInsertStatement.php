@@ -38,7 +38,7 @@ final class ABJ_404_Solution_RedirectInsertStatement {
      */
     public static function fromRequest(array $request): self {
         $table = $request['table'];
-        $data = array(
+        $insertData = array(
             'url' => $request['sourceUrl'],
             'status' => $request['status'],
             'type' => $request['type'],
@@ -47,31 +47,49 @@ final class ABJ_404_Solution_RedirectInsertStatement {
             'disabled' => $request['disabled'],
             'timestamp' => $request['timestamp'],
         );
-        $formats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
+        $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
         $liveColumns = $request['liveColumns'];
-        $liveColumns->appendIfPresent($data, $formats, 'canonical_url',
-            ABJ_404_Solution_RedirectCanonicalUrl::compute($request['sourceUrl']), '%s');
+        $optionalCandidates = array(array(
+            'columnName' => 'canonical_url',
+            'value' => ABJ_404_Solution_RedirectCanonicalUrl::compute($request['sourceUrl']),
+            'format' => '%s',
+        ));
         if ($request['engine'] !== null) {
-            $liveColumns->appendIfPresent($data, $formats, 'engine',
-                substr($request['engine'], 0, 64), '%s');
+            $optionalCandidates[] = array(
+                'columnName' => 'engine',
+                'value' => substr($request['engine'], 0, 64),
+                'format' => '%s',
+            );
         }
         if ($request['score'] !== null) {
-            $liveColumns->appendIfPresent($data, $formats, 'score', round($request['score'], 2), '%f');
+            $optionalCandidates[] = array(
+                'columnName' => 'score',
+                'value' => round($request['score'], 2),
+                'format' => '%f',
+            );
+        }
+        foreach ($optionalCandidates as $candidate) {
+            $presentCandidate = $liveColumns->candidateIfPresent($candidate);
+            if ($presentCandidate === null) {
+                continue;
+            }
+            $insertData[$presentCandidate['columnName']] = $presentCandidate['value'];
+            $insertFormats[] = $presentCandidate['format'];
         }
 
         $sql = "INSERT INTO `" . $table . "` (`" .
-            implode('`, `', array_keys($data)) . "`) ";
-        $params = array_values($data);
+            implode('`, `', array_keys($insertData)) . "`) ";
+        $params = array_values($insertData);
 
         if ($request['requireAbsentSource']) {
             // INSERT...SELECT makes the indexed range check and insert one
             // database operation; a retried deadlock loser observes the winner.
-            $sql .= "SELECT " . implode(', ', $formats) . " FROM DUAL " .
+            $sql .= "SELECT " . implode(', ', $insertFormats) . " FROM DUAL " .
                 "WHERE NOT EXISTS (SELECT 1 FROM `" . $table . "` " .
                 "WHERE `url` = %s LIMIT 1)";
             $params[] = $request['sourceUrl'];
         } else {
-            $sql .= "VALUES (" . implode(', ', $formats) . ")";
+            $sql .= "VALUES (" . implode(', ', $insertFormats) . ")";
         }
 
         return new self($sql, $params);

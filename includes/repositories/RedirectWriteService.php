@@ -427,7 +427,10 @@ class ABJ_404_Solution_RedirectWriteService {
     /** @return ABJ_404_Solution_RedirectsLiveColumnSet */
     private function liveColumns(): ABJ_404_Solution_RedirectsLiveColumnSet {
         if (!($this->liveColumns instanceof ABJ_404_Solution_RedirectsLiveColumnSet)) {
-            $this->liveColumns = new ABJ_404_Solution_RedirectsLiveColumnSet($this->dbCore);
+            $this->liveColumns = new ABJ_404_Solution_RedirectsLiveColumnSet(array(
+                'tableMetadata' => $this->dbCore->tableNameResolver(),
+                'logger' => $this->logger,
+            ));
         }
         return $this->liveColumns;
     }

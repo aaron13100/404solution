@@ -31,15 +31,15 @@ final class ABJ_404_Solution_GscFetchLock {
         $this->store = new ABJ_404_Solution_GscFetchLockStore();
     }
 
-    /** Initialize persistent migration state at an explicit mutation boundary. */
-    public function prepare(): void {
+    /** Initialize and, when absent, persist the atomic-lock migration deadline. */
+    public function initializeAtomicLockMigrationState(): void {
         if ($this->atomicReadyAt === null) {
             $this->atomicReadyAt = $this->initializeAtomicReadyAt();
         }
     }
 
     public function claim(): bool {
-        $this->prepare();
+        $this->initializeAtomicLockMigrationState();
         $now = abj_clock()->now();
         $readyAt = $this->atomicReadyAt === null ? PHP_INT_MAX : $this->atomicReadyAt;
         if ($now < $readyAt
