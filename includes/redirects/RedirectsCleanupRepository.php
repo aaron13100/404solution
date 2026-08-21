@@ -242,6 +242,7 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
         $handleRow = function (array $outerRow) use (&$rowsDeleted): void {
             $url = $outerRow['url'];
 
+            // allow-unbounded-select: this assembled query ends in LIMIT 0,1 and returns only the chosen survivor
             $queryr1 = $this->prepareQueryWp(
                 "select id from {wp_abj404_redirects} where url = {url} order by " .
                 "case status " .
