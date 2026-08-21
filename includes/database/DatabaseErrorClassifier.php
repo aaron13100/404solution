@@ -75,6 +75,11 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         return $this->prefixDiagnostics;
     }
 
+    /** Whether a failed statement is safe to retry as transient contention. */
+    public function isDeadlockOrLockTimeoutError(string $errorText): bool {
+        return $this->taxonomy->connectivity()->isDeadlockOrLockTimeoutError($errorText);
+    }
+
     /**
      * Classify and handle a host-side database issue from direct wpdb call
      * sites that bypass queryAndGetResults().

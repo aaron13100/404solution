@@ -7,6 +7,15 @@ if (!defined('ABSPATH')) {
 require_once __DIR__ . '/PhpErrorLogFallback.php';
 
 /**
+ * Explicit adapter for wpdb drop-ins whose underlying connection is neither
+ * mysqli nor a MySQL PDO connection.
+ */
+interface ABJ_404_Solution_DatabaseSessionStatementConnection {
+    /** @return array{success: bool, error: string} */
+    public function executeAbj404SessionStatement(string $sql): array;
+}
+
+/**
  * Bounds one metadata-lock-sensitive operation without changing the session's
  * lasting configuration or wpdb's mutable result envelope.
  *
@@ -48,22 +57,19 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
      * @param array{description: string, operation: callable(): mixed} $request
      * @return array{status: 'completed'|'setup_failed', value: mixed, error: string}
      */
-    public function run($wpdb, array $request): array {
+    public function runWithBoundedWait($wpdb, array $request): array {
         $description = $request['description'];
         $operation = $request['operation'];
         $connection = $this->connectionOf($wpdb);
 
-        // A wpdb-compatible object without an exposed, supported connection
-        // cannot receive session settings without routing them through query(),
-        // which would corrupt the result envelope this guard exists to protect.
-        // Keep the original operation functional; normal WordPress mysqli and
-        // the supported PDO drop-ins take the guarded path below.
         if (!$this->canRunSessionStatement($connection)) {
-            $value = $operation();
+            $error = 'No supported live database session connection is available.';
+            $this->restoreLastError($wpdb, $error);
+            $this->warnSetupFailure($description, $error);
             return array(
-                'status' => 'completed',
-                'value' => $value,
-                'error' => $this->lastError($wpdb),
+                'status' => 'setup_failed',
+                'value' => null,
+                'error' => $error,
             );
         }
 
@@ -87,7 +93,11 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
             . self::MAX_WAIT_SECONDS . ') AS UNSIGNED)'
         );
         if (!$setup['success']) {
-            $this->clearSavedVariable($connection, $savedVariable, $description);
+            $this->clearSavedVariable(array(
+                'connection' => $connection,
+                'savedVariable' => $savedVariable,
+                'description' => $description,
+            ));
             $this->restoreLastError($wpdb, $setup['error']);
             $this->warnSetupFailure($description, $setup['error']);
             return array('status' => 'setup_failed', 'value' => null, 'error' => $setup['error']);
@@ -97,11 +107,19 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
             $value = $operation();
             $operationError = $this->lastError($wpdb);
         } catch (Throwable $exception) {
-            $this->restoreSessionTimeout($connection, $savedVariable, $description);
+            $this->restoreSessionTimeout(array(
+                'connection' => $connection,
+                'savedVariable' => $savedVariable,
+                'description' => $description,
+            ));
             throw $exception;
         }
 
-        $this->restoreSessionTimeout($connection, $savedVariable, $description);
+        $this->restoreSessionTimeout(array(
+            'connection' => $connection,
+            'savedVariable' => $savedVariable,
+            'description' => $description,
+        ));
         return array('status' => 'completed', 'value' => $value, 'error' => $operationError);
     }
 
@@ -120,7 +138,8 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
             return $connection !== null;
         }
         return (class_exists('mysqli', false) && $connection instanceof mysqli)
-            || $this->isMysqlPdo($connection);
+            || $this->isMysqlPdo($connection)
+            || $connection instanceof ABJ_404_Solution_DatabaseSessionStatementConnection;
     }
 
     /** @param mixed $connection */
@@ -146,12 +165,12 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
     private function runSessionStatement($connection, string $sql): array {
         try {
             if ($this->sessionStatementRunner !== null) {
-                $result = call_user_func($this->sessionStatementRunner, $connection, $sql);
-                if (is_array($result)
-                    && isset($result['success'], $result['error'])
-                    && is_bool($result['success'])
-                    && is_string($result['error'])) {
-                    return $result;
+                $adapterResponse = call_user_func($this->sessionStatementRunner, $connection, $sql);
+                if (is_array($adapterResponse)
+                    && isset($adapterResponse['success'], $adapterResponse['error'])
+                    && is_bool($adapterResponse['success'])
+                    && is_string($adapterResponse['error'])) {
+                    return $adapterResponse;
                 }
                 return array(
                     'success' => false,
@@ -159,20 +178,24 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
                 );
             }
 
+            if ($connection instanceof ABJ_404_Solution_DatabaseSessionStatementConnection) {
+                return $connection->executeAbj404SessionStatement($sql);
+            }
+
             if (class_exists('mysqli', false) && $connection instanceof mysqli) {
-                $result = mysqli_query($connection, $sql);
+                $mysqliResponse = mysqli_query($connection, $sql);
                 return array(
-                    'success' => $result !== false,
-                    'error' => $result === false ? (string)mysqli_error($connection) : '',
+                    'success' => $mysqliResponse !== false,
+                    'error' => $mysqliResponse === false ? (string)mysqli_error($connection) : '',
                 );
             }
 
             if ($connection instanceof PDO) {
-                $result = $connection->exec($sql);
-                $error = $result === false ? $connection->errorInfo() : array();
+                $pdoResponse = $connection->exec($sql);
+                $error = $pdoResponse === false ? $connection->errorInfo() : array();
                 return array(
-                    'success' => $result !== false,
-                    'error' => $result === false && isset($error[2]) ? (string)$error[2] : '',
+                    'success' => $pdoResponse !== false,
+                    'error' => $pdoResponse === false && isset($error[2]) ? (string)$error[2] : '',
                 );
             }
         } catch (Throwable $t) {
@@ -185,14 +208,11 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
         return array('success' => false, 'error' => 'No supported database session connection.');
     }
 
-    /**
-     * @param mixed $connection
-     */
-    private function restoreSessionTimeout(
-        $connection,
-        string $savedVariable,
-        string $description
-    ): void {
+    /** @param array{connection: mixed, savedVariable: string, description: string} $request */
+    private function restoreSessionTimeout(array $request): void {
+        $connection = $request['connection'];
+        $savedVariable = $request['savedVariable'];
+        $description = $request['description'];
         $restore = $this->runSessionStatement(
             $connection,
             'SET SESSION lock_wait_timeout = ' . $savedVariable
@@ -204,17 +224,14 @@ final class ABJ_404_Solution_DatabaseMetadataLockWaitGuard {
                 . ($restore['error'] !== '' ? $restore['error'] : '(none reported)')
             );
         }
-        $this->clearSavedVariable($connection, $savedVariable, $description);
+        $this->clearSavedVariable($request);
     }
 
-    /**
-     * @param mixed $connection
-     */
-    private function clearSavedVariable(
-        $connection,
-        string $savedVariable,
-        string $description
-    ): void {
+    /** @param array{connection: mixed, savedVariable: string, description: string} $request */
+    private function clearSavedVariable(array $request): void {
+        $connection = $request['connection'];
+        $savedVariable = $request['savedVariable'];
+        $description = $request['description'];
         $clear = $this->runSessionStatement($connection, 'SET ' . $savedVariable . ' = NULL');
         if (!$clear['success']) {
             $this->warn(

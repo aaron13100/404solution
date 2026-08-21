@@ -35,6 +35,7 @@ final class ABJ_404_Solution_RedirectInsertStatement {
     /**
      * @param array{table: string, sourceUrl: string, status: int|string, type: int|string,
      *        finalDest: string, code: int|string, disabled: int, timestamp: int,
+     *        canonicalUrl: string,
      *        engine: string|null, score: float|null, liveColumns: ABJ_404_Solution_RedirectsLiveColumnSet,
      *        requireAbsentSource: bool} $request
      */
@@ -53,7 +54,7 @@ final class ABJ_404_Solution_RedirectInsertStatement {
         $liveColumns = $request['liveColumns'];
         $optionalCandidates = array(array(
             'columnName' => 'canonical_url',
-            'value' => ABJ_404_Solution_RedirectCanonicalUrl::compute($request['sourceUrl']),
+            'value' => $request['canonicalUrl'],
             'format' => '%s',
         ));
         if ($request['engine'] !== null) {

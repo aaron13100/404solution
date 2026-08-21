@@ -147,7 +147,7 @@ class ABJ_404_Solution_RedirectWriteService {
             $now = abj_clock()->now();
             $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
             $fromURL = $this->urlNormalization()->normalizeRedirectSourceForStatus($fromURL, $statusAsInt);
-
+            $canonicalUrl = ABJ_404_Solution_RedirectCanonicalUrl::compute($fromURL);
             $insert = ABJ_404_Solution_RedirectInsertStatement::fromRequest(array(
                 'table' => $redirectsTable,
                 'sourceUrl' => $fromURL,
@@ -157,6 +157,7 @@ class ABJ_404_Solution_RedirectWriteService {
                 'code' => $code,
                 'disabled' => $disabled,
                 'timestamp' => $now,
+                'canonicalUrl' => $canonicalUrl,
                 'engine' => $engine === null ? null : (string)$engine,
                 'score' => $score === null ? null : (float)$score,
                 'liveColumns' => $this->liveColumns(),

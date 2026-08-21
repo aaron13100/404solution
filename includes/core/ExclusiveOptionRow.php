@@ -314,7 +314,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 			$candidate = function_exists('abj_service') ? abj_service('logging') : null;
 			return $candidate instanceof ABJ_404_Solution_Logging ? $candidate : null;
 		});
-		$result = $guard->run($wpdb, $request);
+		$result = $guard->runWithBoundedWait($wpdb, $request);
 		return $result['value'];
 	}
 

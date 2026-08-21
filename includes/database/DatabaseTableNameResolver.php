@@ -99,7 +99,7 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
         }
         // @utf8-audit: opt-out - tableExistenceStatus receives system-generated plugin table names from DAO/core callers.
         // DAO-bypass-approved: metadata table existence probe for system-generated plugin table names.
-        $guarded = $this->metadataLockWaitGuard->run($wpdb, array(
+        $guarded = $this->metadataLockWaitGuard->runWithBoundedWait($wpdb, array(
             'description' => 'probing whether database table ' . $tableName . ' exists',
             'operation' => function () use ($wpdb, $tableName) {
                 // DAO-bypass-approved: bounded metadata existence probe for a system-generated table name.
@@ -127,7 +127,7 @@ class ABJ_404_Solution_DatabaseTableNameResolver {
         if (!isset($wpdb) || !is_object($wpdb) || !is_callable(array($wpdb, 'get_results'))) { return []; }
         // @utf8-audit: opt-out - getTableColumnNames receives system-generated plugin table names only.
         // DAO-bypass-approved: metadata column probe for system-generated plugin table names.
-        $guarded = $this->metadataLockWaitGuard->run($wpdb, array(
+        $guarded = $this->metadataLockWaitGuard->runWithBoundedWait($wpdb, array(
             'description' => 'reading database columns for ' . $tableName,
             'operation' => function () use ($wpdb, $tableName) {
                 // DAO-bypass-approved: bounded metadata column probe for a system-generated table name.

@@ -82,7 +82,7 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
 
             // DAO-bypass-approved: transaction boundary must roll back the active wpdb connection after any grouped statement failure.
             $wpdb->query('rollback');
-            $retryable = $this->core->errorClassifier()->taxonomy()->connectivity()->isDeadlockOrLockTimeoutError($lastError);
+            $retryable = $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError);
             if (!$retryable || $attempt >= $maxAttempts) {
                 break;
             }
@@ -112,7 +112,7 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
     public function executeSerializableMutation(array $request): array {
         global $wpdb;
         $prepared = $this->prepareMutation($wpdb, $request['sql'], $request['params']);
-        $guarded = $this->metadataLockWaitGuard->run($wpdb, array(
+        $guarded = $this->metadataLockWaitGuard->runWithBoundedWait($wpdb, array(
             'description' => $request['description'],
             'operation' => function () use ($wpdb, $prepared) {
                 return $this->executeSerializableMutationWithRetry($wpdb, $prepared);
@@ -201,8 +201,7 @@ class ABJ_404_Solution_DatabaseTransactionExecutor {
                     // DAO-bypass-approved: failure cleanup on the same active transaction.
                     $wpdb->query('ROLLBACK');
                 }
-                $retryable = $this->core->errorClassifier()->taxonomy()->connectivity()
-                    ->isDeadlockOrLockTimeoutError($lastError);
+                $retryable = $this->core->errorClassifier()->isDeadlockOrLockTimeoutError($lastError);
                 if (!$retryable || $attempt >= $maxAttempts) {
                     throw $exception;
                 }

@@ -403,7 +403,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     private function executeWpdbQuery(string $query, string $resultType, bool $producesRows): array {
         global $wpdb;
         if ($this->queryCanWaitForMetadataLock($query)) {
-            $guarded = $this->metadataLockWaitGuard->run($wpdb, array(
+            $guarded = $this->metadataLockWaitGuard->runWithBoundedWait($wpdb, array(
                 'description' => 'executing a schema or metadata statement through the database query pipeline',
                 'operation' => function () use ($wpdb, $query, $resultType, $producesRows) {
                     if ($producesRows) {
