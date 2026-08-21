@@ -288,7 +288,7 @@ $abj404ClassesByDirectory = array(
         'ImportUploadValidator', 'OutputBufferDrain',
     ),
     'settings' => array(
-        'SettingsFieldValidator', 'StorageOptionContracts', 'SuggestionTransient',
+        'SettingsFieldValidator', 'StorageOptionContracts', 'SuggestionTransient', 'SuggestionWorkerStateStore',
         'SuggestionDisplayOptions', 'SetupWizardOptionStore',
     ),
     // Includes the standalone classes SpellChecker delegates to (converted

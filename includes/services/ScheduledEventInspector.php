@@ -206,6 +206,15 @@ class ABJ_404_Solution_ScheduledEventInspector {
             }
         }
 
+        if ($recurrence !== null && function_exists('_get_cron_array')) {
+            foreach ($this->eventsForHook($hook, $args) as $event) {
+                if ($event['timestamp'] === $timestamp) {
+                    return $event['recurrence'] === $recurrence;
+                }
+            }
+            return false;
+        }
+
         $next = $this->nextScheduledTimestamp($hook, $args);
         if ($next === false) {
             return false;

@@ -124,7 +124,9 @@ class ABJ_404_Solution_CronRecurrenceMigration {
 
         $replacementTimestamp = $this->replacementTimestamp(array(
             'delaySeconds' => $delaySeconds,
-            'staleTimestamp' => (int)$current['timestamp'],
+            'staleTimestamps' => array_values(array_map(static function(array $event): int {
+                return $event['timestamp'];
+            }, $events)),
         ));
 
         if (!$this->scheduler->scheduleRecurringAt(array(
@@ -200,17 +202,24 @@ class ABJ_404_Solution_CronRecurrenceMigration {
      * The instant the replacement event goes at, kept distinct from the stale
      * event's own timestamp so the two can be told apart afterwards.
      */
-    /** @param array{delaySeconds: int, staleTimestamp: int} $request */
+    /** @param array{delaySeconds: int, staleTimestamps: list<int>} $request */
     private function replacementTimestamp(array $request): int {
         $timestamp = $this->scheduler->timestampAfter($request['delaySeconds']);
-        $staleTimestamp = $request['staleTimestamp'];
         if (!function_exists('wp_get_scheduled_event')) {
+            if ($request['staleTimestamps'] === array()) {
+                throw new InvalidArgumentException(
+                    'Cron recurrence migration requires at least one stale event timestamp.'
+                );
+            }
             // WordPress 5.0's unschedule primitive returns void on success, so
-            // the replacement has to sit AFTER the stale event for the
+            // the replacement has to sit AFTER every stale event for the
             // next-scheduled read to prove the old one was really removed.
-            return max($timestamp, $staleTimestamp + 1);
+            return max($timestamp, max($request['staleTimestamps']) + 1);
         }
-        return $timestamp === $staleTimestamp ? $timestamp + 1 : $timestamp;
+        while (in_array($timestamp, $request['staleTimestamps'], true)) {
+            $timestamp++;
+        }
+        return $timestamp;
     }
 
     private function logWarning(string $message): void {
