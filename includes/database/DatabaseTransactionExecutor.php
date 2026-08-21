@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/DatabaseMetadataLockWaitGuard.php';
+require_once __DIR__ . '/../core/DatabaseMetadataLockWaitGuard.php';
 
 /**
  * Executes SQL statements inside a transaction with deadlock-aware retry.

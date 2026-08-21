@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/../database/DatabaseMetadataLockWaitGuard.php';
+require_once __DIR__ . '/DatabaseMetadataLockWaitGuard.php';
 
 /**
  * Exclusive occupancy of a single WordPress options row: at most one request

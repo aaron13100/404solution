@@ -74,6 +74,7 @@ $abj404ClassesByDirectory = array(
         'PluginLogicAdminActions', 'PluginLogicImportExport', 'PluginLogicLifecycle',
         'PluginLogicPageOrdering', 'PluginLogicSettingsUpdate', 'PluginLogicUrlNormalization',
         'PluginLogicDefaults', 'InternalLinkScanner', 'LockOwnerStore', 'ExclusiveOptionRow',
+        'DatabaseMetadataLockWaitGuard',
         'PluginLogicVersionUpgrader', 'PluginLogicOptionsResolver', 'ErrorHandler',
         'FileSystemService', 'Functions', 'RegexHelper', 'RegexHelperMb', 'RegexHelperPreg',
         'PermalinkResolver', 'UrlEncoder', 'Sanitizer', 'QueryStringHelper', 'PostRef', 'UserRef',
@@ -85,7 +86,6 @@ $abj404ClassesByDirectory = array(
     'database' => array(
         'DatabaseMetadataReader', 'DatabaseRuntimeState', 'DatabaseCoreInterface', 'DatabaseCore',
         'DatabaseConnectionManager', 'DatabaseErrorClassifier', 'DatabaseRepairPolicy',
-        'DatabaseMetadataLockWaitGuard',
         'DatabaseQueryRecoveryPolicy', 'DatabaseQueryTimeoutManager', 'DatabaseSqlErrorReporter',
         'DatabaseQueryInterface', 'DatabaseTableMetadataInterface',
         'DatabaseQueryBuilderInterface', 'DatabaseErrorRecoveryInterface',

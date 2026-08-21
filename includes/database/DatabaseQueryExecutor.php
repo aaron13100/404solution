@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DatabaseInfrastructureErrorTaxonomy.php';
-require_once __DIR__ . '/DatabaseMetadataLockWaitGuard.php';
+require_once __DIR__ . '/../core/DatabaseMetadataLockWaitGuard.php';
 
 /**
  * Central query pipeline for the plugin's DAO layer.
