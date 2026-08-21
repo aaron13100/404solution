@@ -134,6 +134,35 @@ final class ABJ_404_Solution_DiagnosticAppendStream {
     }
 
     /**
+     * Revalidate that the held descriptor still names the live path and return
+     * that file's current size.
+     *
+     * Rotation callers use this only when the cached size says a destructive
+     * rename is imminent. A sibling may already have rotated the descriptor's
+     * inode aside; acting on that stale inode's near-cap size would delete the
+     * retained generation and rotate a small live file in its place. The
+     * ordinary append path keeps its bounded revalidation window, while the
+     * destructive boundary always pays one identity check.
+     */
+    public static function revalidatedSizeOf(string $path): int {
+        $stream = self::stream($path);
+        if ($stream === null) {
+            return 0;
+        }
+        $identity = self::identityOf($stream['handle'], $path);
+        if (!$identity['still_names_path']) {
+            self::invalidate($path);
+            $stream = self::stream($path);
+            return $stream === null ? 0 : $stream['bytes'];
+        }
+        $bytes = is_int($identity['bytes']) ? $identity['bytes'] : $stream['bytes'];
+        $stream['bytes'] = $bytes;
+        $stream['appends'] = 1;
+        self::$streams[$path] = $stream;
+        return $bytes;
+    }
+
+    /**
      * Take the advisory lock that serializes one sink, reentrantly.
      *
      * Reentrancy is the reason this lives here rather than in each writer. With

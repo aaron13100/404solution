@@ -206,6 +206,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 **Bug Fixes**
 
+* Fixed concurrent diagnostic writers being able to discard the newest retained journal generation. A writer whose file had already been rotated could retain its old near-limit size and mistakenly rotate a much smaller live file; destructive rotation now revalidates that the writer still owns the live path before renaming or deleting any journal.
 * Fixed sites with more than 51 active regex redirects evaluating only the 51 oldest rules. The cache safety check used a 51-row query to decide whether the result was small enough to cache, but when it found more rules it kept using that same limited query instead of continuing through the table. Newer regex redirects therefore stayed at "Never Used" and matching requests fell through to the 404 page. Regex rules are now read completely in bounded batches, preserving their existing oldest-first precedence without imposing a matching limit.
 * Fixed a fatal error on the plugin's own Page Redirects and Captured 404s screens for sites running WordPress 5.0, 5.1 or 5.2. The plugin supports WordPress 5.0 and above, but eight places that render a date called a WordPress function that only arrived in 5.3, so those screens died with "Call to undefined function wp_date()" instead of rendering.
 * Fixed a redirect loop in which a request was answered with a redirect back to that same request. When a 404's destination was the home page and the request carried a query string such as `?page=1`, the destination was rebuilt into the original URL, so a browser or crawler looped until it gave up. Every hop was counted as another 404 hit, and one site recorded 3,892 hits on a single row this way. The home destination now resolves to the home page's own path, and no redirect is sent when the destination is the request being answered.
@@ -374,18 +375,3 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 * Added translations for 13 admin strings that were previously displayed in English even on non-English sites.
 
-= Version 4.1.17 (May 10, 2026) =
-
-**Bug Fixes**
-
-* Fixed repeated "Access denied" errors and silently-stuck Captured 404s and Page Redirects pages on shared and managed hosting environments where certain database privileges are restricted. The rebuild now skips the affected step and continues, instead of retrying the same denied operation on every cron run and emailing the site administrator.
-* Fixed the rebuild silently never starting on managed or sharded MySQL services (such as PlanetScale and Vitess) that do not support standard MySQL named locks. The plugin now uses an alternate locking mechanism on these hosts.
-* Fixed the rebuild getting permanently stuck after a previous run was interrupted (for example, by a server restart mid-rebuild). The plugin now detects and cleans up leftover state at the start of the next rebuild so it can complete normally.
-* Fixed the rebuild silently waiting forever when WordPress scheduled tasks (cron) are disabled and no external cron is configured. The plugin now shows a clear admin notice with guidance on how to resolve it.
-* Improved compatibility with multisite networks during long-running rebuilds that span multiple background tasks.
-* Improved compatibility with persistent object caches (Redis, Memcached) so that rebuild progress is reliably saved even when the cache layer is briefly inconsistent.
-* Improved compatibility with HyperDB, LudicrousDB, and other custom database drop-ins.
-
-**Improvements**
-
-* The plugin now self-detects unusual PHP and database hosting limits (memory limit, time limit, strict SQL modes, query packet size) at the start of each rebuild and adapts to work within them, instead of failing on restrictive hosts.

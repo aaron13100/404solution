@@ -118,6 +118,13 @@ final class ABJ_404_Solution_CheckpointJournalWriter {
         // descriptor is revalidated. See ABJ_404_Solution_DiagnosticAppendStream.
         $size = ABJ_404_Solution_DiagnosticAppendStream::sizeOf($path);
         if (($size + strlen($line)) > self::MAX_CHECKPOINT_BYTES) {
+            // A sibling may have rotated the held descriptor away from this
+            // path. Revalidate before a destructive decision: its stale size
+            // must not delete the retained generation and rotate a small live
+            // journal merely because the old inode was near the cap.
+            $size = ABJ_404_Solution_DiagnosticAppendStream::revalidatedSizeOf($path);
+        }
+        if (($size + strlen($line)) > self::MAX_CHECKPOINT_BYTES) {
             $old = $directory . self::ROTATED_FILE;
             if (@is_file($old) && !@unlink($old)) {
                 $status = 'failed';
