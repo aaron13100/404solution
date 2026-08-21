@@ -31,7 +31,8 @@ class ABJ_404_Solution_Ajax_RedirectDestinationAutocomplete {
             return;
         }
 
-        $term = $f->strtolower(ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'term'));
+        $term = $f->strtolower(ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_GET, array('name' => 'term')));
         $term = substr($term, 0, 100);
         $includeDefault404PageRaw = array_key_exists('includeDefault404Page', $_GET) ? $_GET['includeDefault404Page'] : 'false';
         $includeDefault404Page = $includeDefault404PageRaw == "true";

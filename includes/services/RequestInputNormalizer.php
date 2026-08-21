@@ -56,12 +56,15 @@ class ABJ_404_Solution_RequestInputNormalizer {
      * the default rather than a PHP array-to-string warning.
      *
      * @param array<string|int, mixed> $source One of the request superglobals.
-     * @param string $name The key to read.
-     * @param string $default Returned when the key is absent or not scalar.
+     * @param array{name: string, default?: string} $options Named read options.
      * @return string
      */
-    public static function readText(array $source, string $name, string $default = ''): string {
-        return self::readSanitized($source, $name, $default, 'sanitize_text_field');
+    public static function readText(array $source, array $options): string {
+        return self::readSanitized($source, array(
+            'name' => $options['name'],
+            'default' => $options['default'] ?? '',
+            'sanitizer' => 'sanitize_text_field',
+        ));
     }
 
     /**
@@ -69,12 +72,15 @@ class ABJ_404_Solution_RequestInputNormalizer {
      * Same contract as readText(), but preserves newlines.
      *
      * @param array<string|int, mixed> $source One of the request superglobals.
-     * @param string $name The key to read.
-     * @param string $default Returned when the key is absent or not scalar.
+     * @param array{name: string, default?: string} $options Named read options.
      * @return string
      */
-    public static function readTextarea(array $source, string $name, string $default = ''): string {
-        return self::readSanitized($source, $name, $default, 'sanitize_textarea_field');
+    public static function readTextarea(array $source, array $options): string {
+        return self::readSanitized($source, array(
+            'name' => $options['name'],
+            'default' => $options['default'] ?? '',
+            'sanitizer' => 'sanitize_textarea_field',
+        ));
     }
 
     /**
@@ -82,12 +88,13 @@ class ABJ_404_Solution_RequestInputNormalizer {
      * second, never the other way around.
      *
      * @param array<string|int, mixed> $source
-     * @param string $name
-     * @param string $default
-     * @param string $sanitizer Name of the WordPress sanitizer to apply.
+     * @param array{name: string, default: string, sanitizer: string} $options
      * @return string
      */
-    private static function readSanitized(array $source, string $name, string $default, string $sanitizer): string {
+    private static function readSanitized(array $source, array $options): string {
+        $name = $options['name'];
+        $default = $options['default'];
+        $sanitizer = $options['sanitizer'];
         if (!array_key_exists($name, $source) || !is_scalar($source[$name])) {
             return $default;
         }

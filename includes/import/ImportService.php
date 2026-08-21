@@ -90,8 +90,10 @@ class ABJ_404_Solution_ImportService {
             return __('File upload error.', '404-solution');
         }
 
-        $dryRun = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'dry_run') === '1';
-        $overwriteExisting = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'overwrite_existing') === '1';
+        $dryRun = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'dry_run')) === '1';
+        $overwriteExisting = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'overwrite_existing')) === '1';
 
         $validationError = $this->uploadValidator->validate($uploadFile);
         if ($validationError !== '') {

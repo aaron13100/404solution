@@ -98,7 +98,8 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
 
         $existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
 
-        $providedToken = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'token');
+        $providedToken = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'token'));
 
         // Security: Require a valid token for ALL computation requests.
         // This prevents DoS attacks via direct calls to admin-ajax.php.

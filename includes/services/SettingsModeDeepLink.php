@@ -78,7 +78,8 @@ class ABJ_404_Solution_SettingsModeDeepLink {
             return false;
         }
 
-        $nonce = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, '_wpnonce');
+        $nonce = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_GET, array('name' => '_wpnonce'));
         if ($nonce === '' || !wp_verify_nonce($nonce, self::NONCE_ACTION)) {
             return false;
         }

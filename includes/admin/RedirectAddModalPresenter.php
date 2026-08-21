@@ -75,7 +75,8 @@ class ABJ_404_Solution_RedirectAddModalPresenter {
      *   also leaves the modal closed.
      */
     private function prefilledUrl(): string {
-        $raw = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'abj404_add_url');
+        $raw = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_GET, array('name' => 'abj404_add_url'));
         if ($raw === '') {
             return '';
         }

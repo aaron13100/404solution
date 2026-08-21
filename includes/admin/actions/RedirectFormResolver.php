@@ -112,7 +112,8 @@ class ABJ_404_Solution_RedirectFormResolver {
             return $response;
         }
 
-        $info = explode("|", ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'redirect_to_data_field_id'));
+        $info = explode("|", ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'redirect_to_data_field_id')));
         if (count($info) == 2) {
             $response['dest'] = absint($info[0]);
             $response['type'] = $info[1];

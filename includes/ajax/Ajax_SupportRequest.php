@@ -142,7 +142,8 @@ class ABJ_404_Solution_Ajax_SupportRequest {
         // before sanitizing: sanitize_textarea_field() does not remove them,
         // and report 282 stored "couldn\'t" because this call site used to
         // sanitize the raw superglobal.
-        $userMessage = ABJ_404_Solution_RequestInputNormalizer::readTextarea($_POST, 'user_message');
+        $userMessage = ABJ_404_Solution_RequestInputNormalizer::readTextarea(
+            $_POST, array('name' => 'user_message'));
         if (strlen($userMessage) > self::MAX_USER_MESSAGE_LENGTH) {
             $userMessage = substr($userMessage, 0, self::MAX_USER_MESSAGE_LENGTH);
         }

@@ -96,7 +96,10 @@ class ABJ_404_Solution_ExportService {
 
     /** @return void */
     function doExport() {
-        $format = ABJ_404_Solution_RequestInputNormalizer::readText($_REQUEST, 'export_format', 'native');
+        $format = ABJ_404_Solution_RequestInputNormalizer::readText($_REQUEST, array(
+            'name' => 'export_format',
+            'default' => 'native',
+        ));
 
         if (array_key_exists($format, $this->serverFormatRegistry())) {
             $this->doServerFormatExport($format);

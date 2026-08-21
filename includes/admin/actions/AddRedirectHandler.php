@@ -94,7 +94,8 @@ class ABJ_404_Solution_AddRedirectHandler implements ABJ_404_Solution_AdminActio
 
         $tdType2 = is_scalar($typeAndDest['type']) ? (string)$typeAndDest['type'] : '';
         $tdDest2 = is_scalar($typeAndDest['dest']) ? (string)$typeAndDest['dest'] : '';
-        $postedCodeForCheck2 = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'code');
+        $postedCodeForCheck2 = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'code'));
         $code410 = $postedCodeForCheck2 === '410' || $postedCodeForCheck2 === '451';
         if ($tdType2 != "" && ($tdDest2 !== "" || $code410)) {
             $code = $postedCodeForCheck2 !== '' ? $postedCodeForCheck2 : '301';

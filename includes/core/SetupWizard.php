@@ -76,7 +76,7 @@ class ABJ_404_Solution_SetupWizard {
         }
 
         // Check for the plugin's page parameter
-        $page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'page');
+        $page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, array('name' => 'page'));
         return $page === 'abj404_solution';
     }
 

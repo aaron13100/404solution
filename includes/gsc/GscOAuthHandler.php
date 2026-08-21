@@ -33,8 +33,8 @@ class ABJ_404_Solution_GscOAuthHandler {
             return;
         }
 
-        $code  = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'code');
-        $state = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'state');
+        $code  = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, array('name' => 'code'));
+        $state = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, array('name' => 'state'));
 
         if (!wp_verify_nonce($state, 'abj404_gsc_oauth')) {
             wp_die(__('Security check failed.', '404-solution'), 403);
@@ -62,7 +62,7 @@ class ABJ_404_Solution_GscOAuthHandler {
      * @return void
      */
     private static function handleCentralizedCallback(ABJ_404_Solution_GoogleSearchConsole $gsc): void {
-        $nonce = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'nonce');
+        $nonce = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, array('name' => 'nonce'));
 
         if (!wp_verify_nonce($nonce, 'abj404_gsc_oauth')) {
             wp_die(__('Security check failed.', '404-solution'), 403);
@@ -100,8 +100,10 @@ class ABJ_404_Solution_GscOAuthHandler {
      * @return array<string, mixed>
      */
     private static function verifiedCentralizedPayload(string $nonce): array {
-        $encodedPayload = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'abj404_gsc_payload');
-        $signature = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'abj404_gsc_signature');
+        $encodedPayload = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_GET, array('name' => 'abj404_gsc_payload'));
+        $signature = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_GET, array('name' => 'abj404_gsc_signature'));
 
         $secretKey = ABJ_404_Solution_GscConfig::centralizedCallbackSecretTransientKey($nonce);
         $secret = get_transient($secretKey);

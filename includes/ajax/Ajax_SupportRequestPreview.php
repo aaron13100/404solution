@@ -103,7 +103,8 @@ class ABJ_404_Solution_Ajax_SupportRequestPreview {
         // Ajax_SupportRequest does -- same normalizer, same length cap --
         // so the text the admin approves here cannot diverge from the text
         // that is actually sent.
-        $userMessage = ABJ_404_Solution_RequestInputNormalizer::readTextarea($_POST, 'user_message');
+        $userMessage = ABJ_404_Solution_RequestInputNormalizer::readTextarea(
+            $_POST, array('name' => 'user_message'));
         if (strlen($userMessage) > self::MAX_USER_MESSAGE_LENGTH) {
             $userMessage = substr($userMessage, 0, self::MAX_USER_MESSAGE_LENGTH);
         }

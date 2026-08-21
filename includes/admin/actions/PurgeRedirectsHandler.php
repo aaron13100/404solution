@@ -71,7 +71,8 @@ class ABJ_404_Solution_PurgeRedirectsHandler implements ABJ_404_Solution_AdminAc
         $types = array_map(static function($value): string {
             return sanitize_text_field(is_scalar($value) ? (string)$value : '');
         }, $rawTypes);
-        $purgeType = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'purgetype');
+        $purgeType = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'purgetype'));
 
         if ($purgeType != 'abj404_logs' && $purgeType != 'abj404_redirects') {
             $this->parent->getLogger()->debugMessage("Error: An invalid purge type was selected. Type: " .

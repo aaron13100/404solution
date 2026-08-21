@@ -106,7 +106,8 @@ class ABJ_404_Solution_LegacyImportActionHandler {
      * @return string Human-readable result message.
      */
     public function handleActionImportFromPlugin(): string {
-        $source = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'import_source');
+        $source = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'import_source'));
 
         if ($source === '') {
             return __('Error: No source plugin specified.', '404-solution');

@@ -116,8 +116,8 @@ function abj404_loadSomethingWhenWordPressIsReady() {
 
 	$action = null;
 	if ($isAdminRequest) {
-		$actionGet = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'action');
-		$actionPost = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'action');
+		$actionGet = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, array('name' => 'action'));
+		$actionPost = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, array('name' => 'action'));
 		if ($actionGet !== '') {
 			$action = $actionGet;
 		} else if ($actionPost !== '') {

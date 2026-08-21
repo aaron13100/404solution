@@ -47,13 +47,19 @@ class ABJ_404_Solution_Ajax_UninstallPrefs {
             // sanitize_text_field()/sanitize_textarea_field() leave them in
             // place, which is how stored reports 50 and 57 ended up holding
             // "didn\'t" for an apostrophe the user typed normally.
-            'uninstall_reason' => ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'uninstall_reason'),
-            'selected_issues' => ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'selected_issues'),
-            'followup_details' => ABJ_404_Solution_RequestInputNormalizer::readTextarea($_POST, 'followup_details'),
+            'uninstall_reason' => ABJ_404_Solution_RequestInputNormalizer::readText(
+                $_POST, array('name' => 'uninstall_reason')),
+            'selected_issues' => ABJ_404_Solution_RequestInputNormalizer::readText(
+                $_POST, array('name' => 'selected_issues')),
+            'followup_details' => ABJ_404_Solution_RequestInputNormalizer::readTextarea(
+                $_POST, array('name' => 'followup_details')),
             // Back-compat for older tests/UI that used a single text field.
-            'feedback_details' => ABJ_404_Solution_RequestInputNormalizer::readTextarea($_POST, 'followup_details'),
-            'better_plugin_name' => ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'better_plugin_name'),
-            'other_reason_text' => ABJ_404_Solution_RequestInputNormalizer::readTextarea($_POST, 'other_reason_text'),
+            'feedback_details' => ABJ_404_Solution_RequestInputNormalizer::readTextarea(
+                $_POST, array('name' => 'followup_details')),
+            'better_plugin_name' => ABJ_404_Solution_RequestInputNormalizer::readText(
+                $_POST, array('name' => 'better_plugin_name')),
+            'other_reason_text' => ABJ_404_Solution_RequestInputNormalizer::readTextarea(
+                $_POST, array('name' => 'other_reason_text')),
             'feedback_email' => is_string($_POST['feedback_email'] ?? null) ? sanitize_email($_POST['feedback_email']) : '',
             'include_diagnostics' => isset($_POST['include_diagnostics']) ? filter_var($_POST['include_diagnostics'], FILTER_VALIDATE_BOOLEAN) : false
         );

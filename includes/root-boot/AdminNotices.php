@@ -23,7 +23,7 @@ if (!function_exists('abj404_show_plugin_db_notice')) {
 		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
 			return;
 		}
-		$page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'page');
+		$page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, array('name' => 'page'));
 		if ($page !== ABJ404_PP) {
 			return;
 		}
@@ -60,7 +60,7 @@ if (!function_exists('abj404_show_runtime_integrity_notice')) {
 		if (!is_admin() || !abj404_current_user_is_plugin_admin()) {
 			return;
 		}
-		$page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, 'page');
+		$page = ABJ_404_Solution_RequestInputNormalizer::readText($_GET, array('name' => 'page'));
 		if ($page !== ABJ404_PP) {
 			return;
 		}

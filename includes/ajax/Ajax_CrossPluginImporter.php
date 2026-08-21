@@ -28,7 +28,8 @@ class ABJ_404_Solution_Ajax_CrossPluginImporter {
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_crossPluginPreview');
 
         $allowedSources = array('rankmath', 'yoast', 'aioseo', 'safe-redirect-manager', 'redirection');
-        $source = ABJ_404_Solution_RequestInputNormalizer::readText($_POST, 'import_source');
+        $source = ABJ_404_Solution_RequestInputNormalizer::readText(
+            $_POST, array('name' => 'import_source'));
 
         if ($source === '' || !in_array($source, $allowedSources, true)) {
             wp_send_json_error(array('message' => __('Invalid source plugin.', '404-solution')));
