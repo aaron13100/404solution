@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/../redirects/RedirectCanonicalUrl.php';
 require_once __DIR__ . '/RedirectsLiveColumnSet.php';
+require_once __DIR__ . '/RedirectInsertStatement.php';
 
 /**
  * Application service for redirect row mutations and purge decisions.
@@ -90,6 +91,19 @@ class ABJ_404_Solution_RedirectWriteService {
     }
 
     public function setupRedirect(ABJ_404_Solution_RedirectSpec $spec): int {
+        return $this->setupRedirectWithPolicy($spec, array('require_absent_source' => false));
+    }
+
+    public function setupRedirectIfSourceAbsent(ABJ_404_Solution_RedirectSpec $spec): int {
+        return $this->setupRedirectWithPolicy($spec, array('require_absent_source' => true));
+    }
+
+    /**
+     * @param ABJ_404_Solution_RedirectSpec $spec
+     * @param array{require_absent_source: bool} $policy
+     * @return int
+     */
+    private function setupRedirectWithPolicy(ABJ_404_Solution_RedirectSpec $spec, array $policy): int {
         $fromURL = $spec->getFromURL();
         $status = $spec->getStatus();
         $type = $spec->getType();
@@ -134,41 +148,22 @@ class ABJ_404_Solution_RedirectWriteService {
             $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
             $fromURL = $this->urlNormalization()->normalizeRedirectSourceForStatus($fromURL, $statusAsInt);
 
-            $insertData = array(
-                'url' => $fromURL,
+            $insert = ABJ_404_Solution_RedirectInsertStatement::fromRequest(array(
+                'table' => $redirectsTable,
+                'sourceUrl' => $fromURL,
                 'status' => $status,
                 'type' => $type,
-                'final_dest' => $finalDest,
+                'finalDest' => $finalDest,
                 'code' => $code,
                 'disabled' => $disabled,
                 'timestamp' => $now,
-            );
-            $insertFormats = array('%s', '%d', '%d', '%s', '%d', '%d', '%d');
-
-            // canonical_url / engine / score all arrived in later releases, so
-            // every one of them is optional against the live table (defensive
-            // rule 7). This matters most for engine/score: a captured 404 now
-            // carries them, and a capture is the highest-frequency write the
-            // plugin makes, so an install whose upgrade never added the columns
-            // would fail every capture rather than lose one nullable display
-            // value.
-            $liveColumns = $this->liveColumns();
-            $liveColumns->appendIfPresent($insertData, $insertFormats, 'canonical_url',
-                ABJ_404_Solution_RedirectCanonicalUrl::compute($fromURL), '%s');
-            if ($engine !== null) {
-                $liveColumns->appendIfPresent($insertData, $insertFormats, 'engine',
-                    substr((string)$engine, 0, 64), '%s');
-            }
-            if ($score !== null) {
-                $liveColumns->appendIfPresent($insertData, $insertFormats, 'score',
-                    round((float)$score, 2), '%f');
-            }
-
-            $insertSql = "INSERT INTO `" . $redirectsTable . "` (`" .
-                implode('`, `', array_keys($insertData)) . "`) VALUES (" .
-                implode(', ', $insertFormats) . ")";
-            $insertResult = $this->dbCore->queryAndGetResults($insertSql, array(
-                'query_params' => array_values($insertData),
+                'engine' => $engine === null ? null : (string)$engine,
+                'score' => $score === null ? null : (float)$score,
+                'liveColumns' => $this->liveColumns(),
+                'requireAbsentSource' => $policy['require_absent_source'],
+            ));
+            $insertResult = $this->dbCore->queryAndGetResults($insert->sql(), array(
+                'query_params' => $insert->params(),
             ));
             $insertIdRaw = $insertResult['insert_id'] ?? 0;
             $insertId = is_scalar($insertIdRaw) ? (int)$insertIdRaw : 0;

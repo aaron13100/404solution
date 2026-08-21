@@ -107,9 +107,15 @@ class ABJ_404_Solution_CanonicalPaginationRedirect {
             'reserved pagination query var -> ' . $canonicalUrl);
 
         $this->captureEvidence($requestedURL, $options);
-        $this->hitRecorder->record($requestedURL, $canonicalUrl, self::ENGINE_NAME, null, $trace->getSteps());
+        if (!$this->sendCanonicalRedirect($canonicalUrl)) {
+            return false;
+        }
 
-        return $this->sendCanonicalRedirect($canonicalUrl);
+        // A hit describes a redirect WordPress accepted, not merely one the
+        // resolver proposed. Recording after the boundary keeps a canceled
+        // Location from appearing as a successful redirect in the hit log.
+        $this->hitRecorder->record($requestedURL, $canonicalUrl, self::ENGINE_NAME, null, $trace->getSteps());
+        return $this->terminateAfterAcceptedRedirect();
     }
 
     /**
@@ -131,29 +137,20 @@ class ABJ_404_Solution_CanonicalPaginationRedirect {
             return;
         }
 
-        // DESIGN-AUDIT-OK: Redirect rows intentionally have no unique URL
-        // constraint because manual/regex rules may overlap. This best-effort
-        // evidence insert follows the same established capture contract;
-        // duplicate reconciliation is owned by the existing cleanup path.
-        $existing = $this->redirectsRepository->getExistingRedirectForURL($requestedURL);
-        $existingId = isset($existing['id']) && is_scalar($existing['id']) ? (int)$existing['id'] : 0;
-        if ($existingId !== 0) {
-            // Already on record; the hit log carries the per-request evidence.
-            return;
-        }
-
         $defaultRedirect = isset($options['default_redirect']) && is_scalar($options['default_redirect'])
             ? (string)$options['default_redirect'] : (string)self::REDIRECT_STATUS;
 
-        $this->redirectsRepository->setupRedirect(ABJ_404_Solution_RedirectSpec::create(
-            $requestedURL,
-            (string)ABJ404_STATUS_CAPTURED,
-            (string)ABJ404_TYPE_404_DISPLAYED,
-            (string)ABJ404_TYPE_404_DISPLAYED,
-            $defaultRedirect,
-            0,
-            self::ENGINE_NAME
-        ));
+        $this->redirectsRepository->setupRedirectIfSourceAbsent(
+            ABJ_404_Solution_RedirectSpec::fromArray(array(
+                'fromURL' => $requestedURL,
+                'status' => (string)ABJ404_STATUS_CAPTURED,
+                'type' => (string)ABJ404_TYPE_404_DISPLAYED,
+                'finalDest' => (string)ABJ404_TYPE_404_DISPLAYED,
+                'code' => $defaultRedirect,
+                'disabled' => 0,
+                'engine' => self::ENGINE_NAME,
+            ))
+        );
     }
 
     /**
@@ -193,6 +190,16 @@ class ABJ_404_Solution_CanonicalPaginationRedirect {
         }
         $this->logger->debugMessage('WordPress canonical redirect: ' . $canonicalUrl);
 
+        return true;
+    }
+
+    /**
+     * Finish a redirect only after WordPress accepted its Location header and
+     * the associated hit was persisted.
+     *
+     * @return bool true for test/embedding callers that suppress process exit.
+     */
+    private function terminateAfterAcceptedRedirect(): bool {
         if (!apply_filters('abj404_should_exit', true, array('source' => 'canonicalPaginationRedirect'))) {
             return true;
         }

@@ -243,7 +243,13 @@ class ABJ_404_Solution_RedirectsCleanupRepository {
             $url = $outerRow['url'];
 
             $queryr1 = $this->prepareQueryWp(
-                "select id from {wp_abj404_redirects} where url = {url} order by timestamp desc limit 0,1",
+                "select id from {wp_abj404_redirects} where url = {url} order by " .
+                "case status " .
+                "when " . (int)ABJ404_STATUS_MANUAL . " then 0 " .
+                "when " . (int)ABJ404_STATUS_REGEX . " then 1 " .
+                "when " . (int)ABJ404_STATUS_AUTO . " then 2 " .
+                "when " . (int)ABJ404_STATUS_CAPTURED . " then 3 " .
+                "else 4 end asc, timestamp desc, id desc limit 0,1",
                 array("url" => $url)
             );
             $result = $this->dbCore->queryAndGetResults($queryr1);

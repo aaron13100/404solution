@@ -123,7 +123,9 @@ final class ABJ_404_Solution_CanonicalSuppressionSupportSection {
                 return $header . $line;
             }
         }
-        return $header . 'The census record could not be encoded for this payload.';
+        return $header . 'The census record could not be encoded for this payload. JSON error ' .
+            (string)json_last_error() . ': ' . json_last_error_msg() .
+            '. Check callback names and origins for invalid UTF-8.';
     }
 
     /**

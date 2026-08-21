@@ -46,6 +46,14 @@ interface ABJ_404_Solution_RedirectsRepositoryInterface {
     public function setupRedirect(ABJ_404_Solution_RedirectSpec $spec);
 
     /**
+     * Store a redirect only when no row already has its normalized source URL.
+     * The persistence boundary performs the check and insert in one statement.
+     *
+     * @return int New row id, or 0 when the source already exists/write fails.
+     */
+    public function setupRedirectIfSourceAbsent(ABJ_404_Solution_RedirectSpec $spec): int;
+
+    /**
      * @param string $url
      * @param bool $degradedMode
      * @return array<string, mixed>

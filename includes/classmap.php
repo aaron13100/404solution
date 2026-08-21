@@ -263,6 +263,7 @@ $abj404ClassesByDirectory = array(
         'PublishedTermsProvider', 'PermalinkCacheRepository', 'OldPermalinkStructureStore',
         'SpellingCacheRepository', 'OldSlugRepository', 'ContentRepository',
         'RedirectsRepositoryInterface', 'RedirectConditionsRepository', 'RedirectExportReader',
+        'RedirectInsertStatement',
         'RedirectLookupRepository', 'RedirectRegexCacheStore', 'RedirectsLiveColumnSet',
         'RedirectWriteService',
         'RedirectsRepository', 'ContentKeywordsRepository', 'PluginUpdateMetadataRepository',
