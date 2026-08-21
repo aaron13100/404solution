@@ -104,7 +104,9 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
         try {
             $finalDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}");
             $tempDestTable = $this->dbCore->doTableNameReplacements("{wp_abj404_logs_hits}_temp");
+            $this->renewLeaseOrThrow();
             $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable);
+            $this->renewLeaseOrThrow();
             $resolvedCollation = $this->joinHelper->resolveHitsJoinCollation();
             $createTempTableQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsTempTable.sql");
             $createTempTableQuery = $this->dbCore->doTableNameReplacements($createTempTableQuery);
@@ -113,12 +115,14 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
                 'rawCollation' => $resolvedCollation,
             ));
             $this->dbCore->queryAndGetResults($createTempTableQuery);
+            $this->renewLeaseOrThrow();
             // @cache-write-audit: opt-out - truncates an unpublished temp table before rebuilding it.
             $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
             $idRange = $maxLogId - $minLogId;
             $chunkSize = $this->getHitsRebuildChunkSize($idRange);
             $this->renewLeaseOrThrow();
             if ($idRange <= self::HITS_TABLE_DIRECT_PATH_THRESHOLD) { $results = $this->hitsTableInsertDirect($tempDestTable); } else { $results = $this->hitsTableInsertChunked($tempDestTable, $preAggTable, $minLogId, $maxLogId, $chunkSize); }
+            $this->renewLeaseOrThrow();
             if ($results === false || !empty($results['timed_out']) || !empty($results['last_error'])) {
                 $rawLastError = is_array($results) && isset($results['last_error']) && is_string($results['last_error']) ? $results['last_error'] : '';
                 $errorMessage = $results === false ? 'Hits rebuild phase 1 chunk failed.' : ($rawLastError !== '' ? $rawLastError : 'Hits rebuild timed out.');
@@ -126,7 +130,8 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
                 if ($idRange > self::HITS_TABLE_DIRECT_PATH_THRESHOLD && $results !== false && (!empty($results['timed_out']) || !empty($results['last_error']))) {
                     $this->recordHitsChunkFailure();
                 }
-                $this->dbCore->queryAndGetResults("drop table if exists " . $tempDestTable); $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild.");
+                $this->dropScratchTableIfLeaseOwned($tempDestTable);
+                $this->logger->debugMessage(__FUNCTION__ . " INSERT timed out or errored; aborting rebuild.");
                 return array('refreshed' => false, 'elapsed_time' => 0.0, 'error' => $errorMessage);
             }
             $rawElapsed = $results['elapsed_time'] ?? 0;
@@ -136,6 +141,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             // @utf8-audit: opt-out - rebuild table comment is synthesized from numeric timing and ID values.
             $comment = substr(esc_sql($comment), 0, 2048);
             $this->dbCore->queryAndGetResults(sprintf("ALTER TABLE %s COMMENT '%s'", $tempDestTable, $comment));
+            $this->renewLeaseOrThrow();
             $statements = array("drop table if exists " . $finalDestTable, "rename table " . $tempDestTable . ' to ' . $finalDestTable);
             $this->dbCore->executeAsTransaction($statements);
             $this->recordHitsRebuildSuccess($chunkSize);
@@ -146,7 +152,7 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             $this->logger->errorMessage(__FUNCTION__ . " failed: " . $e->getMessage(), $e instanceof \Exception ? $e : null);
             return array('refreshed' => false, 'elapsed_time' => 0.0, 'error' => $e->getMessage());
         } finally {
-            $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
+            $this->dropScratchTableIfLeaseOwned($preAggTable);
         }
     }
 
@@ -196,7 +202,9 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
         $redirectsTable = $this->dbCore->doTableNameReplacements("{wp_abj404_redirects}");
         $resolvedCollation = $this->joinHelper->resolveHitsJoinCollation();
         $startTime = abj_clock()->nowFloat();
+        $this->renewLeaseOrThrow();
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
+        $this->renewLeaseOrThrow();
         $createPreAggQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsPreAggTempTable.sql");
         $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
         $createPreAggQuery = $this->applyJoinCharsetCollation(array(
@@ -204,12 +212,14 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             'rawCollation' => $resolvedCollation,
         ));
         $this->dbCore->queryAndGetResults($createPreAggQuery);
+        $this->renewLeaseOrThrow();
         $logsv2CanonicalExpr = $this->joinHelper->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
             $this->renewLeaseOrThrow();
             $end = $start + $chunkSize;
             $chunkQuery = "/* abj404:src=LogsHitsTableRebuilder::hitsTableInsertChunked#phase1Chunk */ INSERT INTO " . $preAggTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT " . $logsv2CanonicalExpr . ", MIN(id), MAX(timestamp), COUNT(*), SUM(CASE WHEN dest_url = '' OR dest_url IS NULL THEN 1 ELSE 0 END) FROM " . $logsv2Table . " WHERE id >= %d AND id < %d GROUP BY " . $logsv2CanonicalExpr;
             $chunkResult = $this->dbCore->queryAndGetResults($chunkQuery, array('log_too_slow' => false, 'timeout' => 10, 'query_params' => array($start, $end)));
+            $this->renewLeaseOrThrow();
             if (!empty($chunkResult['timed_out']) || !empty($chunkResult['last_error'])) { $this->recordHitsChunkFailure(); $this->logger->debugMessage(__FUNCTION__ . " Phase 1 chunk failed at id range [{$start}, {$end}); aborting."); return false; }
         }
         // Defensive form covers legacy and in-progress installs; optimized
@@ -220,18 +230,34 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
         $this->renewLeaseOrThrow();
         $phase2Query = "/* abj404:src=LogsHitsTableRebuilder::hitsTableInsertChunked#phase2Aggregate */ INSERT INTO " . $tempDestTable . " (requested_url, logsid, last_used, logshits, failed_hits) SELECT a.requested_url, MIN(a.logsid), MAX(a.last_used), SUM(a.logshits), SUM(a.failed_hits) FROM " . $preAggTable . " a INNER JOIN " . $redirectsTable . " r ON a.requested_url = " . $joinRhs . " GROUP BY a.requested_url";
         $results = $this->dbCore->queryAndGetResults($phase2Query, array('log_too_slow' => false, 'timeout' => 60));
+        $this->renewLeaseOrThrow();
         $results['elapsed_time'] = round(abj_clock()->nowFloat() - $startTime, 3);
-        $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         return $results;
     }
 
     /** Abort before another request can run beside a worker that lost its lease. */
     private function renewLeaseOrThrow(): void {
-        if ($this->leaseRenewer !== null && !call_user_func($this->leaseRenewer)) {
+        if (!$this->renewLease()) {
             throw new RuntimeException(
                 'The logs-hits rebuild lost its exclusive lease; aborting before staging-table work can overlap.'
             );
         }
+    }
+
+    /** Return whether this worker still owns (and has renewed) its lease. */
+    private function renewLease(): bool {
+        return $this->leaseRenewer === null || (bool)call_user_func($this->leaseRenewer);
+    }
+
+    /** Never let a superseded worker drop a replacement worker's scratch table. */
+    private function dropScratchTableIfLeaseOwned(string $table): void {
+        if (!$this->renewLease()) {
+            $this->logger->debugMessage(
+                __FUNCTION__ . " skipped cleanup after lease ownership was lost: " . $table
+            );
+            return;
+        }
+        $this->dbCore->queryAndGetResults("drop table if exists " . $table);
     }
 
     /** @param int $idRange @return int */
