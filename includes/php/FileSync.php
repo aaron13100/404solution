@@ -224,9 +224,10 @@ class ABJ_404_Solution_FileSync {
 			throw new RuntimeException('Could not open lock-owner mutation guard: ' . $guardPath);
 		}
 		try {
-			$deadline = microtime(true) + (self::OWNER_MUTATION_GUARD_WAIT_MICROSECONDS / 1000000);
+			$attemptsRemaining = max(1, intdiv(self::OWNER_MUTATION_GUARD_WAIT_MICROSECONDS, 10000));
 			while (!@flock($guard, LOCK_EX | LOCK_NB)) {
-				if (microtime(true) >= $deadline) {
+				$attemptsRemaining--;
+				if ($attemptsRemaining <= 0) {
 					throw new RuntimeException('Timed out acquiring lock-owner mutation guard: ' . $guardPath);
 				}
 				usleep(10000);
