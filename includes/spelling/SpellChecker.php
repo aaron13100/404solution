@@ -423,7 +423,7 @@ class ABJ_404_Solution_SpellChecker {
 	 * @return bool True when a background computation was dispatched.
 	 */
 	public function triggerAndCleanupOnFailure(string $requestedURL): bool {
-		return $this->suggestionPublisher->triggerAndCleanupOnFailure($requestedURL);
+		return $this->suggestionPublisher->triggerAsyncSuggestions($requestedURL);
 	}
 
 	public function does404PageHaveSuggestionsShortcode() {

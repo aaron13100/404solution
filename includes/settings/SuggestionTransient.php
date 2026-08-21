@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
  * consumers:
  *
  *   Producers (writers):
- *     1. ABJ_404_Solution_SuggestionPublisher::triggerAndCleanupOnFailure
+ *     1. ABJ_404_Solution_SuggestionPublisher::triggerAsyncSuggestions
  *        (creates 'pending', started=0, with a fresh token)
  *     2. ABJ_404_Solution_SuggestionPublisher::cacheComputedSuggestionsForShortcode
  *        (creates 'complete' directly, no token, when synchronous spell-check
@@ -103,6 +103,12 @@ final class ABJ_404_Solution_SuggestionTransient {
      */
     public static function transientKeyForRequestedUrl(string $requestedUrl): string {
         return self::transientKeyForNormalizedUrl(self::normalizedUrl($requestedUrl));
+    }
+
+    /** Shared synchronization key for all writers of one URL's state. */
+    public static function lockKeyForNormalizedUrl(string $normalizedUrl): string {
+        // allow-url-key: the method accepts only the normalized-URL identity produced by normalizedUrl().
+        return 'suggestion-state-' . md5($normalizedUrl);
     }
 
     /** @var string */

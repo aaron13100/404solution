@@ -50,19 +50,29 @@ class ABJ_404_Solution_SuggestionPublisher {
 	public function cacheComputedSuggestionsForShortcode(string $fullRequestedURL, array $permalinksPacket): void {
 		$normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($fullRequestedURL);
 		$transientKey = ABJ_404_Solution_SuggestionTransient::transientKeyForNormalizedUrl($normalizedURL);
+		$claim = $this->acquireStateLock($normalizedURL);
+		if ($claim === null) {
+			$this->logger->debugMessage('Suggestion cache write skipped because another writer owns ' .
+				esc_html($normalizedURL));
+			return;
+		}
 
-		// allow-cache-empty: factory-built typed array; SuggestionTransient::completeArray
-		// always returns a non-empty associative array with at minimum a 'status' key.
-		$stored = set_transient(
-			$transientKey,
-			ABJ_404_Solution_SuggestionTransient::completeArray(
-				$normalizedURL,
-				$permalinksPacket,
-				abj_clock()->now(),
-				''
-			),
-			ABJ_404_Solution_SuggestionTransient::COMPLETE_TTL_SECONDS
-		);
+		try {
+			// allow-cache-empty: factory-built typed array; SuggestionTransient::completeArray
+			// always returns a non-empty associative array with at minimum a 'status' key.
+			$stored = set_transient(
+				$transientKey,
+				ABJ_404_Solution_SuggestionTransient::completeArray(
+					$normalizedURL,
+					$permalinksPacket,
+					abj_clock()->now(),
+					''
+				),
+				ABJ_404_Solution_SuggestionTransient::COMPLETE_TTL_SECONDS
+			);
+		} finally {
+			$this->releaseStateLock($claim);
+		}
 
 		if (!$stored) {
 			$this->logger->warn('[SUGGESTION_CACHE_WRITE_FAILED] Could not store completed suggestions for ' .
@@ -74,7 +84,7 @@ class ABJ_404_Solution_SuggestionPublisher {
 			esc_html($normalizedURL));
 	}
 
-	public function triggerAndCleanupOnFailure(string $requestedURL): bool {
+	public function triggerAsyncSuggestions(string $requestedURL): bool {
 		$normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($requestedURL);
 		$transientKey = ABJ_404_Solution_SuggestionTransient::transientKeyForNormalizedUrl($normalizedURL);
 		$adminAjaxUrl = $this->localAdminAjaxUrl();
@@ -82,42 +92,41 @@ class ABJ_404_Solution_SuggestionPublisher {
 			return false;
 		}
 
-		$existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
-		if ($existing !== null) {
-			$this->logger->debugMessage("Async suggestions: skipping, transient already exists for " .
-				esc_html($normalizedURL) . " (status: " . esc_html($existing->getStatus()) . ")");
+		$claim = $this->acquireStateLock($normalizedURL);
+		if ($claim === null) {
+			$this->logger->debugMessage('Async suggestions: another publisher owns ' . esc_html($normalizedURL));
 			return false;
 		}
 
-		$token = wp_generate_password(32, false);
+		try {
+			$existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
+			if ($existing !== null) {
+				$this->logger->debugMessage("Async suggestions: skipping, transient already exists for " .
+					esc_html($normalizedURL) . " (status: " . esc_html($existing->getStatus()) . ")");
+				return false;
+			}
 
-		// allow-cache-empty: factory-built typed array; keep the TTL at 120
-		// seconds so slow hosts can start before the polling UI gives up.
-		$stored = set_transient(
-			$transientKey,
-			ABJ_404_Solution_SuggestionTransient::pendingArray(
-				$normalizedURL,
-				$token,
-				0,
-				abj_clock()->now()
-			),
-			ABJ_404_Solution_SuggestionTransient::PENDING_TTL_SECONDS
-		);
+			$token = wp_generate_password(32, false);
 
-		if (!$stored) {
-			$this->logger->warn('[SUGGESTION_PENDING_WRITE_FAILED] Could not persist the async suggestion job for ' .
-				esc_html($normalizedURL) . '. Recovery: the request will use synchronous suggestions.');
-			return false;
-		}
+			// allow-cache-empty: pendingArray always returns a typed, non-empty state packet.
+			$stored = set_transient(
+				$transientKey,
+				ABJ_404_Solution_SuggestionTransient::pendingArray(
+					$normalizedURL,
+					$token,
+					0,
+					abj_clock()->now()
+				),
+				ABJ_404_Solution_SuggestionTransient::PENDING_TTL_SECONDS
+			);
 
-		// A racing publisher may have replaced this marker after our write. Only
-		// dispatch work for the token still recorded in shared state; a stale
-		// worker could never pass the worker-side token gate anyway.
-		$published = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
-		if ($published === null || $published->getToken() !== $token) {
-			$this->logger->debugMessage('Async suggestions: a newer request owns the pending job for ' .
-				esc_html($normalizedURL));
-			return false;
+			if (!$stored) {
+				$this->logger->warn('[SUGGESTION_PENDING_WRITE_FAILED] Could not persist the async suggestion job for ' .
+					esc_html($normalizedURL) . '. Recovery: the request will use synchronous suggestions.');
+				return false;
+			}
+		} finally {
+			$this->releaseStateLock($claim);
 		}
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
@@ -145,6 +154,20 @@ class ABJ_404_Solution_SuggestionPublisher {
 		}
 
 		return true;
+	}
+
+	/** @return array{key: string, owner: string}|null */
+	private function acquireStateLock(string $normalizedURL): ?array {
+		$key = ABJ_404_Solution_SuggestionTransient::lockKeyForNormalizedUrl($normalizedURL);
+		$owner = abj_service('sync_utils')
+			->synchronizerAcquireLockTry($key);
+		return $owner === '' ? null : array('key' => $key, 'owner' => $owner);
+	}
+
+	/** @param array{key: string, owner: string} $claim */
+	private function releaseStateLock(array $claim): void {
+		abj_service('sync_utils')
+			->synchronizerReleaseLock($claim['owner'], $claim['key']);
 	}
 
 	/**

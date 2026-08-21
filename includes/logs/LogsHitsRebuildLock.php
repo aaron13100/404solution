@@ -140,8 +140,8 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
 
         $timestampPart = explode(':', $lockValue, 2)[0];
         $isStale = !is_numeric($timestampPart)
-            || ((int)$timestampPart > 0
-                && (abj_clock()->now() - (int)$timestampPart) > self::TTL_SECONDS);
+            || (int)$timestampPart <= 0
+            || (abj_clock()->now() - (int)$timestampPart) > self::TTL_SECONDS;
         if (!$isStale) {
             return false;
         }

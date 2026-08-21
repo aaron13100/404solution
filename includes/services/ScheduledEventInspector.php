@@ -111,6 +111,59 @@ class ABJ_404_Solution_ScheduledEventInspector {
     }
 
     /**
+     * Return every stored event for the exact hook/argument identity, ordered
+     * by timestamp. This is the convergence read used by recurrence migration:
+     * wp_get_scheduled_event() exposes only the next event and cannot reveal a
+     * stale recurrence sitting beside a valid replacement.
+     *
+     * @param array<int, mixed> $args
+     * @return list<array{timestamp: int, recurrence: string|null}>
+     */
+    public function eventsForHook(string $hook, array $args = array()): array {
+        if (!function_exists('_get_cron_array')) {
+            $current = $this->currentEvent($hook, $args);
+            return $current === null ? array() : array($current);
+        }
+
+        $cron = _get_cron_array();
+        if (!is_array($cron)) {
+            throw new UnexpectedValueException('WordPress returned a malformed cron array for hook ' . $hook . '.');
+        }
+
+        $targetArgs = $this->listArgs($args);
+        $matches = array();
+        foreach ($cron as $timestamp => $eventsByHook) {
+            if (!is_numeric($timestamp) || !is_array($eventsByHook) || !isset($eventsByHook[$hook])) {
+                continue;
+            }
+            if (!is_array($eventsByHook[$hook])) {
+                throw new UnexpectedValueException('WordPress returned malformed events for cron hook ' . $hook . '.');
+            }
+            foreach ($eventsByHook[$hook] as $event) {
+                if (!is_array($event)) {
+                    throw new UnexpectedValueException('WordPress returned a malformed event for cron hook ' . $hook . '.');
+                }
+                $eventArgs = isset($event['args']) && is_array($event['args'])
+                    ? $this->listArgs($event['args'])
+                    : array();
+                if ($eventArgs !== $targetArgs) {
+                    continue;
+                }
+                $matches[] = array(
+                    'timestamp' => (int)$timestamp,
+                    'recurrence' => isset($event['schedule']) && is_string($event['schedule'])
+                        && $event['schedule'] !== '' ? $event['schedule'] : null,
+                );
+            }
+        }
+
+        usort($matches, static function(array $left, array $right): int {
+            return $left['timestamp'] <=> $right['timestamp'];
+        });
+        return $matches;
+    }
+
+    /**
      * Answer whether the cron store already holds an event that was just
      * requested, after a write WordPress reported as failed.
      *
@@ -336,7 +389,7 @@ class ABJ_404_Solution_ScheduledEventInspector {
     }
 
     /**
-     * @param array<int, mixed> $args
+     * @param array<array-key, mixed> $args
      * @return list<mixed>
      */
     private function listArgs(array $args): array {

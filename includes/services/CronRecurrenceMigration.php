@@ -65,18 +65,52 @@ class ABJ_404_Solution_CronRecurrenceMigration {
      * @return bool True when the hook is left running at the target recurrence.
      */
     public function ensureDailyRecurrence(string $hook, int $delaySeconds = 0, array $args = array()): bool {
-        $current = $this->inspector->currentEvent($hook, $args);
-        if ($current === null) {
+        $lockKey = 'cron-recurrence-' . hash('sha256', serialize(array($hook, array_values($args))));
+        $synchronizer = abj_service('sync_utils');
+        $owner = $synchronizer->synchronizerAcquireLockTry($lockKey);
+        if ($owner === '') {
+            if ($this->logger !== null && method_exists($this->logger, 'debugMessage')) {
+                $this->logger->debugMessage('Cron recurrence migration already in progress for ' . $hook . '.');
+            }
+            return false;
+        }
+
+        try {
+            return $this->ensureDailyRecurrenceWhileLocked($hook, $delaySeconds, $args);
+        } finally {
+            $synchronizer->synchronizerReleaseLock($owner, $lockKey);
+        }
+    }
+
+    /**
+     * Converge every exact hook/args event while the migration lock is held.
+     *
+     * @param array<int, mixed> $args
+     */
+    private function ensureDailyRecurrenceWhileLocked(string $hook, int $delaySeconds, array $args): bool {
+        $events = $this->inspector->eventsForHook($hook, $args);
+        if ($events === array()) {
             return $this->scheduler->scheduleRecurringAt(array(
                 'hook' => $hook,
                 'recurrence' => self::TARGET_RECURRENCE,
-                'timestamp' => $this->timestampAfter($delaySeconds),
+                'timestamp' => $this->scheduler->timestampAfter($delaySeconds),
                 'args' => $args,
             ));
         }
-        if ($current['recurrence'] === self::TARGET_RECURRENCE) {
-            return true;
+
+        $dailyEvents = array_values(array_filter($events, static function(array $event): bool {
+            return $event['recurrence'] === self::TARGET_RECURRENCE;
+        }));
+        if ($dailyEvents !== array()) {
+            return $this->removeEventsExcept(array(
+                'events' => $events,
+                'keeper' => $dailyEvents[0],
+                'hook' => $hook,
+                'args' => $args,
+            ));
         }
+
+        $current = $events[0];
         if ($current['recurrence'] === null) {
             $this->logWarning('[CRON_RECURRENCE_UNAVAILABLE] Cannot migrate cron hook ' . $hook
                 . ': existing recurrence is unavailable. Recovery: inspect and recreate the event in WP-Cron.');
@@ -101,12 +135,19 @@ class ABJ_404_Solution_CronRecurrenceMigration {
         ))) {
             return false;
         }
-        if ($this->scheduler->unscheduleAt(array(
-            'timestamp' => $current['timestamp'],
-            'hook' => $hook,
-            'args' => $args,
-            'expectedNextTimestamp' => $replacementTimestamp,
-        ))) {
+        $allStaleRemoved = true;
+        foreach ($events as $event) {
+            if (!$this->scheduler->unscheduleAt(array(
+                'timestamp' => $event['timestamp'],
+                'hook' => $hook,
+                'args' => $args,
+                'expectedNextTimestamp' => $replacementTimestamp,
+            ))) {
+                $allStaleRemoved = false;
+                break;
+            }
+        }
+        if ($allStaleRemoved) {
             return true;
         }
 
@@ -123,12 +164,38 @@ class ABJ_404_Solution_CronRecurrenceMigration {
     }
 
     /**
+     * Remove stale and duplicate events while retaining exactly one daily event.
+     *
+     * @param array{events: list<array{timestamp: int, recurrence: string|null}>, keeper: array{timestamp: int, recurrence: string|null}, hook: string, args: array<int, mixed>} $request
+     */
+    private function removeEventsExcept(array $request): bool {
+        $keeperSkipped = false;
+        foreach ($request['events'] as $event) {
+            if (!$keeperSkipped && $event === $request['keeper']) {
+                $keeperSkipped = true;
+                continue;
+            }
+            if (!$this->scheduler->unscheduleAt(array(
+                'timestamp' => $event['timestamp'],
+                'hook' => $request['hook'],
+                'args' => $request['args'],
+                'expectedNextTimestamp' => $request['keeper']['timestamp'],
+            ))) {
+                $this->logWarning('[CRON_DUPLICATE_REMOVAL_FAILED] Could not remove a duplicate event for ' .
+                    $request['hook'] . '. Recovery: inspect the hook in WP-Cron and keep one daily event.');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * The instant the replacement event goes at, kept distinct from the stale
      * event's own timestamp so the two can be told apart afterwards.
      */
     /** @param array{delaySeconds: int, staleTimestamp: int} $request */
     private function replacementTimestamp(array $request): int {
-        $timestamp = $this->timestampAfter($request['delaySeconds']);
+        $timestamp = $this->scheduler->timestampAfter($request['delaySeconds']);
         $staleTimestamp = $request['staleTimestamp'];
         if (!function_exists('wp_get_scheduled_event')) {
             // WordPress 5.0's unschedule primitive returns void on success, so
@@ -137,10 +204,6 @@ class ABJ_404_Solution_CronRecurrenceMigration {
             return max($timestamp, $staleTimestamp + 1);
         }
         return $timestamp === $staleTimestamp ? $timestamp + 1 : $timestamp;
-    }
-
-    private function timestampAfter(int $delaySeconds): int {
-        return $this->scheduler->now() + max(0, $delaySeconds);
     }
 
     private function logWarning(string $message): void {
