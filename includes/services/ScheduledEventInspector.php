@@ -266,9 +266,10 @@ class ABJ_404_Solution_ScheduledEventInspector {
      * refusal this class already settles, and the behaviour that shipped before
      * this method existed. Failing the other way would strand a chain forever.
      *
-     * Deliberately reads through the option cache: this runs BEFORE a write, on
-     * hot paths, and dropping the autoloaded `alloptions` blob to answer it
-     * would cost far more than the duplicate request a stale read can cause.
+     * This method does not invalidate WordPress's option cache on its own.
+     * Callers whose correctness crosses requests must first call
+     * refreshCronStoreReads(); callers making an advisory observation may keep
+     * the cheaper process-local view.
      */
     public function anyEventIsStored(string $hook): bool {
         if (function_exists('_get_cron_array')) {

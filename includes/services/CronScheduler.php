@@ -123,6 +123,11 @@ class ABJ_404_Solution_CronScheduler {
         return $this->inspector->anyEventIsStored($hook);
     }
 
+    /** Make the next cron-store observation read durable cross-request state. */
+    public function refreshStoredEventReads(): void {
+        $this->inspector->refreshCronStoreReads();
+    }
+
     /**
      * @param string $hook
      * @param array<int, mixed> $args

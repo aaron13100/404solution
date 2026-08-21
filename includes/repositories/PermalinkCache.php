@@ -333,6 +333,7 @@ class ABJ_404_Solution_PermalinkCache {
 
         $scheduler = abj_cron_scheduler();
         try {
+            $scheduler->refreshStoredEventReads();
             if ($scheduler->hasAnyScheduledEvent(self::UPDATE_PERMALINK_CACHE_HOOK)) {
                 $this->logger->debugMessage(__CLASS__ . "/" . __FUNCTION__ .
                     ": a permalink cache pass is already queued; not queueing another.");
