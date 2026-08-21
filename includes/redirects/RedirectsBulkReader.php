@@ -134,6 +134,8 @@ class ABJ_404_Solution_RedirectsBulkReader {
      * @return iterable<int, array<string, mixed>>
      */
     private function iterateAllRegexRedirectsInBatches(array $leadingRows = array()): iterable {
+        // DESIGN-AUDIT-OK(2026-08-21, owner): A total-work cap would silently make later valid regex rules unreachable, reproducing Troy's 51-rule defect.
+        // The admin-owned finite table is streamed in 250-row pages, holds bounded memory, and stops as soon as a caller finds a match.
         $afterId = $this->greatestRedirectId($leadingRows);
         foreach ($leadingRows as $row) {
             yield $row;
