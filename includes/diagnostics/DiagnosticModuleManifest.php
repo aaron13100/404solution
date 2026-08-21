@@ -109,16 +109,7 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
      * @return array<string, string>
      */
     public static function modulePaths(): array {
-        $includes = dirname(__DIR__) . DIRECTORY_SEPARATOR;
-        $paths = array();
-        foreach (glob($includes . 'diagnostics' . DIRECTORY_SEPARATOR . '*.php') ?: array() as $path) {
-            $paths[self::shortName($path)] = $path;
-        }
-        foreach (self::EXTERNAL_MODULES as $relative) {
-            $path = $includes . str_replace('/', DIRECTORY_SEPARATOR, $relative);
-            $paths[self::shortName($path)] = $path;
-        }
-        ksort($paths);
+        $paths = self::baseModulePathsForRoot(dirname(dirname(__DIR__)));
         // Real extension point, not a test hatch: a site running this plugin
         // from an unusual layout (a symlinked mu-plugin tree, a build that
         // relocates part of the diagnostic path) can tell the manifest where
@@ -147,6 +138,26 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         return $result === array() ? $paths : $result;
     }
 
+    /**
+     * Build the unfiltered shipped manifest for a project root supplied as
+     * data. Release tooling uses this instead of executing PHP from that root.
+     *
+     * @return array<string, string>
+     */
+    private static function baseModulePathsForRoot(string $projectRoot): array {
+        $includes = rtrim($projectRoot, '/\\') . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR;
+        $paths = array();
+        foreach (glob($includes . 'diagnostics' . DIRECTORY_SEPARATOR . '*.php') ?: array() as $path) {
+            $paths[self::shortName($path)] = $path;
+        }
+        foreach (self::EXTERNAL_MODULES as $relative) {
+            $path = $includes . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+            $paths[self::shortName($path)] = $path;
+        }
+        ksort($paths);
+        return $paths;
+    }
+
     /** The record's key for one module: its basename without the .php suffix. */
     public static function shortName(string $path): string {
         return preg_replace('/\.php$/', '', basename($path)) ?? basename($path);
@@ -161,8 +172,21 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
      * covered module changes without refreshing the compiled marker.
      */
     public static function releaseBuildId(): string {
+        return self::buildIdForPaths(self::modulePaths());
+    }
+
+    /**
+     * Compute the shipped manifest for another source root without loading or
+     * executing any PHP from that caller-supplied directory.
+     */
+    public static function releaseBuildIdForRoot(string $projectRoot): string {
+        return self::buildIdForPaths(self::baseModulePathsForRoot($projectRoot));
+    }
+
+    /** @param array<string, string> $paths */
+    private static function buildIdForPaths(array $paths): string {
         $parts = array();
-        foreach (self::modulePaths() as $name => $path) {
+        foreach ($paths as $name => $path) {
             $parts[] = $name . ':' . self::canonicalSourceHash($path);
         }
         return sha1(implode('|', $parts));
