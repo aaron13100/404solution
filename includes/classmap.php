@@ -192,7 +192,7 @@ $abj404ClassesByDirectory = array(
         'SlugChangeHandler', 'SuggestionPublisher', 'SystemPage',
     ),
     'gsc' => array(
-        'GscConfig', 'GscFetchLease', 'GscFetchLock', 'GscOAuthTokenStore', 'GscSearchAnalyticsClient', 'GscAdminSectionRenderer',
+        'GscConfig', 'GscFetchLease', 'GscFetchLock', 'GscFetchLockStore', 'GscOAuthTokenStore', 'GscSearchAnalyticsClient', 'GscAdminSectionRenderer',
         'GoogleSearchConsole', 'GscOAuthHandler',
     ),
     'import' => array(
