@@ -192,8 +192,13 @@ class ABJ_404_Solution_NGramCacheRebuildBatchRunner {
         // ABJ_404_Solution_NGramRescheduleFailureReport::report().
         $timestamp = $this->cronScheduler->timestampAfter($delaySeconds);
         if ($this->cronScheduler->scheduleSingleAt(self::REBUILD_CRON_HOOK, $timestamp, $args) === false) {
-            $this->rescheduleFailureReport->report(
-                self::REBUILD_CRON_HOOK, $this->progress->cursor(), $progress, $args, $timestamp);
+            $this->rescheduleFailureReport->report(array(
+                'hookName' => self::REBUILD_CRON_HOOK,
+                'offset' => $this->progress->cursor(),
+                'progressPercent' => $progress,
+                'args' => $args,
+                'requestedTimestamp' => $timestamp,
+            ));
         }
     }
 

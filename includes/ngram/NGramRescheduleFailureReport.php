@@ -78,20 +78,15 @@ class ABJ_404_Solution_NGramRescheduleFailureReport {
      * refusal that WAS a duplicate of a queued event read as an unexplained
      * stall.
      *
-     * @param string $hookName Hook the chain reschedules itself on.
-     * @param int $offset Offset the chain would have resumed from.
-     * @param float $progressPercent Percent complete at the point of failure.
-     * @param array<int, mixed> $args The cron args the refused write used.
-     * @param int $requestedTimestamp The second the refused write asked for.
+     * @param array{hookName: string, offset: int, progressPercent: float, args: array<int, mixed>, requestedTimestamp: int} $options
      * @return void
      */
-    public function report(
-        string $hookName,
-        int $offset,
-        float $progressPercent,
-        array $args,
-        int $requestedTimestamp
-    ): void {
+    public function report(array $options): void {
+        $hookName = $options['hookName'];
+        $offset = $options['offset'];
+        $progressPercent = $options['progressPercent'];
+        $args = $options['args'];
+        $requestedTimestamp = $options['requestedTimestamp'];
         // WP-Cron switched off entirely is a configuration answer, not a
         // failure to diagnose: say so plainly and skip the evidence dump.
         if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {

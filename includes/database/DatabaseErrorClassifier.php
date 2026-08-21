@@ -80,6 +80,26 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         return $this->taxonomy->connectivity()->isDeadlockOrLockTimeoutError($errorText);
     }
 
+    /** Whether the failed DDL asks for schema state that already exists. */
+    public function isRedundantSchemaChangeError(string $errorText): bool {
+        return $this->taxonomy->schema()->isRedundantSchemaChangeError($errorText);
+    }
+
+    /** Whether the text names a host/infrastructure SQL failure. */
+    public function isInfrastructureSqlError(string $errorText): bool {
+        return $this->taxonomy->isInfrastructureSqlError($errorText);
+    }
+
+    /** Whether the server reports a corrupt or unusable key file. */
+    public function isIncorrectKeyFileError(string $errorText): bool {
+        return $this->taxonomy->schema()->isIncorrectKeyFileError($errorText);
+    }
+
+    /** Whether the server rejected data that cannot fit the target schema. */
+    public function isInvalidDataError(string $errorText): bool {
+        return $this->taxonomy->schema()->isInvalidDataError($errorText);
+    }
+
     /**
      * Classify and handle a host-side database issue from direct wpdb call
      * sites that bypass queryAndGetResults().

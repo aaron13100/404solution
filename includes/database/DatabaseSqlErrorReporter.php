@@ -139,8 +139,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         if ($errorText === '') {
             return false;
         }
-        return $this->core->errorClassifier()->taxonomy()->schema()
-            ->isRedundantSchemaChangeError($errorText);
+        return $this->core->errorClassifier()->isRedundantSchemaChangeError($errorText);
     }
 
     /**
@@ -157,7 +156,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         if ($errorText === '') {
             return false;
         }
-        return $this->core->errorClassifier()->taxonomy()->isInfrastructureSqlError($errorText);
+        return $this->core->errorClassifier()->isInfrastructureSqlError($errorText);
     }
 
     /**
@@ -282,7 +281,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
                 $tracer->traceBranch('duplicate_id', $repair);
             }
         }
-        if ($this->core->errorClassifier()->taxonomy()->schema()->isIncorrectKeyFileError($lastError)) {
+        if ($this->core->errorClassifier()->isIncorrectKeyFileError($lastError)) {
             $repair = function () use ($query, &$result, $tracer): void {
                 $this->core->tableRepairer()->repairCorruptedTableAndRetry(
                     $query,
@@ -322,7 +321,7 @@ class ABJ_404_Solution_DatabaseSqlErrorReporter {
         global $wpdb;
 
         $strippedQuery = 'n/a';
-        if ($this->core->errorClassifier()->taxonomy()->schema()->isInvalidDataError($lastError)) {
+        if ($this->core->errorClassifier()->isInvalidDataError($lastError)) {
             $strippedResult = $this->core->tableRepairer()->get_stripped_query_result($query);
             $strippedQuery = is_string($strippedResult) ? $strippedResult : 'n/a';
         }
