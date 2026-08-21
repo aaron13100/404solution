@@ -76,7 +76,12 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             ? $rebuildHealth
             : null;
         $this->joinHelper = $joinHelper;
-        $this->leaseRenewer = is_callable($leaseRenewer) ? $leaseRenewer : null;
+        if ($leaseRenewer !== null && !is_callable($leaseRenewer)) {
+            throw new InvalidArgumentException(
+                'LogsHitsTableRebuilder lease renewer must be callable or null.'
+            );
+        }
+        $this->leaseRenewer = $leaseRenewer;
     }
 
     /**
@@ -103,7 +108,10 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
             $resolvedCollation = $this->joinHelper->resolveHitsJoinCollation();
             $createTempTableQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsTempTable.sql");
             $createTempTableQuery = $this->dbCore->doTableNameReplacements($createTempTableQuery);
-            $createTempTableQuery = $this->applyJoinCharsetCollation($createTempTableQuery, $resolvedCollation);
+            $createTempTableQuery = $this->applyJoinCharsetCollation(array(
+                'ddl' => $createTempTableQuery,
+                'rawCollation' => $resolvedCollation,
+            ));
             $this->dbCore->queryAndGetResults($createTempTableQuery);
             // @cache-write-audit: opt-out - truncates an unpublished temp table before rebuilding it.
             $this->dbCore->queryAndGetResults("truncate table " . $tempDestTable);
@@ -155,16 +163,17 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
      * 'latin1_swedish_ci' is not valid for CHARACTER SET 'utf8mb4'"), taking the
      * whole rollup rebuild with it. Both halves now come from one pair.
      *
-     * @param string $ddl Staging-table DDL with the placeholder pair.
-     * @param string $rawCollation Collation the staging table must match.
+     * @param array{ddl: string, rawCollation: string} $options
      * @return string DDL with a self-consistent charset/collation pair.
      */
-    private function applyJoinCharsetCollation(string $ddl, string $rawCollation): string {
-        $pair = ABJ_404_Solution_DatabaseCollationHelper::charsetCollationPair($rawCollation);
+    private function applyJoinCharsetCollation(array $options): string {
+        $pair = ABJ_404_Solution_DatabaseCollationHelper::charsetCollationPair(
+            $options['rawCollation']
+        );
         return str_replace(
             array('{CHARSET}', '{COLLATION}'),
             array($pair['charset'], $pair['collation']),
-            $ddl
+            $options['ddl']
         );
     }
 
@@ -190,7 +199,10 @@ class ABJ_404_Solution_LogsHitsTableRebuilder {
         $this->dbCore->queryAndGetResults("drop table if exists " . $preAggTable);
         $createPreAggQuery = ABJ_404_Solution_FileSystemService::readFileContents(__DIR__ . "/../sql/createLogsHitsPreAggTempTable.sql");
         $createPreAggQuery = $this->dbCore->doTableNameReplacements($createPreAggQuery);
-        $createPreAggQuery = $this->applyJoinCharsetCollation($createPreAggQuery, $resolvedCollation);
+        $createPreAggQuery = $this->applyJoinCharsetCollation(array(
+            'ddl' => $createPreAggQuery,
+            'rawCollation' => $resolvedCollation,
+        ));
         $this->dbCore->queryAndGetResults($createPreAggQuery);
         $logsv2CanonicalExpr = $this->joinHelper->isLogsv2CanonicalUrlBackfillComplete() ? "canonical_url" : "COALESCE(canonical_url, CONCAT('/', TRIM(BOTH '/' FROM requested_url)))";
         for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
