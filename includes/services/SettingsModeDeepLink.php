@@ -107,6 +107,6 @@ class ABJ_404_Solution_SettingsModeDeepLink {
             $logger->warn($message);
             return;
         }
-        error_log('404 Solution: ' . $message);
+        abj404_logPhpFallback('settings-mode-deep-link', $message);
     }
 }
