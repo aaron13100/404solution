@@ -101,10 +101,8 @@ class ABJ_404_Solution_Ajax_SuggestionPolling {
         }
 
         // Normalize URL using centralized function for consistency
-        $normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($requestedURL);
-
-        $urlKey = md5($normalizedURL);
-        $transientKey = 'abj404_suggest_' . $urlKey;
+        $normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($requestedURL);
+        $transientKey = ABJ_404_Solution_SuggestionTransient::transientKeyForNormalizedUrl($normalizedURL);
 
         // Check transient for status. Normalize at the boundary: any
         // raw-shape probing (status string check, started/created int

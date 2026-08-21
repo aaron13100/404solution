@@ -7,6 +7,8 @@
  *
  * Exposes:
  *   fileExists(p)                                  -> boolean
+ *   pathExists(p)                                  -> boolean
+ *   filesEqual(left, right)                        -> boolean
  *   loadJson(p)                                    -> parsed JSON (throws on bad JSON)
  *   findJsonSchemaFiles(dir)                       -> string[] of *.schema.json paths
  *   fileContainsAnnotation(filePath, id, name?)    -> boolean
@@ -23,6 +25,19 @@ function fileExists(p) {
   } catch {
     return false; // allow-silent-catch: stat failure means file does not exist
   }
+}
+
+function pathExists(p) {
+  try {
+    fs.statSync(p);
+    return true;
+  } catch {
+    return false; // allow-silent-catch: stat failure means path is unavailable
+  }
+}
+
+function filesEqual(left, right) {
+  return fs.readFileSync(left).equals(fs.readFileSync(right));
 }
 
 function loadJson(p) {
@@ -57,6 +72,8 @@ function fileContainsParityAnnotation(filePath, contractId) {
 
 module.exports = {
   fileExists,
+  pathExists,
+  filesEqual,
   loadJson,
   findJsonSchemaFiles,
   fileContainsAnnotation,

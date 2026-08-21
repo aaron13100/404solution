@@ -13,10 +13,11 @@
 // Exit 0: all checks pass (or no contracts directory found)
 // Exit 1: validation failure
 
-const fs = require("fs");
 const path = require("path");
 const {
   fileExists,
+  pathExists,
+  filesEqual,
   loadJson,
   findJsonSchemaFiles,
   fileContainsAnnotation,
@@ -31,26 +32,31 @@ const args = process.argv.slice(2);
  * three in one function is what stops the same setting being read twice with
  * two different defaults.
  *
- * @param {string} name CLI flag name, without the leading dashes.
- * @param {string} fallback Value to use when neither flag nor env is set.
- * @param {string} [envName] Environment variable consulted between the two.
+ * @param {{name: string, fallback: string, envName?: string}} options
  * @returns {string}
  */
-function getArg(name, fallback, envName) {
+function getArg({ name, fallback, envName }) {
   const idx = args.indexOf(`--${name}`);
-  if (idx !== -1 && args[idx + 1]) return args[idx + 1];
+  if (idx !== -1) {
+    const value = args[idx + 1];
+    if (!value || value.startsWith("--")) {
+      console.error(`ERROR [MISSING_FLAG_VALUE]: --${name} requires a path.`);
+      process.exit(1);
+    }
+    return value;
+  }
   const fromEnv = envName ? process.env[envName] : undefined; // allow-direct-env: this IS the config adapter, the only env read in this script
   return fromEnv || fallback;
 }
 
-const contractsDir = path.resolve(getArg("contracts-dir", "./contracts"));
-const vendorDir = path.resolve(getArg("vendor-dir", "./vendor-contracts"));
+const contractsDir = path.resolve(getArg({ name: "contracts-dir", fallback: "./contracts" }));
+const vendorDir = path.resolve(getArg({ name: "vendor-dir", fallback: "./vendor-contracts" }));
 const serverContractsDir = path.resolve(
-  getArg(
-    "server-contracts-dir",
-    path.join(__dirname, "..", "..", "404-solution-server", "contracts"),
-    "ABJ404_SERVER_CONTRACTS_DIR"
-  )
+  getArg({
+    name: "server-contracts-dir",
+    fallback: path.join(__dirname, "..", "..", "404-solution-server", "contracts"),
+    envName: "ABJ404_SERVER_CONTRACTS_DIR",
+  })
 );
 
 const errors = [];
@@ -563,7 +569,7 @@ function validateVendoredContractFiles(dir) {
     `Validating ${vendored.length} vendored contract file(s) against owner: ${serverContractsDir}`
   );
 
-  if (!fs.existsSync(serverContractsDir)) {
+  if (!pathExists(serverContractsDir)) {
     fail(
       `vendored contract owner not found: ${serverContractsDir}. The files here ` +
         `(${vendored.join(", ")}) are verbatim copies owned by 404-solution-server; ` +
@@ -589,7 +595,7 @@ function validateVendoredContractFiles(dir) {
       continue;
     }
 
-    if (!fs.readFileSync(localPath).equals(fs.readFileSync(ownerPath))) {
+    if (!filesEqual(localPath, ownerPath)) {
       fail(
         `vendored contract file '${rel}' has drifted from its owner. This copy is ` +
           `never edited directly: make the change in 404-solution-server, then run\n` +
@@ -604,7 +610,7 @@ function validateVendoredContractFiles(dir) {
 
 // --- Main ---
 
-if (!fs.existsSync(contractsDir) && !fs.existsSync(vendorDir)) {
+if (!pathExists(contractsDir) && !pathExists(vendorDir)) {
   process.exit(0);
 }
 
@@ -622,10 +628,10 @@ if (errors.length > 0) {
   process.exit(1);
 } else {
   const contractCount =
-    (fs.existsSync(path.join(contractsDir, "contracts.json")) ? loadJson(path.join(contractsDir, "contracts.json")).contracts.length : 0) +
-    (fs.existsSync(path.join(vendorDir, "vendor-contracts.json")) ? loadJson(path.join(vendorDir, "vendor-contracts.json")).contracts.length : 0);
+    (fileExists(path.join(contractsDir, "contracts.json")) ? loadJson(path.join(contractsDir, "contracts.json")).contracts.length : 0) +
+    (fileExists(path.join(vendorDir, "vendor-contracts.json")) ? loadJson(path.join(vendorDir, "vendor-contracts.json")).contracts.length : 0);
   const storageContractCount =
-    fs.existsSync(path.join(contractsDir, "storage-contracts.json"))
+    fileExists(path.join(contractsDir, "storage-contracts.json"))
       ? loadJson(path.join(contractsDir, "storage-contracts.json")).contracts.length
       : 0;
   if (storageContractCount > 0) {

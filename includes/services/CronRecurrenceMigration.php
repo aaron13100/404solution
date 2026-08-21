@@ -78,15 +78,20 @@ class ABJ_404_Solution_CronRecurrenceMigration {
             return true;
         }
         if ($current['recurrence'] === null) {
-            $this->logWarning('Cannot migrate cron hook ' . $hook . ': existing recurrence is unavailable.');
+            $this->logWarning('[CRON_RECURRENCE_UNAVAILABLE] Cannot migrate cron hook ' . $hook
+                . ': existing recurrence is unavailable. Recovery: inspect and recreate the event in WP-Cron.');
             return false;
         }
         if (!function_exists('wp_unschedule_event')) {
-            $this->logWarning('Cannot migrate cron hook ' . $hook . ': wp_unschedule_event unavailable.');
+            $this->logWarning('[CRON_UNSCHEDULE_UNAVAILABLE] Cannot migrate cron hook ' . $hook
+                . ': wp_unschedule_event is unavailable. Recovery: restore the WordPress cron API and retry.');
             return false;
         }
 
-        $replacementTimestamp = $this->replacementTimestamp($delaySeconds, (int)$current['timestamp']);
+        $replacementTimestamp = $this->replacementTimestamp(array(
+            'delaySeconds' => $delaySeconds,
+            'staleTimestamp' => (int)$current['timestamp'],
+        ));
 
         if (!$this->scheduler->scheduleRecurringAt(array(
             'hook' => $hook,
@@ -111,8 +116,8 @@ class ABJ_404_Solution_CronRecurrenceMigration {
             'args' => $args,
             'expectedNextTimestamp' => $current['timestamp'],
         ))) {
-            $this->logWarning('Failed to roll back replacement cron hook ' . $hook
-                . ' after stale-event removal failed.');
+            $this->logWarning('[CRON_ROLLBACK_FAILED] Failed to roll back replacement cron hook ' . $hook
+                . ' after stale-event removal failed. Recovery: inspect duplicate events in WP-Cron and keep the daily event.');
         }
         return false;
     }
@@ -121,8 +126,10 @@ class ABJ_404_Solution_CronRecurrenceMigration {
      * The instant the replacement event goes at, kept distinct from the stale
      * event's own timestamp so the two can be told apart afterwards.
      */
-    private function replacementTimestamp(int $delaySeconds, int $staleTimestamp): int {
-        $timestamp = $this->timestampAfter($delaySeconds);
+    /** @param array{delaySeconds: int, staleTimestamp: int} $request */
+    private function replacementTimestamp(array $request): int {
+        $timestamp = $this->timestampAfter($request['delaySeconds']);
+        $staleTimestamp = $request['staleTimestamp'];
         if (!function_exists('wp_get_scheduled_event')) {
             // WordPress 5.0's unschedule primitive returns void on success, so
             // the replacement has to sit AFTER the stale event for the

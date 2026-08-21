@@ -74,7 +74,7 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
         // A row already exists. Only a genuinely expired holder may be
         // displaced, and the retry is another atomic claim, so at most one of
         // several requests that all found the same expired lock takes it.
-        if ($this->isHeld()) {
+        if (!$this->releaseStaleHolder($lockRow, $lockName)) {
             return false;
         }
 
@@ -99,10 +99,8 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
     }
 
     /** Whether a live (non-expired) holder currently has the lock.
-     *
-     * Clears the row as a side effect when what it holds is unusable or has
-     * aged out, always conditionally on the exact value just read, so a holder
-     * that took the lock in between keeps it.
+     * This observation is deliberately side-effect free; stale-row cleanup is
+     * part of acquire(), the operation that needs to replace such a row.
      *
      * @return bool
      */
@@ -116,21 +114,42 @@ class ABJ_404_Solution_LogsHitsRebuildLock {
 
         $timestampPart = explode(':', $lockValue, 2)[0];
         if (!is_numeric($timestampPart)) {
-            // A value with no numeric timestamp is from an incompatible older
-            // version or a partial write. Clearing it is the only safe
-            // reading: a value with no timestamp in it can never age out, so
-            // treating it as a holder would wedge rebuilding permanently.
-            $lockRow->releaseIfValueIs(array('optionName' => $lockName, 'value' => $lockValue));
             return false;
         }
 
         $lockTimestamp = (int)$timestampPart;
         if ($lockTimestamp > 0 && (abj_clock()->now() - $lockTimestamp) > self::TTL_SECONDS) {
-            $lockRow->releaseIfValueIs(array('optionName' => $lockName, 'value' => $lockValue));
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Remove an unusable or expired holder after an acquisition attempt lost.
+     * Conditional deletion preserves a newer holder that raced with this read.
+     */
+    private function releaseStaleHolder(
+        ABJ_404_Solution_ExclusiveOptionRow $lockRow,
+        string $lockName
+    ): bool {
+        $lockValue = $lockRow->valueOf($lockName);
+        if ($lockValue === '') {
+            return true;
+        }
+
+        $timestampPart = explode(':', $lockValue, 2)[0];
+        $isStale = !is_numeric($timestampPart)
+            || ((int)$timestampPart > 0
+                && (abj_clock()->now() - (int)$timestampPart) > self::TTL_SECONDS);
+        if (!$isStale) {
+            return false;
+        }
+
+        return $lockRow->releaseIfValueIs(array(
+            'optionName' => $lockName,
+            'value' => $lockValue,
+        ));
     }
 
     /** The option row that holds the lock. Stateless, so a fresh instance

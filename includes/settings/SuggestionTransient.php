@@ -60,6 +60,14 @@ final class ABJ_404_Solution_SuggestionTransient {
     public const STATUS_COMPLETE = 'complete';
     public const STATUS_ERROR    = 'error';
 
+    /** Transient lifetimes for the three producer states. */
+    public const PENDING_TTL_SECONDS = 120;
+    public const COMPLETE_TTL_SECONDS = 300;
+    public const ERROR_TTL_SECONDS = 120;
+
+    /** Prefix shared by every producer and consumer of suggestion state. */
+    private const TRANSIENT_PREFIX = 'abj404_suggest_';
+
     /**
      * Worker is presumed dead after this many seconds since claim
      * (started > 0). Matches the recovery window in
@@ -74,6 +82,28 @@ final class ABJ_404_Solution_SuggestionTransient {
      * dispatch-no-show window in Ajax_SuggestionPolling.
      */
     public const DISPATCH_STUCK_SECONDS = 15;
+
+    /**
+     * Normalize a requested URL once for both storage and key derivation.
+     */
+    public static function normalizedUrl(string $requestedUrl): string {
+        return abj_service('url_encoder')->normalizeURLForCacheKey($requestedUrl);
+    }
+
+    /**
+     * Return the one transient key used by all suggestion-state participants.
+     */
+    public static function transientKeyForNormalizedUrl(string $normalizedUrl): string {
+        // allow-url-key: the method accepts only the normalized-URL identity produced by normalizedUrl().
+        return self::TRANSIENT_PREFIX . md5($normalizedUrl);
+    }
+
+    /**
+     * Normalize a requested URL and return its suggestion transient key.
+     */
+    public static function transientKeyForRequestedUrl(string $requestedUrl): string {
+        return self::transientKeyForNormalizedUrl(self::normalizedUrl($requestedUrl));
+    }
 
     /** @var string */
     private $status;

@@ -93,9 +93,8 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // hashes to a different transient key than the producer wrote, and
         // this worker reports "Unauthorized" while the polling client never
         // finds the result. Sibling shape of 73f21bce / 6e0908a8 / 83b9fb85.
-        $normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($requestedURL);
-        $urlKey = md5($normalizedURL);
-        $transientKey = 'abj404_suggest_' . $urlKey;
+        $normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($requestedURL);
+        $transientKey = ABJ_404_Solution_SuggestionTransient::transientKeyForNormalizedUrl($normalizedURL);
 
         $existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
 
@@ -119,30 +118,11 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
             wp_die('Invalid token');
         }
 
-        // Check if we should compute or skip (handles duplicate workers).
-        // isClaimed() = started > 0 (a worker claimed the work).
-        // isWorkerStuck() = claimed but > WORKER_STUCK_SECONDS old (presumed dead).
-        if ($existing->isPending()) {
-            if (!$existing->isClaimed()) {
-                // First worker, claim the work by setting started=now()
-                // TTL of 120s gives slow hosts enough time to complete computation
-                $existingCreated = $existing->getCreatedAt() > 0 ? $existing->getCreatedAt() : self::clock()->now();
-                set_transient(
-                    $transientKey,
-                    ABJ_404_Solution_SuggestionTransient::pendingArray(
-                        $existing->getUrl(),
-                        $storedToken,
-                        self::clock()->now(),  // Claim the work
-                        $existingCreated       // Preserve creation timestamp
-                    ),
-                    120
-                );
-                // Proceed to compute
-            } elseif (!$existing->isWorkerStuck(self::clock()->now())) {
-                // Another worker claimed recently and is still computing, skip
-                wp_die();
-            }
-            // Else: worker exceeded the stuck window, proceed as recovery
+        if (!self::claimPendingWork($existing, array(
+            'transientKey' => $transientKey,
+            'storedToken' => $storedToken,
+        ))) {
+            wp_die();
         }
 
         // Register crash detection handler BEFORE expensive computation
@@ -188,22 +168,86 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         // TTL of 120 seconds: enough time for polling to retrieve results on slow hosts.
         // allow-cache-empty: factory-built typed array; completeArray always returns a
         // non-empty associative array with at minimum a 'status' key.
-        set_transient(
-            $transientKey,
-            ABJ_404_Solution_SuggestionTransient::completeArray(
-                $requestedURL,
-                is_array($suggestionsPacket) ? $suggestionsPacket : [],
-                self::clock()->now(),
-                $storedToken  // Preserve token for debugging/audit
-            ),
-            120
-        );
+        self::storeCompletedResultOrDie(array(
+            'transientKey' => $transientKey,
+            'requestedURL' => $requestedURL,
+            'storedToken' => $storedToken,
+            'suggestionsPacket' => is_array($suggestionsPacket) ? $suggestionsPacket : [],
+            'logger' => $logger,
+        ));
 
         $suggestionCount = isset($suggestionsPacket[0]) ? count((array)$suggestionsPacket[0]) : 0;
         $logger->debugMessage("Ajax_SuggestionCompute: Completed computation for " .
             esc_html($requestedURL) . " - found " . $suggestionCount . " suggestions");
 
         wp_die(); // End AJAX request cleanly
+    }
+
+    /**
+     * Claim unstarted work, allow recovery of a stuck worker, or reject a live
+     * sibling worker. Non-pending error state remains recoverable.
+     *
+     * @param array{transientKey: string, storedToken: string} $claim
+     */
+    private static function claimPendingWork(
+        ABJ_404_Solution_SuggestionTransient $existing,
+        array $claim
+    ): bool {
+        if (!$existing->isPending()) {
+            return true;
+        }
+        if ($existing->isClaimed()) {
+            return $existing->isWorkerStuck(self::clock()->now());
+        }
+
+        $now = self::clock()->now();
+        $existingCreated = $existing->getCreatedAt() > 0 ? $existing->getCreatedAt() : $now;
+        $claimStored = set_transient(
+            $claim['transientKey'],
+            ABJ_404_Solution_SuggestionTransient::pendingArray(
+                $existing->getUrl(),
+                $claim['storedToken'],
+                $now,
+                $existingCreated
+            ),
+            ABJ_404_Solution_SuggestionTransient::PENDING_TTL_SECONDS
+        );
+        if (!$claimStored) {
+            abj404_logPhpFallback('suggestion-claim-write-failed',
+                '[SUGGESTION_CLAIM_WRITE_FAILED] Could not persist the worker claim for ' .
+                $claim['transientKey'] . '. Recovery: polling will fall back after the worker timeout.');
+        }
+        return $claimStored;
+    }
+
+    /**
+     * Persist a completed packet or terminate after recording the storage
+     * failure; a success response must never claim an unstored result.
+     *
+     * @param array{transientKey: string, requestedURL: string, storedToken: string, suggestionsPacket: array<int, mixed>, logger: ABJ_404_Solution_Logging} $result
+     */
+    private static function storeCompletedResultOrDie(array $result): void {
+        // allow-cache-empty: completeArray always returns typed status/url/token state even when the suggestion list is empty.
+        $completedStored = set_transient(
+            $result['transientKey'],
+            ABJ_404_Solution_SuggestionTransient::completeArray(
+                $result['requestedURL'],
+                $result['suggestionsPacket'],
+                self::clock()->now(),
+                $result['storedToken']
+            ),
+            ABJ_404_Solution_SuggestionTransient::PENDING_TTL_SECONDS
+        );
+        if ($completedStored) {
+            return;
+        }
+
+        $result['logger']->errorMessage(
+            '[SUGGESTION_RESULT_WRITE_FAILED] Computation completed but its result could not be stored for ' .
+            esc_html($result['requestedURL']) .
+            '. Recovery: the next request will compute suggestions synchronously.'
+        );
+        wp_die('Unable to store suggestion results');
     }
 
     /**
@@ -246,11 +290,17 @@ class ABJ_404_Solution_Ajax_SuggestionCompute {
         }
 
         // Mark as error with generic user-facing message (don't leak implementation details)
-        set_transient(
+        $errorStored = set_transient(
             $transientKey,
             ABJ_404_Solution_SuggestionTransient::errorArray($token),
-            120
+            ABJ_404_Solution_SuggestionTransient::ERROR_TTL_SECONDS
         );
+
+        if (!$errorStored) {
+            abj404_logPhpFallback('suggestion-crash-marker-write-failed',
+                '[SUGGESTION_CRASH_MARKER_WRITE_FAILED] Could not store the crash marker for ' .
+                $transientKey . '. Recovery: inspect the preceding PHP fatal error and retry the request.');
+        }
 
         // Log detailed error info for debugging (not exposed to frontend)
         $logMessage = sprintf(

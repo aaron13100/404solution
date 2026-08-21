@@ -16,15 +16,14 @@ if (!defined('ABSPATH')) {
  *     spelling scan ran and produced candidates that scored under the
  *     auto-redirect threshold): publish them directly.
  *   - Nothing is computed yet: mark the slot pending, dispatch a non-blocking
- *     loopback request to admin-ajax.php to do the work, and roll the marker
- *     back if the dispatch fails, so the polling UI is never left waiting on a
- *     job that was never started.
+ *     loopback request to admin-ajax.php to do the work. A failed dispatch
+ *     leaves its owned pending marker intact so polling can report the
+ *     dispatch timeout without deleting state published by another request.
  *
  * This lived on SpellChecker, which made a Levenshtein-scoring domain class
  * also own an HTTP self-request, a TLS-verification policy and a transient
- * lifecycle. The read side (ShortCode, Ajax_SuggestionPolling) and the worker
- * side (Ajax_SuggestionCompute) still derive the same key themselves; they are
- * the next consumers to move onto this class.
+ * lifecycle. SuggestionTransient owns the shared URL normalization, key shape,
+ * and TTL constants used by every producer and consumer.
  */
 class ABJ_404_Solution_SuggestionPublisher {
 
@@ -41,27 +40,20 @@ class ABJ_404_Solution_SuggestionPublisher {
 	/**
 	 * Publish an already-computed suggestion packet so the shortcode renders it
 	 * immediately instead of dispatching a background compute for work that is
-	 * already done. An existing entry (pending or complete) is left alone: the
-	 * worker that owns it is authoritative.
+	 * already done. The completed packet is authoritative over pending work and
+	 * is written directly, avoiding a read-before-write producer race.
 	 *
 	 * @param string $fullRequestedURL The URL as requested, before normalization.
 	 * @param array<int, mixed> $permalinksPacket Two-tuple from the spell checker.
 	 * @return void
 	 */
 	public function cacheComputedSuggestionsForShortcode(string $fullRequestedURL, array $permalinksPacket): void {
-		$normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($fullRequestedURL);
-
-		$urlKey = md5($normalizedURL);
-		$transientKey = 'abj404_suggest_' . $urlKey;
-
-		$existing = get_transient($transientKey);
-		if ($existing !== false) {
-			return;
-		}
+		$normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($fullRequestedURL);
+		$transientKey = ABJ_404_Solution_SuggestionTransient::transientKeyForNormalizedUrl($normalizedURL);
 
 		// allow-cache-empty: factory-built typed array; SuggestionTransient::completeArray
 		// always returns a non-empty associative array with at minimum a 'status' key.
-		set_transient(
+		$stored = set_transient(
 			$transientKey,
 			ABJ_404_Solution_SuggestionTransient::completeArray(
 				$normalizedURL,
@@ -69,18 +61,26 @@ class ABJ_404_Solution_SuggestionPublisher {
 				abj_clock()->now(),
 				''
 			),
-			300
-		); // 5 minute TTL
+			ABJ_404_Solution_SuggestionTransient::COMPLETE_TTL_SECONDS
+		);
+
+		if (!$stored) {
+			$this->logger->warn('[SUGGESTION_CACHE_WRITE_FAILED] Could not store completed suggestions for ' .
+				esc_html($normalizedURL) . '. Recovery: the shortcode will compute suggestions synchronously.');
+			return;
+		}
 
 		$this->logger->debugMessage("Cached spell-check suggestions for shortcode: " .
 			esc_html($normalizedURL));
 	}
 
 	public function triggerAndCleanupOnFailure(string $requestedURL): bool {
-		$normalizedURL = abj_service('url_encoder')->normalizeURLForCacheKey($requestedURL);
-
-		$urlKey = md5($normalizedURL);
-		$transientKey = 'abj404_suggest_' . $urlKey;
+		$normalizedURL = ABJ_404_Solution_SuggestionTransient::normalizedUrl($requestedURL);
+		$transientKey = ABJ_404_Solution_SuggestionTransient::transientKeyForNormalizedUrl($normalizedURL);
+		$adminAjaxUrl = $this->localAdminAjaxUrl();
+		if ($adminAjaxUrl === '') {
+			return false;
+		}
 
 		$existing = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
 		if ($existing !== null) {
@@ -93,7 +93,7 @@ class ABJ_404_Solution_SuggestionPublisher {
 
 		// allow-cache-empty: factory-built typed array; keep the TTL at 120
 		// seconds so slow hosts can start before the polling UI gives up.
-		set_transient(
+		$stored = set_transient(
 			$transientKey,
 			ABJ_404_Solution_SuggestionTransient::pendingArray(
 				$normalizedURL,
@@ -101,39 +101,35 @@ class ABJ_404_Solution_SuggestionPublisher {
 				0,
 				abj_clock()->now()
 			),
-			120
-		); // 2 minute TTL
+			ABJ_404_Solution_SuggestionTransient::PENDING_TTL_SECONDS
+		);
+
+		if (!$stored) {
+			$this->logger->warn('[SUGGESTION_PENDING_WRITE_FAILED] Could not persist the async suggestion job for ' .
+				esc_html($normalizedURL) . '. Recovery: the request will use synchronous suggestions.');
+			return false;
+		}
+
+		// A racing publisher may have replaced this marker after our write. Only
+		// dispatch work for the token still recorded in shared state; a stale
+		// worker could never pass the worker-side token gate anyway.
+		$published = ABJ_404_Solution_SuggestionTransient::fromRaw(get_transient($transientKey));
+		if ($published === null || $published->getToken() !== $token) {
+			$this->logger->debugMessage('Async suggestions: a newer request owns the pending job for ' .
+				esc_html($normalizedURL));
+			return false;
+		}
 
 		$this->logger->debugMessage("Async suggestions: triggering background computation for " .
 			esc_html($normalizedURL));
 
-		// Loopback self-dispatch to admin-ajax.php on this same host. The
-		// sslverify default of false matches WP core's own loopback convention
-		// (see wp-includes/cron.php spawn_cron(), which uses the same
-		// apply_filters('https_local_ssl_verify', false) pattern) and is
-		// intentional for three reasons:
-		//   1. The request never leaves the host. Intercepting it requires an
-		//      attacker who already controls the local machine, at which point
-		//      they can read the transient and dispatch the AJAX directly
-		//      without bothering with MITM on loopback.
-		//   2. WP sites routinely run on self-signed or hostname-mismatched
-		//      certs in dev / behind a TLS-terminating proxy. Hardcoding
-		//      sslverify true would break dispatch for those installs with no
-		//      affordance for the admin to recover.
-		//   3. The body carries only a one-shot suggestion-compute token bound
-		//      to a 2-minute pending transient (set above). Worst case for a
-		//      hypothetical local MITM is they re-trigger the same compute the
-		//      site is already running, which is rate-limited downstream.
-		// Admins on hostile-loopback topologies (e.g. reverse proxy spanning an
-		// untrusted segment) can return true from the https_local_ssl_verify
-		// filter to opt into strict TLS. Tests for both behaviors live in
-		// AsyncSuggestionsTest::testWpRemotePostSslVerify*. M104 in the design
-		// audit re-flags this every pass; this comment is the documented
-		// trade-off so the next audit can mark it accepted.
-		$response = wp_remote_post(admin_url('admin-ajax.php'), array(
+		// Verify TLS by default because the body contains the one-shot worker
+		// token. Sites with an intentionally self-signed loopback can still use
+		// WordPress's standard https_local_ssl_verify filter explicitly.
+		$response = wp_remote_post($adminAjaxUrl, array(
 			'blocking'  => false,
 			'timeout'   => 5,
-			'sslverify' => apply_filters('https_local_ssl_verify', false),
+			'sslverify' => apply_filters('https_local_ssl_verify', true),
 			'body'      => array(
 				'action'   => 'abj404_compute_suggestions',
 				'url'      => $normalizedURL,
@@ -142,12 +138,32 @@ class ABJ_404_Solution_SuggestionPublisher {
 		));
 
 		if (is_wp_error($response)) {
-			$this->logger->debugMessage("Async suggestions: dispatch failed for " .
-				esc_html($normalizedURL) . " - " . $response->get_error_message());
-			delete_transient($transientKey);
+			$this->logger->warn('[SUGGESTION_DISPATCH_FAILED] Async suggestion dispatch failed for ' .
+				esc_html($normalizedURL) . ' (' . $response->get_error_code() . '): ' .
+				$response->get_error_message() . '. Recovery: polling will fall back after the dispatch timeout.');
 			return false;
 		}
 
 		return true;
+	}
+
+	/**
+	 * Resolve the loopback endpoint and reject filters that move it off-site.
+	 * The dispatch body contains a requested URL and one-shot worker token, so
+	 * an externally filtered admin_url must never receive it.
+	 */
+	private function localAdminAjaxUrl(): string {
+		$adminAjaxUrl = admin_url('admin-ajax.php');
+		$adminHost = parse_url($adminAjaxUrl, PHP_URL_HOST);
+		$homeHost = parse_url(home_url('/'), PHP_URL_HOST);
+		if (is_string($adminHost) && $adminHost !== '' && is_string($homeHost)
+			&& $homeHost !== '' && strcasecmp($adminHost, $homeHost) === 0
+		) {
+			return $adminAjaxUrl;
+		}
+
+		$this->logger->warn('[SUGGESTION_DISPATCH_OFFSITE] Refused async suggestion dispatch because admin_url ' .
+			'does not use the site host. Recovery: remove the admin_url filter or use synchronous suggestions.');
+		return '';
 	}
 }
