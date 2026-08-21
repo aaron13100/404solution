@@ -5,6 +5,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/../database/DatabaseMetadataLockWaitGuard.php';
+
 /**
  * Exclusive occupancy of a single WordPress options row: at most one request
  * can hold a given option name, and the DATABASE decides which one.
@@ -106,8 +108,14 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		// alloptions cache of every single request on the site, which for a
 		// row that exists only while somebody holds it is pure overhead.
 		// DAO-bypass-approved: this is the mutual-exclusion primitive itself; the DAO's retry-and-repair path runs INSIDE synchronized sections, and create_db_tables / update_db_version are locked while the DAO is still booting.
-		$rowsInserted = $wpdb->query("INSERT IGNORE INTO `" . $table . "` "
-			. "(option_name, option_value, autoload) VALUES (" . $boundRow . ", 'no')");
+        $rowsInserted = $this->runWithBoundedMetadataLockWait($wpdb, array(
+            'description' => 'claiming the options row "' . $optionName . '"',
+            'operation' => function () use ($wpdb, $table, $boundRow) {
+                // DAO-bypass-approved: guarded options-row lock claim must remain available while the DAO bootstraps.
+                return $wpdb->query("INSERT IGNORE INTO `" . $table . "` "
+                    . "(option_name, option_value, autoload) VALUES (" . $boundRow . ", 'no')");
+            },
+        ));
 
 		// IGNORE turns the duplicate-key rejection into zero affected rows, so
 		// "somebody else got there first" arrives as data rather than as an
@@ -125,7 +133,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 			return false;
 		}
 
-		return ((int)$rowsInserted) === 1;
+		return is_numeric($rowsInserted) && ((int)$rowsInserted) === 1;
 	}
 
 	/** The value currently recorded for $optionName, read from the table and
@@ -147,8 +155,14 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		}
 
 		// DAO-bypass-approved: this row is what the DAO's own bootstrap locks on (create_db_tables, update_db_version), and it lives in WordPress's options table, which the DAO's recovery path must never CREATE, REPAIR, or raise a missing-plugin-table notice about.
-		$value = $wpdb->get_var("SELECT option_value FROM `" . $table . "` "
-			. "WHERE option_name = " . $boundName . " LIMIT 1");
+        $value = $this->runWithBoundedMetadataLockWait($wpdb, array(
+            'description' => 'reading the options row "' . $optionName . '"',
+            'operation' => function () use ($wpdb, $table, $boundName) {
+                // DAO-bypass-approved: guarded lock-owner read bypasses WordPress's process-local option cache.
+                return $wpdb->get_var("SELECT option_value FROM `" . $table . "` "
+                    . "WHERE option_name = " . $boundName . " LIMIT 1");
+            },
+        ));
 
 		// get_var() answers null for "no such row" and for "the statement was
 		// refused", and every other statement in this class tells those two
@@ -159,11 +173,9 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		// silently: a host that refuses this SELECT refuses the claim next to
 		// it too, which stops every synchronized section on the site with
 		// nothing anywhere saying why.
-		if ($value === null) {
-			$lastError = $this->stringPropertyOf($wpdb, 'last_error');
-			if ($lastError !== null && $lastError !== '') {
-				$this->logStorageFailure('read the options row "' . $optionName . '"', $wpdb);
-			}
+		$lastError = $this->stringPropertyOf($wpdb, 'last_error');
+		if ($lastError !== null && $lastError !== '') {
+			$this->logStorageFailure('read the options row "' . $optionName . '"', $wpdb);
 		}
 
 		return is_string($value) ? $value : '';
@@ -204,13 +216,19 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		}
 
 		// DAO-bypass-approved: renewing the coordination lease must remain available while the DAO itself is rebuilding tables.
-		$rowsUpdated = $wpdb->query("UPDATE `" . $table . "` SET option_value = " . $boundReplacement
-			. " WHERE option_name = " . $boundName . " AND option_value = " . $boundCurrent);
+        $rowsUpdated = $this->runWithBoundedMetadataLockWait($wpdb, array(
+            'description' => 'renewing the options row "' . $replacement['optionName'] . '"',
+            'operation' => function () use ($wpdb, $table, $boundReplacement, $boundName, $boundCurrent) {
+                // DAO-bypass-approved: guarded lease renewal must stay on the same raw coordination row.
+                return $wpdb->query("UPDATE `" . $table . "` SET option_value = " . $boundReplacement
+                    . " WHERE option_name = " . $boundName . " AND option_value = " . $boundCurrent);
+            },
+        ));
 		if ($rowsUpdated === false) {
 			$this->logStorageFailure('renew the options row "' . $replacement['optionName'] . '"', $wpdb);
 			return false;
 		}
-		return ((int)$rowsUpdated) === 1;
+		return is_numeric($rowsUpdated) && ((int)$rowsUpdated) === 1;
 	}
 
 	/**
@@ -239,7 +257,13 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		$sql .= " AND option_value = " . $boundValue;
 
 		// DAO-bypass-approved: releasing a lock must not itself need one, and this runs in finally blocks and on shutdown, after the DAO may already have been torn down.
-		$rowsDeleted = $wpdb->query($sql);
+        $rowsDeleted = $this->runWithBoundedMetadataLockWait($wpdb, array(
+            'description' => 'releasing the options row "' . $optionName . '"',
+            'operation' => function () use ($wpdb, $sql) {
+                // DAO-bypass-approved: guarded conditional release runs during finally/shutdown paths outside DAO lifetime.
+                return $wpdb->query($sql);
+            },
+        ));
 
 		// Same reasoning as claim(): removing no row is the ordinary outcome of
 		// a conditional release whose row somebody else now holds, while a
@@ -250,7 +274,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 			return false;
 		}
 
-		return ((int)$rowsDeleted) > 0;
+		return is_numeric($rowsDeleted) && ((int)$rowsDeleted) > 0;
 	}
 
 	/** Report a statement the database refused.
@@ -278,6 +302,20 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 		$lastError = $this->stringPropertyOf($wpdb, 'last_error');
 		$logger->warn('Could not ' . $attempted . '; treating the lock as unavailable. '
 			. 'Database error: ' . ($lastError === null || $lastError === '' ? '(none reported)' : $lastError));
+	}
+
+	/**
+	 * @param \wpdb $wpdb
+	 * @param array{description: string, operation: callable(): mixed} $request
+	 * @return mixed
+	 */
+	private function runWithBoundedMetadataLockWait($wpdb, array $request) {
+		$guard = new ABJ_404_Solution_DatabaseMetadataLockWaitGuard(static function () {
+			$candidate = function_exists('abj_service') ? abj_service('logging') : null;
+			return $candidate instanceof ABJ_404_Solution_Logging ? $candidate : null;
+		});
+		$result = $guard->run($wpdb, $request);
+		return $result['value'];
 	}
 
 	/** Bind $values into $fragment and hand back the escaped SQL text.

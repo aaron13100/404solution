@@ -110,7 +110,8 @@ class ABJ_404_Solution_DatabaseCore implements
             $this->f,
             function (string $query, array $options): array {
                 return $this->queryAndGetResults($query, $options);
-            }
+            },
+            $this->logger
         );
         $this->noticeState = new ABJ_404_Solution_DatabaseNoticeStateHolder(
             function (): bool {

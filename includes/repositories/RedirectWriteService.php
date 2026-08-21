@@ -162,9 +162,17 @@ class ABJ_404_Solution_RedirectWriteService {
                 'liveColumns' => $this->liveColumns(),
                 'requireAbsentSource' => $policy['require_absent_source'],
             ));
-            $insertResult = $this->dbCore->queryAndGetResults($insert->sql(), array(
-                'query_params' => $insert->params(),
-            ));
+            if ($policy['require_absent_source']) {
+                $insertResult = $this->dbCore->transactionExecutor()->executeSerializableMutation(array(
+                    'sql' => $insert->sql(),
+                    'params' => $insert->params(),
+                    'description' => 'atomically recording captured-404 evidence',
+                ));
+            } else {
+                $insertResult = $this->dbCore->queryAndGetResults($insert->sql(), array(
+                    'query_params' => $insert->params(),
+                ));
+            }
             $insertIdRaw = $insertResult['insert_id'] ?? 0;
             $insertId = is_scalar($insertIdRaw) ? (int)$insertIdRaw : 0;
 

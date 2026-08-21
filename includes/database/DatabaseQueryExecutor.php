@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/DatabaseInfrastructureErrorTaxonomy.php';
+require_once __DIR__ . '/DatabaseMetadataLockWaitGuard.php';
 
 /**
  * Central query pipeline for the plugin's DAO layer.
@@ -52,6 +53,9 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
     /** @var ABJ_404_Solution_DatabaseQueryRecoveryPolicy */
     private $queryRecoveryPolicy;
 
+    /** @var ABJ_404_Solution_DatabaseMetadataLockWaitGuard */
+    private $metadataLockWaitGuard;
+
     /** @var string Current wpdb result type for queryAndGetResults (ARRAY_A or OBJECT). */
     private $currentResultType = ARRAY_A;
 
@@ -74,6 +78,7 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         $this->resultHarvester = $resultHarvester;
         $this->queryDiagnostics = $queryDiagnostics;
         $this->queryRecoveryPolicy = $queryRecoveryPolicy;
+        $this->metadataLockWaitGuard = new ABJ_404_Solution_DatabaseMetadataLockWaitGuard($logger);
         $this->currentResultType = ARRAY_A;
     }
 
@@ -397,7 +402,19 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
      */
     private function executeWpdbQuery(string $query, string $resultType, bool $producesRows): array {
         global $wpdb;
-        if ($producesRows) {
+        if ($this->queryCanWaitForMetadataLock($query)) {
+            $guarded = $this->metadataLockWaitGuard->run($wpdb, array(
+                'description' => 'executing a schema or metadata statement through the database query pipeline',
+                'operation' => function () use ($wpdb, $query, $resultType, $producesRows) {
+                    if ($producesRows) {
+                        return $wpdb->get_results($query, $resultType);
+                    }
+                    $wpdb->query($query);
+                    return array();
+                },
+            ));
+            $result = array('rows' => $producesRows ? $guarded['value'] : array());
+        } else if ($producesRows) {
             $result = array('rows' => $wpdb->get_results($query, $resultType));
         } else {
             $wpdb->query($query);
@@ -408,6 +425,25 @@ class ABJ_404_Solution_DatabaseQueryExecutor {
         // mutable result properties.
         $this->resultHarvester->harvestWpdbResult($result);
         return $result;
+    }
+
+    /**
+     * DDL and metadata inspection take metadata locks. Bound these uncommon
+     * statements without adding two session SETs to every ordinary frontend
+     * SELECT/INSERT/UPDATE.
+     */
+    private function queryCanWaitForMetadataLock(string $query): bool {
+        $unwrapped = (string)preg_replace(
+            '/^\s*SET\s+STATEMENT\s+max_statement_time\s*=\s*\d+\s+FOR\s+/i',
+            '',
+            $query,
+            1
+        );
+        $unwrapped = (string)preg_replace('/^\s*(?:\/\*[\s\S]*?\*\/\s*)+/', '', $unwrapped);
+        return preg_match(
+            '/^\s*(?:ALTER|CREATE|DROP|RENAME|TRUNCATE|SHOW|DESCRIBE|DESC|LOCK)\b/i',
+            $unwrapped
+        ) === 1;
     }
 
 }

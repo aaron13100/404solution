@@ -85,6 +85,7 @@ $abj404ClassesByDirectory = array(
     'database' => array(
         'DatabaseMetadataReader', 'DatabaseRuntimeState', 'DatabaseCoreInterface', 'DatabaseCore',
         'DatabaseConnectionManager', 'DatabaseErrorClassifier', 'DatabaseRepairPolicy',
+        'DatabaseMetadataLockWaitGuard',
         'DatabaseQueryRecoveryPolicy', 'DatabaseQueryTimeoutManager', 'DatabaseSqlErrorReporter',
         'DatabaseQueryInterface', 'DatabaseTableMetadataInterface',
         'DatabaseQueryBuilderInterface', 'DatabaseErrorRecoveryInterface',

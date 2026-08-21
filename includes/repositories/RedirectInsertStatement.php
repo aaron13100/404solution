@@ -8,8 +8,10 @@ if (!defined('ABSPATH')) {
  * SQL and bound values for one redirect insert.
  *
  * Owns the persistence-level distinction between an ordinary insert and the
- * atomic "insert only when this source is absent" form used by canonical
- * evidence capture.
+ * conditional "insert only when this source is absent" form used by canonical
+ * evidence capture. The caller makes that form atomic by executing it in a
+ * SERIALIZABLE transaction; a lone INSERT...SELECT is not sufficient under
+ * READ COMMITTED isolation.
  *
  * // allow-no-test-found: exercised by RedirectWriteServiceUpdateAtomicityTest
  */
@@ -82,8 +84,11 @@ final class ABJ_404_Solution_RedirectInsertStatement {
         $params = array_values($insertData);
 
         if ($request['requireAbsentSource']) {
-            // INSERT...SELECT makes the indexed range check and insert one
-            // database operation; a retried deadlock loser observes the winner.
+            // The transaction executor runs this indexed absence check under
+            // SERIALIZABLE isolation. Concurrent callers therefore cannot
+            // both pass the range check; a retried deadlock loser observes the
+            // winner without imposing a UNIQUE(url) constraint that would also
+            // forbid intentional overlapping manual/regex redirect rows.
             $sql .= "SELECT " . implode(', ', $insertFormats) . " FROM DUAL " .
                 "WHERE NOT EXISTS (SELECT 1 FROM `" . $table . "` " .
                 "WHERE `url` = %s LIMIT 1)";
