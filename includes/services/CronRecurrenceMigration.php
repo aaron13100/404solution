@@ -67,12 +67,12 @@ class ABJ_404_Solution_CronRecurrenceMigration {
     public function ensureDailyRecurrence(string $hook, int $delaySeconds = 0, array $args = array()): bool {
         $current = $this->inspector->currentEvent($hook, $args);
         if ($current === null) {
-            return $this->scheduler->scheduleRecurringAt(
-                $hook,
-                self::TARGET_RECURRENCE,
-                $this->timestampAfter($delaySeconds),
-                $args
-            );
+            return $this->scheduler->scheduleRecurringAt(array(
+                'hook' => $hook,
+                'recurrence' => self::TARGET_RECURRENCE,
+                'timestamp' => $this->timestampAfter($delaySeconds),
+                'args' => $args,
+            ));
         }
         if ($current['recurrence'] === self::TARGET_RECURRENCE) {
             return true;
@@ -88,14 +88,29 @@ class ABJ_404_Solution_CronRecurrenceMigration {
 
         $replacementTimestamp = $this->replacementTimestamp($delaySeconds, (int)$current['timestamp']);
 
-        if (!$this->scheduler->scheduleRecurringAt($hook, self::TARGET_RECURRENCE, $replacementTimestamp, $args)) {
+        if (!$this->scheduler->scheduleRecurringAt(array(
+            'hook' => $hook,
+            'recurrence' => self::TARGET_RECURRENCE,
+            'timestamp' => $replacementTimestamp,
+            'args' => $args,
+        ))) {
             return false;
         }
-        if ($this->scheduler->unscheduleAt($current['timestamp'], $hook, $args, $replacementTimestamp)) {
+        if ($this->scheduler->unscheduleAt(array(
+            'timestamp' => $current['timestamp'],
+            'hook' => $hook,
+            'args' => $args,
+            'expectedNextTimestamp' => $replacementTimestamp,
+        ))) {
             return true;
         }
 
-        if (!$this->scheduler->unscheduleAt($replacementTimestamp, $hook, $args, $current['timestamp'])) {
+        if (!$this->scheduler->unscheduleAt(array(
+            'timestamp' => $replacementTimestamp,
+            'hook' => $hook,
+            'args' => $args,
+            'expectedNextTimestamp' => $current['timestamp'],
+        ))) {
             $this->logWarning('Failed to roll back replacement cron hook ' . $hook
                 . ' after stale-event removal failed.');
         }

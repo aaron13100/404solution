@@ -68,14 +68,17 @@ final class ABJ_404_Solution_CanonicalSuppressionSupportSection {
      */
     public static function compose(): string {
         if (!class_exists('ABJ_404_Solution_CanonicalRedirectHookCensus')) {
-            return 'Canonical hook census unavailable:'
+            return 'Canonical hook census unavailable [CANONICAL_CENSUS_CLASS_UNAVAILABLE]:'
                 . ' ABJ_404_Solution_CanonicalRedirectHookCensus could not be loaded on this install,'
-                . ' so whether core still canonicalizes on this site was not observed.';
+                . ' so whether core still canonicalizes on this site was not observed.'
+                . ' Reinstall the same plugin version, then reproduce the 404 before generating support data again.';
         }
         try {
             return self::render(ABJ_404_Solution_CanonicalRedirectHookCensus::read());
         } catch (Throwable $e) {
-            return 'Canonical hook census could not be read: ' . substr($e->getMessage(), 0, 200);
+            return 'Canonical hook census could not be read [CANONICAL_CENSUS_READ_FAILED]: '
+                . substr($e->getMessage(), 0, 200)
+                . '. Reproduce the 404 once, then generate support data again; include this code if it recurs.';
         }
     }
 

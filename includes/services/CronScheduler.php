@@ -216,17 +216,26 @@ class ABJ_404_Solution_CronScheduler {
         if ($this->nextScheduled($hook, $args) !== false) {
             return true;
         }
-        return $this->scheduleRecurringAt($hook, $recurrence, $this->timestampAfter($delaySeconds), $args);
+        return $this->scheduleRecurringAt(array(
+            'hook' => $hook,
+            'recurrence' => $recurrence,
+            'timestamp' => $this->timestampAfter($delaySeconds),
+            'args' => $args,
+        ));
     }
 
     /**
      * Removes one identified occurrence without affecting sibling events.
      *
-     * @param array<int, mixed> $args
-     * @param int $expectedNextTimestamp What nextScheduled() must report afterwards on
+     * @param array{timestamp: int, hook: string, args: array<int, mixed>, expectedNextTimestamp: int} $request
+     *        expectedNextTimestamp is what nextScheduled() must report afterwards on
      *   WordPress builds whose unschedule primitive returns no status of its own.
      */
-    public function unscheduleAt(int $timestamp, string $hook, array $args, int $expectedNextTimestamp): bool {
+    public function unscheduleAt(array $request): bool {
+        $timestamp = $request['timestamp'];
+        $hook = $request['hook'];
+        $args = $request['args'];
+        $expectedNextTimestamp = $request['expectedNextTimestamp'];
         if (!function_exists('wp_unschedule_event')) {
             $this->outcome->reportUnavailablePrimitive(array(
                 'verb' => 'unschedule',
@@ -297,7 +306,12 @@ class ABJ_404_Solution_CronScheduler {
         if ($this->nextScheduled($hook) !== false) {
             return true;
         }
-        return $this->scheduleRecurringAt($hook, 'daily', $timestamp);
+        return $this->scheduleRecurringAt(array(
+            'hook' => $hook,
+            'recurrence' => 'daily',
+            'timestamp' => $timestamp,
+            'args' => array(),
+        ));
     }
 
     /**
@@ -408,10 +422,14 @@ class ABJ_404_Solution_CronScheduler {
     }
 
     /**
-     * @param array<int, mixed> $args
+     * @param array{hook: string, recurrence: string, timestamp: int, args?: array<int, mixed>} $request
      * @return bool
      */
-    public function scheduleRecurringAt(string $hook, string $recurrence, int $timestamp, array $args = array()): bool {
+    public function scheduleRecurringAt(array $request): bool {
+        $hook = $request['hook'];
+        $recurrence = $request['recurrence'];
+        $timestamp = $request['timestamp'];
+        $args = isset($request['args']) ? $request['args'] : array();
         if (!function_exists('wp_schedule_event')) {
             $this->outcome->reportScheduleFailure(array(
                 'type' => 'recurring',
