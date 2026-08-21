@@ -27,6 +27,13 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 	// make the changes
 	$this->updateATableBasedOnDifferences($tableName, $tableDifferences);
 
+	// Data migrations can outlive the DDL request that created their column.
+	// Keep their retry path reachable on every schema verification.
+	if (strpos($tableName, 'abj404_logsv2') !== false &&
+		preg_match('/[` ]min_log_id[` ]/i', $createTableStatementGoal) === 1) {
+		$this->upgrades()->addedColumnBackfillUpgrade()->runPendingBackfills($tableName);
+	}
+
 	// verify that there are now no changes that need to be made.
 	$tableDifferences = $this->getTableDifferences($tableName, $createTableStatementGoal);
 	$tableDifferences = is_array($tableDifferences) ? $tableDifferences : [];
@@ -261,9 +268,19 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 			$this->logger->infoMessage("I added a column: " . $createColStatement);
 		}
 
-		$this->upgrades()->addedColumnBackfillUpgrade()->runBackfillsForAddedColumn(
-			array('tableName' => $tableName, 'colName' => $colName));
+		$this->runAddedColumnBackfill($tableName, $colName);
 	}
+    }
+
+    /** @return void */
+    private function runAddedColumnBackfill(string $tableName, string $colName) {
+	// min_log_id is drained once per verification by runPendingBackfills(),
+	// including on later requests after the column already exists.
+	if ($colName === 'min_log_id') {
+		return;
+	}
+	$this->upgrades()->addedColumnBackfillUpgrade()->runBackfillsForAddedColumn(
+		array('tableName' => $tableName, 'colName' => $colName));
     }
 
     /** Create table DDL is returned without SQL comments of any kind.

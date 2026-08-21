@@ -103,22 +103,22 @@ class ABJ_404_Solution_FileSync {
 	 * the second by reclaiming a stale empty file here rather than leaving the
 	 * key wedged until someone clears the uploads directory by hand.
 	 *
-	 * @param string $key
-	 * @param string $uniqueID
+	 * @param array{key: string, owner: string} $claim
 	 * @return bool true only if this call created the owner record.
 	 */
-	function claimOwnerFile(string $key, string $uniqueID): bool {
+	function claimOwnerFile(array $claim): bool {
+		$key = $claim['key'];
+		$uniqueID = $claim['owner'];
 		$filePath = $this->getSyncFilePath($key);
-
-		if ($this->createOwnerFileExclusively($filePath, $uniqueID)) {
-			return true;
-		}
-
-		if (!$this->reclaimAbandonedEmptyOwnerFile($filePath)) {
-			return false;
-		}
-
-		return $this->createOwnerFileExclusively($filePath, $uniqueID);
+		return $this->withOwnerMutationGuard($filePath, function () use ($filePath, $uniqueID): bool {
+			if ($this->createOwnerFileExclusively($filePath, $uniqueID)) {
+				return true;
+			}
+			if (!$this->reclaimAbandonedEmptyOwnerFile($filePath)) {
+				return false;
+			}
+			return $this->createOwnerFileExclusively($filePath, $uniqueID);
+		});
 	}
 
 	/**
@@ -173,13 +173,55 @@ class ABJ_404_Solution_FileSync {
 	}
 	
 	/**
-	 * @param string $uniqueID
-	 * @param string $key
-	 * @return void
+	 * @param array{key: string, owner: string} $release
+	 * @return bool true only when the named owner was removed
 	 */
-	function releaseLock(string $uniqueID, string $key): void {
+	function releaseLock(array $release): bool {
+		$key = $release['key'];
+		$uniqueID = $release['owner'];
 		$filePath = $this->getSyncFilePath($key);
-		ABJ_404_Solution_FileSystemService::safeUnlink($filePath);
+		return $this->withOwnerMutationGuard($filePath, function () use ($filePath, $uniqueID): bool {
+			try {
+				$currentOwner = ABJ_404_Solution_FileSystemService::readFileContents($filePath, false);
+			} catch (Exception $e) {
+				if (!is_file($filePath)) {
+					return false;
+				}
+				throw $e;
+			}
+			if ($currentOwner !== $uniqueID) {
+				return false;
+			}
+			ABJ_404_Solution_FileSystemService::safeUnlink($filePath);
+			clearstatcache(true, $filePath);
+			return !is_file($filePath);
+		});
+	}
+
+	/**
+	 * Serialize owner-file replacement and conditional release for one key.
+	 *
+	 * @template T
+	 * @param string $filePath
+	 * @param callable(): T $operation
+	 * @return T
+	 */
+	private function withOwnerMutationGuard(string $filePath, callable $operation) {
+		$guardPath = $filePath . '.guard';
+		ABJ_404_Solution_FileSystemService::createDirectoryWithErrorMessages(dirname($guardPath));
+		$guard = @fopen($guardPath, 'c');
+		if ($guard === false) {
+			throw new RuntimeException('Could not open lock-owner mutation guard: ' . $guardPath);
+		}
+		try {
+			if (!@flock($guard, LOCK_EX)) {
+				throw new RuntimeException('Could not acquire lock-owner mutation guard: ' . $guardPath);
+			}
+			return $operation();
+		} finally {
+			@flock($guard, LOCK_UN);
+			@fclose($guard);
+		}
 	}
 	
 }

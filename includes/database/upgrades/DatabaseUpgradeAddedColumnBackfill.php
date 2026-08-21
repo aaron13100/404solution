@@ -59,6 +59,20 @@ class ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill extends ABJ_404_Soluti
     }
 
     /**
+     * Continue resumable backfills even after the triggering column exists.
+     * A failed or partially completed data update must remain reachable on the
+     * next schema verification.
+     *
+     * @param string $tableName
+     * @return void
+     */
+    public function runPendingBackfills(string $tableName): void {
+        if (strpos($tableName, 'abj404_logsv2') !== false) {
+            $this->backfillLogsMinLogId($tableName);
+        }
+    }
+
+    /**
      * One-time backfill for the abj404_logsv2.min_log_id column: runs the
      * seed SQL, then ensures the composite index that depends on it exists.
      * Extracted out of runBackfillsForAddedColumn() so that method stays a plain
@@ -79,8 +93,8 @@ class ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill extends ABJ_404_Soluti
             );
             return;
         }
-        $result = $this->dbCore->queryAndGetResults($query);
-        $lastErrorValue = $result['last_error'] ?? null;
+        $queryResponse = $this->dbCore->queryAndGetResults($query);
+        $lastErrorValue = $queryResponse['last_error'] ?? null;
         if (!is_string($lastErrorValue)) {
             $this->logger->errorMessage(
                 'min_log_id backfill query returned invalid last_error type ('
@@ -100,6 +114,18 @@ class ABJ_404_Solution_DatabaseUpgradeAddedColumnBackfill extends ABJ_404_Soluti
                 'min_log_id backfill query failed for ' . $tableName . ': ' . $lastError
                 . '. Skipping composite index creation this run; will retry on the next upgrade check.'
             );
+            return;
+        }
+        $rowsAffected = $queryResponse['rows_affected'] ?? null;
+        if (!is_int($rowsAffected) && !is_numeric($rowsAffected)) {
+            $this->logger->errorMessage(
+                'min_log_id backfill query returned invalid rows_affected type ('
+                . gettype($rowsAffected) . ') for ' . $tableName
+                . '. Skipping composite index creation this run; will retry on the next upgrade check.'
+            );
+            return;
+        }
+        if ((int)$rowsAffected > 0) {
             return;
         }
         $this->upgrades()->indexesUpgrade()->ensureLogsCompositeIndex($tableName);

@@ -137,7 +137,10 @@ class ABJ_404_Solution_SynchronizationUtils {
         // don't let anyone hold the lock for too long.
         $this->fixAnUnforeseenIssue($synchronizedKeyFromUser);
 
-        if (!$this->ownerStore->claimOwner($internalSynchronizedKey, $uniqueID)) {
+        if (!$this->ownerStore->claimOwner(array(
+            'key' => $internalSynchronizedKey,
+            'owner' => $uniqueID,
+        ))) {
         	// Somebody else owns it. This request wrote nothing, so it has
         	// nothing to clean up.
         	return '';
@@ -176,7 +179,10 @@ class ABJ_404_Solution_SynchronizationUtils {
 
         // it should have been released by now.
         if ($timePassed > $maxExecutionTime) {
-        	$this->ownerStore->deleteOwner($uniqueID, $internalSynchronizedKey);
+			$this->ownerStore->deleteOwner(array(
+				'key' => $internalSynchronizedKey,
+				'owner' => $uniqueID,
+			));
             $valueAfterDelete = $this->ownerStore->readOwner($internalSynchronizedKey);
 
             // Options storage is only proven broken when the record that is
@@ -237,7 +243,10 @@ class ABJ_404_Solution_SynchronizationUtils {
         $this->forgetHeldLock($internalSynchronizedKey, $uniqueID);
 
 		if ($uniqueID == $currentLockHolder) {
-			$this->ownerStore->deleteOwner($uniqueID, $internalSynchronizedKey);
+			$this->ownerStore->deleteOwner(array(
+				'key' => $internalSynchronizedKey,
+				'owner' => $uniqueID,
+			));
 
 		} else {
 			// Fail silently instead of throwing fatal exception.
@@ -377,7 +386,10 @@ class ABJ_404_Solution_SynchronizationUtils {
                     continue;
                 }
 
-                $this->ownerStore->deleteOwner($uniqueID, $internalSynchronizedKey);
+                $this->ownerStore->deleteOwner(array(
+                    'key' => $internalSynchronizedKey,
+                    'owner' => $uniqueID,
+                ));
 
                 // The record is gone, so this key's work is durably done. Drop
                 // it before anything else can throw: a key still in the map is

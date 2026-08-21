@@ -178,15 +178,16 @@ class ABJ_404_Solution_LockOwnerStore {
      * the same "unowned" answer -- which is how error report 270 ended up with
      * two requests holding 'update_db_version' at the same moment.
      *
-     * @param string $key
-     * @param string $uniqueID
+     * @param array{key: string, owner: string} $claim
      * @return bool true only if this call created the owner record.
      */
-    function claimOwner($key, $uniqueID) {
+    function claimOwner(array $claim) {
+		$key = $claim['key'];
+		$uniqueID = $claim['owner'];
     	if ($this->isFileMode()) {
     		$fileSync = ABJ_404_Solution_FileSync::getInstance();
     		try {
-    			return $fileSync->claimOwnerFile($key, $uniqueID);
+				return $fileSync->claimOwnerFile($claim);
     		} catch (Throwable $e) {
     			// An unwritable uploads directory, a full disk, a revoked
     			// permission. Report the claim as lost, which stops the caller
@@ -247,19 +248,15 @@ class ABJ_404_Solution_LockOwnerStore {
      * remove its own record, which is what stops a request that lost a race
      * from wiping the winner's lock.
      *
-     * @param string $owner
-     * @param string $key
+     * @param array{key: string, owner: string} $release
      * @return bool true if the record named by $owner was removed.
      */
-    function deleteOwner($owner, $key) {
-    	if ($this->isFileMode()) {
-    		$fileSync = ABJ_404_Solution_FileSync::getInstance();
-    		$currentOwner = $this->readOwner($key);
-    		if ($currentOwner !== '' && $currentOwner !== $owner) {
-    			return false;
-    		}
-    		$fileSync->releaseLock($owner, $key);
-    		return true;
+    function deleteOwner(array $release) {
+		$key = $release['key'];
+		$owner = $release['owner'];
+		if ($this->isFileMode()) {
+			$fileSync = ABJ_404_Solution_FileSync::getInstance();
+			return $fileSync->releaseLock($release);
     	}
 
 		return $this->optionRowFor($key)->releaseIfValueIs(array('optionName' => $key, 'value' => $owner));

@@ -30,6 +30,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
     /** @var string|null Exact row value acquired by this instance. */
     private $fetchLockValue;
 
+    /** @var int Acquisition/renewal timestamp carried by fetchLockValue. */
+    private $fetchLockRenewedAt = 0;
+
     /** @param ABJ_404_Solution_Logging $logger */
     public function __construct($logger, ABJ_404_Solution_GscOAuthTokenStore $oauthStore) {
         $this->logger = $logger;
@@ -110,6 +113,11 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return bool true only if this request holds the lock.
      */
     private function claimFetchLock(): bool {
+        // During a rolling upgrade, older plugin code still coordinates with
+        // this transient. Respect it before touching the new atomic row.
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
+            return false;
+        }
         $lockRow = $this->fetchLockRow();
         $now = abj_clock()->now();
         $claimValue = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
@@ -118,8 +126,7 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
             'value' => $claimValue,
         ))) {
-            $this->fetchLockValue = $claimValue;
-            return true;
+            return $this->publishClaimToLegacyLock($claimValue, $now);
         }
 
         $heldSince = $lockRow->valueOf(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
@@ -138,9 +145,39 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             'value' => $claimValue,
         ));
         if ($claimed) {
-            $this->fetchLockValue = $claimValue;
+            return $this->publishClaimToLegacyLock($claimValue, $now);
         }
-        return $claimed;
+        return false;
+    }
+
+    /**
+     * Mirror the atomic claim into the legacy transient so an older plugin
+     * process running during an upgrade does not start a second fetch.
+     */
+    private function publishClaimToLegacyLock(string $claimValue, int $now): bool {
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
+            $this->fetchLockRow()->releaseIfValueIs(array(
+                'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+                'value' => $claimValue,
+            ));
+            return false;
+        }
+        // allow-cache-empty: uniqueClaimValue() is always non-empty; this transient is coordination state, not cached API data.
+        if (!set_transient(
+            ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            $claimValue,
+            ABJ_404_Solution_GscConfig::LOCK_TTL
+        )) {
+            $this->fetchLockRow()->releaseIfValueIs(array(
+                'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+                'value' => $claimValue,
+            ));
+            $this->logger->warn('Could not publish the GSC fetch lock to the legacy transient; fetch skipped.');
+            return false;
+        }
+        $this->fetchLockValue = $claimValue;
+        $this->fetchLockRenewedAt = $now;
+        return true;
     }
 
     /** @return void */
@@ -152,7 +189,11 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
             'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
             'value' => $this->fetchLockValue,
         ));
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) === $this->fetchLockValue) {
+            delete_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
+        }
         $this->fetchLockValue = null;
+        $this->fetchLockRenewedAt = 0;
     }
 
     /** Whether a fetch is running right now.
@@ -164,6 +205,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return bool
      */
     private function isFetchLockHeld(): bool {
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== false) {
+            return true;
+        }
         $heldSince = $this->fetchLockRow()->valueOf(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY);
 
         return $heldSince !== '' && !$this->fetchLockHasAgedOut($heldSince, abj_clock()->now());
@@ -190,6 +234,43 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
      * @return ABJ_404_Solution_ExclusiveOptionRow */
     private function fetchLockRow(): ABJ_404_Solution_ExclusiveOptionRow {
         return new ABJ_404_Solution_ExclusiveOptionRow();
+    }
+
+    /** Renew a long-running fetch lease before another network request. */
+    private function renewFetchLockIfDue(): bool {
+        if ($this->fetchLockValue === null) {
+            return true;
+        }
+        $now = abj_clock()->now();
+        if (($now - $this->fetchLockRenewedAt) < intdiv(ABJ_404_Solution_GscConfig::LOCK_TTL, 3)) {
+            return true;
+        }
+        $replacement = ABJ_404_Solution_ExclusiveOptionRow::uniqueClaimValue((string)$now);
+        if (!$this->fetchLockRow()->replaceValueIfMatches(array(
+            'optionName' => ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            'currentValue' => $this->fetchLockValue,
+            'replacementValue' => $replacement,
+        ))) {
+            $this->logger->warn('Lost the GSC fetch lock while renewing it; stopping the fetch before another API request.');
+            return false;
+        }
+        $previousValue = $this->fetchLockValue;
+        $this->fetchLockValue = $replacement;
+        $this->fetchLockRenewedAt = $now;
+        if (get_transient(ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY) !== $previousValue) {
+            $this->logger->warn('Lost the legacy GSC fetch lock while renewing it; stopping the fetch.');
+            return false;
+        }
+        // allow-cache-empty: the replacement lease token is always non-empty and must be mirrored for old-version workers.
+        if (!set_transient(
+            ABJ_404_Solution_GscConfig::LOCK_TRANSIENT_KEY,
+            $replacement,
+            ABJ_404_Solution_GscConfig::LOCK_TTL
+        )) {
+            $this->logger->warn('Could not renew the legacy GSC fetch lock; stopping the fetch.');
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -283,6 +364,9 @@ class ABJ_404_Solution_GscSearchAnalyticsClient {
         $allRows = array();
 
         foreach ($urls as $url) {
+            if (!$this->renewFetchLockIfDue()) {
+                break;
+            }
             $absoluteUrl = (strpos($url, 'http') === 0) ? $url : rtrim(home_url('/'), '/') . '/' . ltrim($url, '/');
             $body = array(
                 'startDate'       => $startDate,
