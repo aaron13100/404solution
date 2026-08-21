@@ -93,7 +93,12 @@ class ABJ_404_Solution_NotFoundResponseService {
                 $defRedir = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
                 if (!isset($redirect['id']) || $redirect['id'] == 0) {
                     $this->redirectsRepo->setupRedirect(
-                        $this->capturedRedirectSpec($requestedURL, $pType, $pId, $defRedir));
+                        $this->capturedRedirectSpec(array(
+                            'requestedURL' => $requestedURL,
+                            'type' => $pType,
+                            'finalDest' => $pId,
+                            'code' => $defRedir,
+                        )));
                 }
 
                 $this->logsRepo->logRedirectHit(ABJ_404_Solution_RedirectHitLogEntry::create($requestedURL, $pLink, 'user specified 404 page. ' . $reason));
@@ -110,7 +115,12 @@ class ABJ_404_Solution_NotFoundResponseService {
             $defRedir2 = is_scalar($options['default_redirect']) ? (string)$options['default_redirect'] : '301';
             if (!isset($redirect['id']) || $redirect['id'] == 0) {
                 $this->redirectsRepo->setupRedirect($this->capturedRedirectSpec(
-                    $requestedURL, (string)ABJ404_TYPE_404_DISPLAYED, (string)ABJ404_TYPE_404_DISPLAYED, $defRedir2));
+                    array(
+                        'requestedURL' => $requestedURL,
+                        'type' => (string)ABJ404_TYPE_404_DISPLAYED,
+                        'finalDest' => (string)ABJ404_TYPE_404_DISPLAYED,
+                        'code' => $defRedir2,
+                    )));
             }
         } else {
             $optionsJson = json_encode($options);
@@ -133,21 +143,22 @@ class ABJ_404_Solution_NotFoundResponseService {
      * nothing scored at all -- score and engine stay null, which is the honest
      * answer and what the Score column's no-score branch renders.
      *
-     * @param string $requestedURL
-     * @param string $type ABJ404_TYPE_* discriminator for the destination.
-     * @param string $finalDest Destination id, or the 404-displayed sentinel.
-     * @param string $code HTTP status code for the redirect.
+     * @param array{requestedURL: string, type: string, finalDest: string, code: string} $fields
      * @return ABJ_404_Solution_RedirectSpec
      */
-    private function capturedRedirectSpec(string $requestedURL, string $type, string $finalDest,
-            string $code): ABJ_404_Solution_RedirectSpec {
-        $nearMiss = $this->nearMissRecorder->getBestFor($requestedURL);
+    private function capturedRedirectSpec(array $fields): ABJ_404_Solution_RedirectSpec {
+        $nearMiss = $this->nearMissRecorder->getBestFor($fields['requestedURL']);
 
-        return ABJ_404_Solution_RedirectSpec::create(
-            $requestedURL, (string)ABJ404_STATUS_CAPTURED, $type, $finalDest, $code, 0,
-            $nearMiss !== null ? $nearMiss->getEngineName() : null,
-            $nearMiss !== null ? $nearMiss->getScore() : null
-        );
+        return ABJ_404_Solution_RedirectSpec::fromArray(array(
+            'fromURL' => $fields['requestedURL'],
+            'status' => (string)ABJ404_STATUS_CAPTURED,
+            'type' => $fields['type'],
+            'finalDest' => $fields['finalDest'],
+            'code' => $fields['code'],
+            'disabled' => 0,
+            'engine' => $nearMiss !== null ? $nearMiss->getEngineName() : null,
+            'score' => $nearMiss !== null ? $nearMiss->getScore() : null,
+        ));
     }
 
     /** @param string|null $dest404page @return bool */
