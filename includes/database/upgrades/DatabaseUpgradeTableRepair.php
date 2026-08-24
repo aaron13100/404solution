@@ -188,18 +188,21 @@ class ABJ_404_Solution_DatabaseUpgradeTableRepair extends ABJ_404_Solution_Datab
     }
 
     /**
-     * Returns true if the DDL declares a column literally named `id` (in
-     * backticks, the only style permitted in plugin DDL files since 3.3.5 —
-     * see DDLColumnParsingRobustnessTest::testEveryDdlFileUsesBacktickColumnStyle).
+     * Returns true if the DDL declares a column literally named `id`.
      *
-     * Matching `\bid\b` against raw DDL is unsafe — it hits the `id` substring
-     * in `auto_increment`, `void`, and any column name containing those letters.
+     * Parse the column region instead of scanning the whole statement. An
+     * index can itself be named `id`, but that is not evidence that an `id`
+     * column exists and must not suppress stripped-table repair.
      *
      * @param string $ddl
      * @return bool
      */
     private function ddlDeclaresIdColumn(string $ddl): bool {
-	return stripos($ddl, '`id`') !== false;
+	return in_array(
+		'id',
+		ABJ_404_Solution_CreateTableColumnParser::columnNames($ddl),
+		true
+	);
     }
 
     /**
