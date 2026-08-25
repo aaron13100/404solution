@@ -30,7 +30,9 @@ class ABJ_404_Solution_DatabaseUpgradeSchemaDiff extends ABJ_404_Solution_Databa
 	// Data migrations can outlive the DDL request that created their column.
 	// Keep their retry path reachable on every schema verification.
 	if (strpos($tableName, 'abj404_logsv2') !== false &&
-		preg_match('/[` ]min_log_id[` ]/i', $createTableStatementGoal) === 1) {
+		in_array('min_log_id',
+			ABJ_404_Solution_CreateTableColumnParser::columnNames($createTableStatementGoal),
+			true)) {
 		$this->upgrades()->addedColumnBackfillUpgrade()->runPendingBackfills($tableName);
 	}
 
