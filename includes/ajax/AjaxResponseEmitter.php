@@ -28,17 +28,6 @@ require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
 final class ABJ_404_Solution_AjaxResponseEmitter {
 
     /**
-     * Maximum recursion depth payloadShapeFields() will walk into.
-     * Bounded so this diagnostic itself cannot become the next unmeasured
-     * hang on a pathological (deeply nested or huge) payload -- exactly the
-     * failure mode this instrumentation exists to catch.
-     */
-    private const PAYLOAD_SHAPE_MAX_DEPTH = 32;
-
-    /** Maximum number of array/object elements payloadShapeFields() will visit. */
-    private const PAYLOAD_SHAPE_MAX_ELEMENTS = 5000;
-
-    /**
      * Whether this request has already emitted its JSON response head.
      *
      * headers_sent() alone cannot answer that: while any output buffer holds
@@ -253,27 +242,34 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         string $checkpointRequestId,
         string $measuredRequestId = ''
     ): void {
-        $json = null;
+        $encoded = null;
         if ($checkpointRequestId === '') {
-            $json = json_encode($payload);
+            $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($payload);
         } else {
             ABJ_404_Solution_AjaxCheckpointLogger::around(
                 $checkpointRequestId,
                 'json_encode',
-                static function () use ($payload, &$json) {
-                    $json = json_encode($payload);
+                static function () use ($payload, &$encoded) {
+                    $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($payload);
                 },
-                self::payloadShapeFields($payload)
+                ABJ_404_Solution_PayloadShapeFingerprint::measure($payload)
+            );
+        }
+        if (!($encoded instanceof ABJ_404_Solution_EncodedJsonResponse)) {
+            // around() runs a foreign-callback dispatch; if anything ever
+            // prevents the closure from assigning, an envelope still ships
+            // rather than `echo null`.
+            $encoded = new ABJ_404_Solution_EncodedJsonResponse(
+                '{"success":false,"errorText":"The plugin could not encode this response."}',
+                ABJ_404_Solution_EncodedJsonResponse::STRATEGY_ERROR_ENVELOPE
             );
         }
         // record() is a no-op for '', so an endpoint with no armed trace
         // behaves exactly as it did before this scope existed.
-        ABJ_404_Solution_AjaxCheckpointLogger::record($measuredRequestId, 'json_encode', array(
-            'bytes' => is_string($json) ? strlen($json) : 0,
-            'hash' => is_string($json) ? md5($json) : null,
-            'json_last_error' => json_last_error(),
-            'json_last_error_msg' => json_last_error() === JSON_ERROR_NONE ? '' : json_last_error_msg(),
-        ));
+        ABJ_404_Solution_AjaxCheckpointLogger::record(
+            $measuredRequestId, 'json_encode', $encoded->diagnosticFields());
+        self::reportDegradedEncode($encoded);
+        $json = $encoded->json();
         if ($checkpointRequestId === '') {
             echo $json;
             return;
@@ -284,58 +280,49 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             static function () use ($json) {
                 echo $json;
             },
-            array('bytes' => is_string($json) ? strlen($json) : 0)
+            array('bytes' => strlen($json))
         );
     }
 
     /**
-     * A best-effort structural fingerprint of the payload BEFORE
-     * json_encode() runs: max nesting depth, element count, and total string
-     * bytes. Recorded on json_encode_start so a stall or fatal inside the
-     * encode call is attributable to a payload shape instead of an absence.
+     * Leave a durable trace whenever an encode had to degrade.
      *
-     * @param mixed $payload
-     * @return array{depth: int, element_count: int, string_byte_total: int, truncated: bool}
+     * The checkpoint record above only lands when a durable trace is armed,
+     * which on this endpoint means a retry -- so a FIRST-attempt encode failure
+     * would otherwise leave nothing behind at all, which is exactly how the
+     * 2026-08-27 Azure report arrived with a `parsererror` and no server-side
+     * explanation. The debug log always gets the line.
+     *
+     * Severity follows the project's test: "can the plugin still do its job
+     * after this failure?" A substituted or partial encode still renders the
+     * admin table, so it is a warning; an envelope means the screen is broken,
+     * so it is an error.
+     *
+     * @return void
      */
-    private static function payloadShapeFields($payload): array {
-        $stats = array('depth' => 0, 'element_count' => 0, 'string_byte_total' => 0, 'truncated' => false);
-        self::walkPayloadShape($payload, 0, $stats);
-        return $stats;
-    }
-
-    /**
-     * @param mixed $value
-     * @param array{depth: int, element_count: int, string_byte_total: int, truncated: bool} $stats
-     */
-    private static function walkPayloadShape($value, int $currentDepth, array &$stats): void {
-        if ($stats['truncated']) {
+    private static function reportDegradedEncode(ABJ_404_Solution_EncodedJsonResponse $encoded): void {
+        if (!$encoded->isDegraded()) {
             return;
         }
-        $stats['depth'] = max($stats['depth'], $currentDepth);
-        if ($currentDepth >= self::PAYLOAD_SHAPE_MAX_DEPTH) {
-            $stats['truncated'] = true;
+        $logger = function_exists('abj_service') ? abj_service('logging') : null;
+        if (!is_object($logger)) {
             return;
         }
-        if (is_string($value)) {
-            $stats['string_byte_total'] += strlen($value);
+        $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
+            ? $GLOBALS['abj404_ajax_context'] : array();
+        $action = isset($ctx['action']) && is_string($ctx['action']) ? $ctx['action'] : '(unknown action)';
+        $part = isset($ctx['part']) && is_string($ctx['part']) ? $ctx['part'] : '';
+        $message = 'AjaxResponseEmitter: json_encode could not represent the response for '
+            . $action . ($part === '' ? '' : ' (part ' . $part . ')')
+            . '. Recovery strategy: ' . $encoded->strategy()
+            . '. JSON error ' . $encoded->errorCode() . ': ' . $encoded->errorMessage()
+            . '. Response bytes sent: ' . strlen($encoded->json()) . '.';
+        if ($encoded->carriesPayload() && method_exists($logger, 'warn')) {
+            $logger->warn($message);
             return;
         }
-        $children = null;
-        if (is_array($value)) {
-            $children = $value;
-        } else if (is_object($value)) {
-            $children = get_object_vars($value);
-        }
-        if ($children === null) {
-            return;
-        }
-        foreach ($children as $child) {
-            $stats['element_count']++;
-            if ($stats['element_count'] >= self::PAYLOAD_SHAPE_MAX_ELEMENTS) {
-                $stats['truncated'] = true;
-                return;
-            }
-            self::walkPayloadShape($child, $currentDepth + 1, $stats);
+        if (method_exists($logger, 'errorMessage')) {
+            $logger->errorMessage($message);
         }
     }
 

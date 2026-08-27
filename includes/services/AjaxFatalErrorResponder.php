@@ -179,7 +179,12 @@ class ABJ_404_Solution_AjaxFatalErrorResponder {
                 http_response_code($httpStatus);
             }
         }
-        echo json_encode($payload);
+        // The fatal-error responder is the last thing standing between a
+        // PHP fatal and a browser waiting on JSON. `echo json_encode(...)`
+        // would answer an unencodable payload with an empty 200 -- the
+        // diagnostic path going dark exactly when it is needed. See
+        // ABJ_404_Solution_JsonResponseEncoder.
+        echo ABJ_404_Solution_JsonResponseEncoder::encode($payload)->json();
         $shouldExit = function_exists('apply_filters')
             ? apply_filters('abj404_should_exit', true, array('source' => 'errorHandler_emitJson'))
             : true;

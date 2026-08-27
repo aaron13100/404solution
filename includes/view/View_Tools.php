@@ -215,13 +215,17 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
 
         // allow-em-dash: preserving shipped translation string verbatim (extracted, not authored, here)
         $msgFound = __('Found %d redirect(s) from %s — proceed with import?', '404-solution');
-        $migrateConfig = wp_json_encode(array(
+        // Encoded through ABJ_404_Solution_JsonResponseEncoder: every value below is a
+        // __() result, and a `gettext` filter returning bytes json_encode() cannot
+        // represent would otherwise make this false, then '' after the cast, then a
+        // JSON.parse('') throw in the importer's own script.
+        $migrateConfig = ABJ_404_Solution_JsonResponseEncoder::encode(array(
             'ajaxUrl'  => $ajaxUrl,
             'nonce'    => $previewNonce,
             'msgFound' => $msgFound,
             'msgNone'  => __('No redirects found in %s. Nothing to import.', '404-solution'),
             'msgError' => __('Could not fetch preview. Please try again.', '404-solution'),
-        ));
+        ))->json();
 
         $html = $this->tpl('viewStatsMigrateForm.html');
         $html = $this->f->str_replace('{detected_label}', esc_html__('Detected redirect plugins:', '404-solution'), $html);
@@ -233,7 +237,7 @@ class ABJ_404_Solution_View_Tools extends ABJ_404_Solution_ViewComponent {
         $html = $this->f->str_replace('{confirm_text}', esc_attr__('Confirm Import', '404-solution'), $html);
         $html = $this->f->str_replace('{back_text}', esc_html__('Back', '404-solution'), $html);
         $html = $this->f->str_replace('{note_text}', esc_html__('This will import all active redirects from the selected plugin into 404 Solution. Regex and redirect codes are preserved.', '404-solution'), $html);
-        $html = $this->f->str_replace('{migrate_config}', esc_attr((string)$migrateConfig), $html);
+        $html = $this->f->str_replace('{migrate_config}', esc_attr($migrateConfig), $html);
 
         return $html;
     }

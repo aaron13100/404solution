@@ -419,10 +419,16 @@ class ABJ_404_Solution_SystemPage {
             'wp.data.dispatch("core/notices").createNotice("info",%s+%s,{id:"abj404-system-page-notice",isDismissible:false,' .
             'actions:[{label:%s,url:%s}]});' .
             '});',
-            wp_json_encode($message . ' '),
-            wp_json_encode(''),
-            wp_json_encode($linkText),
-            wp_json_encode($settingsUrl)
+            // Encoded through ABJ_404_Solution_JsonResponseEncoder rather than
+            // wp_json_encode(): $message and $linkText are __() results, so a
+            // co-plugin hooked on `gettext` can make wp_json_encode() return
+            // false. sprintf('%s') renders false as '', and the emitted line
+            // becomes createNotice("info",+,{...}) -- a syntax error that takes
+            // the whole block editor script with it.
+            ABJ_404_Solution_JsonResponseEncoder::encode($message . ' ')->json(),
+            ABJ_404_Solution_JsonResponseEncoder::encode('')->json(),
+            ABJ_404_Solution_JsonResponseEncoder::encode($linkText)->json(),
+            ABJ_404_Solution_JsonResponseEncoder::encode($settingsUrl)->json()
         ));
     }
 

@@ -195,7 +195,11 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
         // Configuration carrier for statsConfidenceChart.js. The external JS
         // reads labels + band counts from this canvas's data attribute, so
         // PHP doesn't need to inline any JavaScript.
-        $confidenceConfig = wp_json_encode(array(
+        // Encoded through ABJ_404_Solution_JsonResponseEncoder, not wp_json_encode:
+        // these labels are __() results, so a co-plugin hooked on `gettext` can hand
+        // back bytes json_encode() cannot represent. wp_json_encode() answers that with
+        // false, esc_attr((string)false) is '', and the chart's JSON.parse('') throws.
+        $confidenceConfig = ABJ_404_Solution_JsonResponseEncoder::encode(array(
             'labelHigh'   => $labelHigh,
             'labelMedium' => $labelMedium,
             'labelLow'    => $labelLow,
@@ -204,13 +208,13 @@ class ABJ_404_Solution_View_Stats extends ABJ_404_Solution_ViewComponent {
             'medium'      => $mediumCount,
             'low'         => $lowCount,
             'manual'      => $manualCount,
-        ));
+        ))->json();
 
         // Confidence chart rendering moved to includes/js/statsConfidenceChart.js.
         // The canvas in the template carries its config via data-abj404-confidence.
         $content = $this->tpl('viewStatsConfidenceDistribution.html');
         $content = $this->f->str_replace('{avg_label}', $avgLabel, $content);
-        $content = $this->f->str_replace('{confidence_config}', esc_attr((string)$confidenceConfig), $content);
+        $content = $this->f->str_replace('{confidence_config}', esc_attr($confidenceConfig), $content);
         $content = $this->f->str_replace('{label_high}', esc_html($labelHigh), $content);
         $content = $this->f->str_replace('{label_medium}', esc_html($labelMedium), $content);
         $content = $this->f->str_replace('{label_low}', esc_html($labelLow), $content);

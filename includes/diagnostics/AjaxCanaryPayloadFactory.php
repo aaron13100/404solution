@@ -75,7 +75,7 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
             $extraFields,
             array('requestId' => $requestId, 'canaryStep' => $step, 'filler' => '')
         );
-        $overhead = strlen((string)json_encode($envelope));
+        $overhead = self::envelopeOverheadBytes($envelope);
         $envelope['filler'] = str_repeat('a', max(0, $targetBytes - $overhead));
         return $envelope;
     }
@@ -98,13 +98,30 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
             'targetBytes' => $targetBytes,
             'targetBytesSource' => self::normalizeTargetSource($options['target_source']),
         );
-        $overhead = strlen((string)json_encode($envelope));
+        $overhead = self::envelopeOverheadBytes($envelope);
         $fillerLength = max(0, $targetBytes - $overhead);
         $envelope['filler'] = $variant
             === ABJ_404_Solution_AjaxCanaryLadder::PAYLOAD_VARIANT_INCOMPRESSIBLE
             ? self::incompressibleText($requestId, $fillerLength)
             : str_repeat('a', $fillerLength);
         return $envelope;
+    }
+
+    /**
+     * How many bytes the envelope costs before any filler is added.
+     *
+     * `strlen((string)json_encode($envelope))` used to compute this. On a
+     * payload json_encode() cannot represent that cast turns false into '',
+     * the overhead reads as 0, and the size probe silently ships a body larger
+     * than the target it is supposed to be measuring -- so the one ladder step
+     * whose entire job is calibrating response size reports a number that is
+     * wrong in the direction that hides the problem. The encoder cannot return
+     * false, so the count is always the real one.
+     *
+     * @param array<string, mixed> $envelope
+     */
+    private static function envelopeOverheadBytes(array $envelope): int {
+        return strlen(ABJ_404_Solution_JsonResponseEncoder::encode($envelope)->json());
     }
 
     private static function incompressibleText(string $seed, int $length): string {

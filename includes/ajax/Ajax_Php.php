@@ -391,7 +391,11 @@ class ABJ_404_Solution_Ajax_Php {
 				http_response_code($status);
 			}
 		}
-		echo json_encode($payload);
+		// Never `echo json_encode(...)` directly: a payload json_encode()
+		// cannot represent makes that an HTTP 200 with an empty body, which
+		// the browser reports as `parsererror`. See
+		// ABJ_404_Solution_JsonResponseEncoder.
+		echo ABJ_404_Solution_JsonResponseEncoder::encode($payload)->json();
 		if (!apply_filters('abj404_should_exit', true, array('source' => 'ajaxPhp_sendJson'))) {
 			return;
 		}
