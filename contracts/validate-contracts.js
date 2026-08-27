@@ -527,7 +527,7 @@ function isVendoredSchema(schemaPath) {
  *
  * A missing server checkout is a hard failure rather than a skip: this gate
  * exists precisely because the previous detection
- * (.github/workflows/contract-schema-staleness.yml) never ran once, the GitHub
+ * (formerly delegated to an unpublished remote workflow) never ran once, the GitHub
  * mirror being an allowlist publish that carries no workflows, and a check that
  * stands down when it cannot see the other side reports "no drift" forever.
  *
