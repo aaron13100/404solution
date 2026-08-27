@@ -9,6 +9,7 @@ require_once __DIR__ . '/PluginSchemaMetadataProbe.php';
 require_once __DIR__ . '/RollupFreshnessProbe.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_HostProbes.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_PlatformFingerprint.php';
+require_once __DIR__ . '/FeedbackEnvironmentExtras_CacheFingerprint.php';
 require_once __DIR__ . '/FeedbackEnvironmentExtras_DebugLogSignatures.php';
 require_once __DIR__ . '/FeedbackTransportLog.php';
 require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
@@ -36,8 +37,12 @@ require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
  *     state (opcache, filesystem headroom, open_basedir, timezone,
  *     multisite role, htaccess writability, lifecycle).
  *   - FeedbackEnvironmentExtras_PlatformFingerprint: static platform
- *     identity (hosting class, control panel, object-cache backend) --
+ *     identity (hosting class, control panel, PHP execution stack) --
  *     marker-table scans that rarely change for the life of the install.
+ *   - FeedbackEnvironmentExtras_CacheFingerprint: which cache implementation
+ *     owns the request caches -- who INSTALLED it (drop-in headers) and what
+ *     is actually RUNNING (constants, classes, extensions), which disagree on
+ *     a site that has switched caching plugins.
  *   - FeedbackEnvironmentExtras_DebugLogSignatures: tail-read of the
  *     plugin debug log + PII-stripping signature normalization for
  *     `recent_error_signatures`.
@@ -71,6 +76,9 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
     /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint */
     private $platform;
 
+    /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_CacheFingerprint */
+    private $cache;
+
     /** @var ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures */
     private $debugLog;
 
@@ -80,6 +88,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         $this->rollup = new ABJ_404_Solution_RollupFreshnessProbe();
         $this->host = new ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes();
         $this->platform = new ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint();
+        $this->cache = new ABJ_404_Solution_FeedbackEnvironmentExtras_CacheFingerprint();
         $this->debugLog = new ABJ_404_Solution_FeedbackEnvironmentExtras_DebugLogSignatures();
     }
 
@@ -107,6 +116,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         $rollup = $this->rollup;
         $host = $this->host;
         $platform = $this->platform;
+        $cache = $this->cache;
         $debugLog = $this->debugLog;
 
         // MySQL global variables: the binding constraints for slow
@@ -130,40 +140,11 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // mod_php (per-request fork, fresh memory) from php-fpm
         // (long-lived worker, opcache hot). max_input_vars caps how
         // many POST fields the importer can accept. realpath_cache
-        // size matters for sites with many include paths.
-        // PHP_SAPI, not php_sapi_name(): the constant is defined by the engine
-        // on every SAPI and cannot be removed, while the function is on the
-        // disable_functions hardening lists some shared/CloudLinux hosts ship,
-        // where the guarded call silently degrades to ''. This is the field
-        // that identified Bruno's litespeed SAPI (and with it the FPM-only
-        // fastcgi_finish_request() no-op), so losing it loses the diagnosis.
-        // Same accessor the flight recorder uses (RequestEnvironmentFingerprint).
-        $extras['php_sapi'] = PHP_SAPI;
-        $extras['php_disable_functions'] = function_exists('ini_get')
-            ? (string)ini_get('disable_functions') : '';
-        $extras['php_post_response_budget_armable'] =
-            ABJ_404_Solution_PostResponseWorkerBudget::isSupported();
-        $extras['php_memory_peak_bytes'] = function_exists('memory_get_peak_usage') ? (int)memory_get_peak_usage(true) : 0;
-        $extras['php_opcache_enabled'] = $host->opcacheEnabled();
-        $extras['php_max_input_vars'] = function_exists('ini_get') ? (int)ini_get('max_input_vars') : 0;
-        $extras['php_output_buffering'] = function_exists('ini_get')
-            ? (string)ini_get('output_buffering') : '';
-        $extras['php_zlib_output_compression'] = function_exists('ini_get')
-            ? (string)ini_get('zlib.output_compression') : '';
-        $obStatuses = function_exists('ob_get_status') ? ob_get_status(true) : array();
-        $obHandlerNames = array();
-        foreach ($obStatuses as $obStatus) {
-            if (is_array($obStatus) && isset($obStatus['name']) && is_string($obStatus['name'])) {
-                $obHandlerNames[] = $obStatus['name'];
-            }
-        }
-        $extras['php_ob_level_at_collect'] = array(
-            'level' => function_exists('ob_get_level') ? (int)ob_get_level() : 0,
-            // Handler names identify stack ownership. Other status fields,
-            // especially byte counts, are unnecessary diagnostic surface.
-            'handlers' => $obHandlerNames,
-        );
-        $extras['php_realpath_cache_size_bytes'] = function_exists('realpath_cache_size') ? (int)realpath_cache_size() : 0;
+        // size matters for sites with many include paths. None of it can
+        // fail, so it is merged whole rather than registered as a probe;
+        // the reasoning for each field lives with the values in
+        // FeedbackEnvironmentExtras_HostProbes::collectPhpRuntimeIdentity().
+        $extras = array_merge($extras, $host->collectPhpRuntimeIdentity());
 
         // Plugin table sizes beyond logsv2 (which has its own typed
         // column). redirects volume and logs_hits rollup size are
@@ -197,15 +178,23 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // Plesk, WP Engine, Kinsta, Pantheon, Flywheel, RunCloud,
         // CloudPanel). Lets server-side group heartbeats by host
         // class retroactively without paying for a deep fingerprint.
-        $this->recordProbe($extras, 'hosting_class', function () use ($platform) {
-            return $platform->probeHostingClass(array('php_sapi' => PHP_SAPI));
+        // The database server's version SUFFIX is one of the three independent
+        // markers that name Azure App Service, whose FPM pools can be built
+        // with clear_env and publish no environment variable at all. Supplied
+        // from here because $wpdb access belongs to the server-state probe, not
+        // to the platform fingerprint (see that class's INFRASTRUCTURE_HOST_MARKERS).
+        $this->recordProbe($extras, 'hosting_class', function () use ($platform, $server) {
+            return $platform->probeHostingClass(array(
+                'php_sapi' => PHP_SAPI,
+                'db_server_version' => $server->serverVersionString(),
+            ));
         }, array());
 
         // Full-request page-cache drop-ins can own an outer output buffer.
         // Report only presence and the declared Plugin Name so support can
         // identify that foreign owner without receiving file content or paths.
-        $this->recordProbe($extras, 'advanced_cache_dropin', function () use ($platform) {
-            return $platform->probeCacheDropin('advanced_cache');
+        $this->recordProbe($extras, 'advanced_cache_dropin', function () use ($cache) {
+            return $cache->probeCacheDropin('advanced_cache');
         }, array('present' => false, 'owner' => ''));
 
         // Object-cache backend NAME, not just the on/off enum already
@@ -213,12 +202,12 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras {
         // / W3TC / LiteSpeed / WP Engine native via known constants
         // + wp_using_ext_object_cache(). Stale-cache reports cluster
         // by backend class.
-        $this->recordProbe($extras, 'object_cache_backend', function () use ($platform) { return $platform->probeObjectCacheBackend(); }, array());
+        $this->recordProbe($extras, 'object_cache_backend', function () use ($cache) { return $cache->probeObjectCacheBackend(); }, array());
 
         // The backend marker identifies the running cache implementation;
         // the drop-in header identifies which plugin installed object-cache.php.
-        $this->recordProbe($extras, 'object_cache_dropin', function () use ($platform) {
-            return $platform->probeCacheDropin('object_cache');
+        $this->recordProbe($extras, 'object_cache_dropin', function () use ($cache) {
+            return $cache->probeCacheDropin('object_cache');
         }, array('present' => false, 'owner' => ''));
 
         // SHOW GLOBAL STATUS counterpart to mysql_globals. Captures

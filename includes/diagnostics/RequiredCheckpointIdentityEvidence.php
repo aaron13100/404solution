@@ -110,7 +110,7 @@ final class ABJ_404_Solution_RequiredCheckpointIdentityEvidence {
 
     /** @param array<mixed, mixed> $record */
     private static function isConcurrentControlReceipt(array $record): bool {
-        return ABJ_404_Solution_ClientTransportReport::isCompleteConcurrentControlJournalRecord($record);
+        return ABJ_404_Solution_ConcurrentControlReceipt::isCompleteJournalRecord($record);
     }
 
     /** @param array<mixed, mixed> $record */

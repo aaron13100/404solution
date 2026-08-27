@@ -36,6 +36,31 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
         'ajaxRefreshHealthBar' => true,
     );
 
+    /**
+     * Actions that arm their own durable trace whether or not the debug
+     * setting is on, because ASKING FOR THEM IS THE OPT-IN.
+     *
+     * `ajaxRunCanaryStep` is the whole of this set. The ladder is not ambient
+     * cost: the browser fires it only after a real table request has already
+     * failed, at most once an hour per browser
+     * (view_updater_canary_cooldown.js), and every one of those requests is
+     * already writing full checkpoint records through the ungated
+     * ABJ_404_Solution_AjaxCheckpointLogger. Leaving the trace behind the
+     * setting bought nothing and cost the server half of the evidence: support
+     * report 2026-08-27 (Azure App Service, plugin 4.3.4) carried fifteen
+     * canary client receipts in the checkpoint journal and a completely empty
+     * `ajax_stage_trace` channel from the same directory, so the ladder's own
+     * run could not even be scoped to the browser session that produced it.
+     *
+     * Deliberately NOT extended to `ajaxUpdatePaginationLinks` or
+     * `ajaxRefreshHealthBar`: those run on every admin table load, which is the
+     * 726 ms-against-136 ms cost the 4.3.3 gate exists to keep off a site that
+     * did not ask for it.
+     */
+    const SELF_ARMING_TRACE_ACTIONS = array(
+        'ajaxRunCanaryStep' => true,
+    );
+
     /** Whether the stored debug setting explicitly enables diagnostics. */
     public static function isEnabled(): bool {
         if (!function_exists('abj404_get_settings_options')) {
@@ -68,11 +93,37 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
      */
     public static function diagnosticRequestId(array $context): string {
         $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
-        if (!isset(self::DIAGNOSTIC_TRACE_ACTIONS[$action])
-                || (!self::isEnabled() && !self::isAuthorizedRetry($context))) {
+        if (!isset(self::DIAGNOSTIC_TRACE_ACTIONS[$action])) {
+            return '';
+        }
+        if (!isset(self::SELF_ARMING_TRACE_ACTIONS[$action])
+                && !self::isEnabled() && !self::isAuthorizedRetry($context)) {
             return '';
         }
         return ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? null);
+    }
+
+    /**
+     * Whether this site's durable trace writer is armed right now, and on what.
+     *
+     * Composed for the support-collection manifest, which otherwise cannot tell
+     * "the stage-trace channel wrote nothing because nothing went wrong" from
+     * "the stage-trace channel wrote nothing because it was never switched on".
+     * Those are the same three empty files on disk and completely different
+     * findings, and the Azure capture spent a whole report on the difference.
+     *
+     * Names only fixed action strings and one boolean read of an existing
+     * setting: no request data, no site identity.
+     *
+     * @return array{debug_mode_enabled: bool, traced_actions: array<int, string>,
+     *   self_arming_actions: array<int, string>}
+     */
+    public static function armingState(): array {
+        return array(
+            'debug_mode_enabled' => self::isEnabled(),
+            'traced_actions' => array_keys(self::DIAGNOSTIC_TRACE_ACTIONS),
+            'self_arming_actions' => array_keys(self::SELF_ARMING_TRACE_ACTIONS),
+        );
     }
 
     /**

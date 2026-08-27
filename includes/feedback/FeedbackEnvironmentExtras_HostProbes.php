@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 require_once __DIR__ . '/FeedbackTransportLog.php';
+require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
 
 /**
  * Host / runtime environment probes for the feedback payload's
@@ -349,5 +350,59 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
             throw new \RuntimeException('disk_free_space returned false for ' . $tmp);
         }
         return (int)$v;
+    }
+
+    /**
+     * The PHP runtime's own self-report: which SAPI is executing, what the
+     * hardening and buffering ini settings are, how much memory this request
+     * peaked at, and which output-buffer handlers own the response right now.
+     *
+     * A flat map rather than a set of registered probes, because none of it can
+     * fail: every value is a constant, an `ini_get()`, or a function guarded by
+     * `function_exists()`, so there is no error to isolate and nothing for a
+     * `<probe>_error` marker to say. Keeping it here instead of inline in
+     * FeedbackEnvironmentExtras::collect() leaves that method a uniform probe
+     * registry with no special case in the middle of it.
+     *
+     * PHP_SAPI, not php_sapi_name(): the constant is defined by the engine on
+     * every SAPI and cannot be removed, while the function is on the
+     * disable_functions hardening lists some shared/CloudLinux hosts ship,
+     * where the guarded call silently degrades to ''. This is the field that
+     * identified Bruno's litespeed SAPI (and with it the FPM-only
+     * fastcgi_finish_request() no-op), so losing it loses the diagnosis. Same
+     * accessor the flight recorder uses (RequestEnvironmentFingerprint).
+     *
+     * @return array<string, mixed>
+     */
+    public function collectPhpRuntimeIdentity(): array {
+        $obHandlerNames = array();
+        foreach (function_exists('ob_get_status') ? ob_get_status(true) : array() as $obStatus) {
+            if (is_array($obStatus) && isset($obStatus['name']) && is_string($obStatus['name'])) {
+                $obHandlerNames[] = $obStatus['name'];
+            }
+        }
+        return array(
+            'php_sapi' => PHP_SAPI,
+            'php_disable_functions' => function_exists('ini_get')
+                ? (string)ini_get('disable_functions') : '',
+            'php_post_response_budget_armable' =>
+                ABJ_404_Solution_PostResponseWorkerBudget::isSupported(),
+            'php_memory_peak_bytes' => function_exists('memory_get_peak_usage')
+                ? (int)memory_get_peak_usage(true) : 0,
+            'php_opcache_enabled' => $this->opcacheEnabled(),
+            'php_max_input_vars' => function_exists('ini_get') ? (int)ini_get('max_input_vars') : 0,
+            'php_output_buffering' => function_exists('ini_get')
+                ? (string)ini_get('output_buffering') : '',
+            'php_zlib_output_compression' => function_exists('ini_get')
+                ? (string)ini_get('zlib.output_compression') : '',
+            'php_ob_level_at_collect' => array(
+                'level' => function_exists('ob_get_level') ? (int)ob_get_level() : 0,
+                // Handler names identify stack ownership. Other status fields,
+                // especially byte counts, are unnecessary diagnostic surface.
+                'handlers' => $obHandlerNames,
+            ),
+            'php_realpath_cache_size_bytes' => function_exists('realpath_cache_size')
+                ? (int)realpath_cache_size() : 0,
+        );
     }
 }

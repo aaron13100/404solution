@@ -186,6 +186,44 @@ class ABJ_404_Solution_MysqlServerStateProbe {
     }
 
     /**
+     * The connection's own server version string, vendor suffix included
+     * ("8.0.45-azure", "10.6.18-MariaDB-log"), or '' when the connection
+     * cannot report one.
+     *
+     * Read off the live connection rather than through `SELECT VERSION()`:
+     * mysqli already holds this string, so the probe costs no round trip and
+     * cannot fail on a read-only replica or a saturated server. The SUFFIX is
+     * what makes it worth collecting here -- `db_version` in the typed columns
+     * keeps the number, and the vendor tag on the end is a hosting-platform
+     * marker (see FeedbackEnvironmentExtras_PlatformFingerprint's
+     * INFRASTRUCTURE_HOST_MARKERS).
+     *
+     * Returns '' rather than throwing: unlike the probes above this has no
+     * `<probe>_error` marker of its own, and a host whose driver hides the
+     * version is not a failure, it is one fewer marker.
+     */
+    public function serverVersionString(): string {
+        global $wpdb;
+        if (!isset($wpdb) || !is_object($wpdb)) {
+            return '';
+        }
+        if (isset($wpdb->db_server_info) && is_scalar($wpdb->db_server_info)) {
+            return (string)$wpdb->db_server_info;
+        }
+        if (!method_exists($wpdb, 'db_server_info')) {
+            return '';
+        }
+        try {
+            $info = $wpdb->db_server_info();
+            return is_scalar($info) ? (string)$info : '';
+        } catch (\Throwable $e) {
+            ABJ_404_Solution_FeedbackTransportLog::log(
+                'warn', 'serverVersionString probe failed: ' . $e->getMessage());
+            return '';
+        }
+    }
+
+    /**
      * Run one `SHOW <scope> VARIABLES|STATUS WHERE Variable_name IN (...)`
      * statement and fold the returned rows into a lowercased name => raw
      * string-value map.

@@ -8,8 +8,11 @@ if (!defined('ABSPATH')) {
  * Static-identity probes that fingerprint the hosting platform: WHICH
  * managed host (WP Engine, Kinsta, Pantheon, ...), WHICH control panel
  * (cPanel, Plesk, RunCloud, ...), WHICH PHP execution stack (LSWS,
- * mod_lsapi, FPM, mod_php, CGI), WHICH CloudLinux markers are present,
- * and WHICH cache drop-ins/backends own the request caches.
+ * mod_lsapi, FPM, mod_php, CGI), and WHICH CloudLinux markers are present.
+ *
+ * WHICH cache implementation owns the request caches is a different subject
+ * with a different marker vocabulary, and it lives in
+ * ABJ_404_Solution_FeedbackEnvironmentExtras_CacheFingerprint.
  *
  * Distinct in kind from FeedbackEnvironmentExtras_HostProbes, which
  * answers dynamic runtime questions (how much disk is left, what is
@@ -17,10 +20,11 @@ if (!defined('ABSPATH')) {
  * this site permanently sitting on" -- the values rarely change for
  * the life of the install and group reports the same way over time.
  *
- * Both methods follow the same pattern: scan a table of distinctive
- * markers (constants, env vars, paths, classes), return the first
- * match. Keeping them together lets the marker tables evolve as a
- * single editorial concern instead of being scattered.
+ * Every detector here follows the same pattern: scan a table of
+ * distinctive markers (constants, env vars, paths, container and
+ * database-server identity), return the first match. Keeping those tables
+ * together lets them evolve as a single editorial concern instead of
+ * being scattered.
  *
  * No PII: only matched marker keys are returned. SERVER_SOFTWARE is
  * NOT echoed wholesale; it may include a hostname.
@@ -44,7 +48,9 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
      * callers normally omit it; diagnostic tests and offline collectors can
      * supply stable values without mutating process-wide PHP state.
      *
-     * @param array{php_sapi?: mixed, loaded_extensions?: mixed, cloudlinux_alt_php_present?: mixed} $runtime
+     * @param array{php_sapi?: mixed, loaded_extensions?: mixed, cloudlinux_alt_php_present?: mixed,
+     *   env?: mixed, document_root?: mixed, abspath?: mixed, cgroup?: mixed,
+     *   db_server_version?: mixed} $runtime
      * @return array<string, mixed>
      */
     public function probeHostingClass(array $runtime = array()): array {
@@ -71,8 +77,48 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
 
         $out['cloudlinux_markers'] = $this->collectCloudLinuxMarkers($runtime);
 
-        // Managed-host markers: each host publishes a distinctive
-        // constant or environment variable.
+        $managedHost = $this->detectManagedHost($runtime);
+        if ($managedHost['host'] !== '') {
+            $out['host'] = $managedHost['host'];
+            $out['matched_marker'] = $managedHost['matched_marker'];
+        }
+        if ($out['host'] === 'unknown') {
+            $infrastructure = $this->detectInfrastructureHost($runtime);
+            if ($infrastructure['host'] !== '') {
+                $out['host'] = $infrastructure['host'];
+                $out['matched_marker'] = $infrastructure['matched_marker'];
+            }
+        }
+        if ($out['host'] === 'unknown' && $out['cloudlinux_markers'] !== array()) {
+            $out['host'] = 'cloudlinux';
+            $out['matched_marker'] = (string)$out['cloudlinux_markers'][0];
+        }
+
+        $panel = $this->detectControlPanel($runtime);
+        if ($panel['panel'] !== '') {
+            $out['panel'] = $panel['panel'];
+            if ($out['matched_marker'] === '') {
+                $out['matched_marker'] = $panel['matched_marker'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Managed hosts that identify themselves outright, each through a
+     * distinctive PHP constant or environment variable. First match wins, so
+     * declaration order is precedence order.
+     *
+     * Azure App Service is in this table for the environment route
+     * (WEBSITE_SITE_NAME and friends, which App Service always injects into the
+     * container); the filesystem/cgroup/database routes that survive an FPM
+     * pool built with `clear_env = yes` are in INFRASTRUCTURE_HOST_MARKERS.
+     *
+     * @param array<string, mixed> $runtime
+     * @return array{host: string, matched_marker: string} Empty host when no marker matched.
+     */
+    private function detectManagedHost(array $runtime): array {
         $managedHostChecks = array(
             'wp_engine'   => array('const' => array('WPE_APIKEY', 'WPE_PLUGIN_DIR'), 'env' => array('IS_WPE')),
             'kinsta'      => array('const' => array('KINSTA_CACHE_ZONE'), 'env' => array('KINSTA_SERVICE_NAME')),
@@ -82,31 +128,33 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
             'siteground'  => array('const' => array('SG_OPTIMIZER_VERSION'), 'env' => array()),
             'wordpress_com' => array('const' => array('IS_ATOMIC', 'IS_WPCOM'), 'env' => array()),
             'cloudways'   => array('const' => array(), 'env' => array('cw_allowed_ip')),
+            'azure_app_service' => array('const' => array(), 'env' => array(
+                'WEBSITE_SITE_NAME', 'WEBSITE_INSTANCE_ID', 'APPSETTING_WEBSITE_SITE_NAME')),
         );
         foreach ($managedHostChecks as $hostKey => $checks) {
             foreach ((array)$checks['const'] as $c) {
                 if (defined($c)) {
-                    $out['host'] = $hostKey;
-                    $out['matched_marker'] = 'const:' . $c;
-                    break 2;
+                    return array('host' => $hostKey, 'matched_marker' => 'const:' . $c);
                 }
             }
             foreach ((array)$checks['env'] as $e) {
-                if (getenv($e) !== false) {
-                    $out['host'] = $hostKey;
-                    $out['matched_marker'] = 'env:' . $e;
-                    break 2;
+                if ($this->environmentValue($runtime, $e) !== null) {
+                    return array('host' => $hostKey, 'matched_marker' => 'env:' . $e);
                 }
             }
         }
-        if ($out['host'] === 'unknown' && $out['cloudlinux_markers'] !== array()) {
-            $out['host'] = 'cloudlinux';
-            $out['matched_marker'] = (string)$out['cloudlinux_markers'][0];
-        }
+        return array('host' => '', 'matched_marker' => '');
+    }
 
-        // Control-panel markers: cPanel / hPanel / Plesk / DirectAdmin /
-        // RunCloud / CloudPanel. These are independent of the managed-host
-        // class above: a cPanel site might also be on SiteGround.
+    /**
+     * Control panels: cPanel / hPanel / Plesk / DirectAdmin / RunCloud /
+     * CloudPanel. Independent of the managed-host class: a cPanel site might
+     * also be on SiteGround.
+     *
+     * @param array<string, mixed> $runtime
+     * @return array{panel: string, matched_marker: string} Empty panel when no marker matched.
+     */
+    private function detectControlPanel(array $runtime): array {
         $panelChecks = array(
             'cpanel'      => array('env' => array('CPANEL'), 'path' => array('/usr/local/cpanel')),
             'hpanel'      => array('env' => array('HOSTINGER'), 'path' => array('/usr/local/hostinger')),
@@ -117,12 +165,8 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
         );
         foreach ($panelChecks as $panelKey => $checks) {
             foreach ((array)$checks['env'] as $e) {
-                if (getenv($e) !== false) {
-                    $out['panel'] = $panelKey;
-                    if ($out['matched_marker'] === '') {
-                        $out['matched_marker'] = 'env:' . $e;
-                    }
-                    break 2;
+                if ($this->environmentValue($runtime, $e) !== null) {
+                    return array('panel' => $panelKey, 'matched_marker' => 'env:' . $e);
                 }
             }
             foreach ((array)$checks['path'] as $p) {
@@ -137,16 +181,147 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
                 // Suppress with @ since the probe is intentionally best-effort and
                 // a denial here means "not on this host", not a logic bug.
                 if (@is_dir($p)) { // allow-silent-error: open_basedir restriction surface; absence here is the answer, not a fault. See production reports 22-39 (4.1.18-4.1.19) flooding the inbox with "is_dir(): open_basedir restriction in effect" for /home/clp probes on p2p-game.com and similar CloudLinux-hosted sites.
-                    $out['panel'] = $panelKey;
-                    if ($out['matched_marker'] === '') {
-                        $out['matched_marker'] = 'path:' . $p;
-                    }
-                    break 2;
+                    return array('panel' => $panelKey, 'matched_marker' => 'path:' . $p);
                 }
             }
         }
+        return array('panel' => '', 'matched_marker' => '');
+    }
 
-        return $out;
+    /**
+     * Platforms that publish no constant and cannot be relied on to publish an
+     * environment variable either, but that DO stamp themselves on three fixed,
+     * non-identifying facts about the runtime: where the site is served from,
+     * which container hierarchy the worker sits in, and how the database server
+     * suffixes its own version string.
+     *
+     * Azure App Service for Linux is the case this table was built for. Support
+     * report 2026-08-27 (plugin 4.3.4) carried `/home/site/wwwroot`, an Antares
+     * cgroup path and `8.0.45-azure`, and still reported host="unknown",
+     * because an FPM pool with `clear_env = yes` (the App Service default for
+     * some images) strips WEBSITE_SITE_NAME before PHP ever sees it. Any ONE of
+     * the three is sufficient, which is the point: this platform is only
+     * reliably named when the markers are checked independently.
+     *
+     * Marker KEYS only ever leave the site. The cgroup line and the App Service
+     * environment both embed the customer's own site name, so the matched
+     * needle is reported and the matched text never is.
+     *
+     * @var array<string, array{paths: array<int, string>, cgroup: array<int, string>, db_version: array<int, string>}>
+     */
+    private const INFRASTRUCTURE_HOST_MARKERS = array(
+        'azure_app_service' => array(
+            'paths' => array('/home/site/wwwroot'),
+            'cgroup' => array('antares'),
+            'db_version' => array('azure'),
+        ),
+    );
+
+    /** Ceiling on the cgroup read. The membership lines we match are in the first few. */
+    private const MAX_CGROUP_BYTES = 4096;
+
+    /**
+     * Name a platform from the fixed runtime markers in
+     * INFRASTRUCTURE_HOST_MARKERS, or report no match.
+     *
+     * Runs only after the constant/environment table above has come back
+     * unknown, so a host that identifies itself explicitly keeps its own,
+     * more specific marker.
+     *
+     * @param array<string, mixed> $runtime
+     * @return array{host: string, matched_marker: string}
+     */
+    private function detectInfrastructureHost(array $runtime): array {
+        $documentRoot = $this->normalizedDirectory(
+            array_key_exists('document_root', $runtime)
+                ? $runtime['document_root']
+                : ($_SERVER['DOCUMENT_ROOT'] ?? '')
+        );
+        $installPath = $this->normalizedDirectory(
+            array_key_exists('abspath', $runtime)
+                ? $runtime['abspath']
+                : (defined('ABSPATH') ? ABSPATH : '')
+        );
+        $cgroup = array_key_exists('cgroup', $runtime)
+            ? (is_scalar($runtime['cgroup']) ? (string)$runtime['cgroup'] : '')
+            : $this->readProcSelfCgroup();
+        $cgroup = strtolower($cgroup);
+        $databaseVersion = strtolower(
+            array_key_exists('db_server_version', $runtime) && is_scalar($runtime['db_server_version'])
+                ? (string)$runtime['db_server_version'] : ''
+        );
+
+        foreach (self::INFRASTRUCTURE_HOST_MARKERS as $hostKey => $markers) {
+            foreach ($markers['paths'] as $path) {
+                if ($this->pathIsWithin($documentRoot, $path) || $this->pathIsWithin($installPath, $path)) {
+                    return array('host' => $hostKey, 'matched_marker' => 'path:' . $path);
+                }
+            }
+            foreach ($markers['cgroup'] as $needle) {
+                // Bounded by the path separators on both sides so a customer
+                // site literally named "antares" cannot match as the platform.
+                if ($cgroup !== '' && strpos($cgroup, '/' . $needle . '/') !== false) {
+                    return array('host' => $hostKey, 'matched_marker' => 'cgroup:' . $needle);
+                }
+            }
+            foreach ($markers['db_version'] as $needle) {
+                // The vendor suffix, not a substring: "8.0.45-azure" matches and
+                // a server hosted at azure.example.com does not.
+                if ($databaseVersion !== '' && strpos($databaseVersion, '-' . $needle) !== false) {
+                    return array('host' => $hostKey, 'matched_marker' => 'db_version:' . $needle);
+                }
+            }
+        }
+        return array('host' => '', 'matched_marker' => '');
+    }
+
+    /**
+     * One environment variable, read from the injected snapshot when the caller
+     * supplied one and from the process otherwise. Null means "not set".
+     *
+     * An injected `env` array is authoritative even when empty: a test or an
+     * offline collector that declares the environment has to be able to declare
+     * it EMPTY, or the negative control silently reads the developer's own shell.
+     *
+     * @param array<string, mixed> $runtime
+     */
+    private function environmentValue(array $runtime, string $name): ?string {
+        if (array_key_exists('env', $runtime)) {
+            $environment = is_array($runtime['env']) ? $runtime['env'] : array();
+            return array_key_exists($name, $environment) && is_scalar($environment[$name])
+                ? (string)$environment[$name] : null;
+        }
+        $value = getenv($name);
+        return $value === false ? null : (string)$value;
+    }
+
+    /**
+     * The worker's cgroup membership text, or '' when this platform has no
+     * procfs (macOS, Windows, a hardened open_basedir).
+     */
+    private function readProcSelfCgroup(): string {
+        $path = '/proc/self/cgroup';
+        if (!@is_readable($path)) { // allow-silent-error: procfs is absent on non-Linux hosts and outside many open_basedir roots; absence is the answer, not a fault.
+            return '';
+        }
+        $raw = @file_get_contents($path, false, null, 0, self::MAX_CGROUP_BYTES); // allow-silent-error: a readable-but-unreadable procfs entry means the marker is unavailable, which is the same finding as absence.
+        return is_string($raw) ? $raw : '';
+    }
+
+    /**
+     * A directory path with any trailing separator removed, so
+     * `/home/site/wwwroot/` and `/home/site/wwwroot` compare equal.
+     *
+     * @param mixed $value
+     */
+    private function normalizedDirectory($value): string {
+        $path = is_scalar($value) ? (string)$value : '';
+        return $path === '' ? '' : rtrim($path, '/\\');
+    }
+
+    /** Is $path the marker directory itself, or something inside it? */
+    private function pathIsWithin(string $path, string $marker): bool {
+        return $path !== '' && ($path === $marker || strpos($path, $marker . '/') === 0);
     }
 
     /**
@@ -232,124 +407,5 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
             return 'cgi';
         }
         return 'unknown';
-    }
-
-    /**
-     * Report whether one of WordPress's two cache drop-ins is installed and
-     * the owner declared by its `Plugin Name` header. No file body, path, or
-     * other header is returned.
-     *
-     * The directory searched is WP_CONTENT_DIR (or ABSPATH/wp-content when
-     * that constant is absent), passed through the
-     * `abj404_cache_dropin_directory` filter so a site can point the probe
-     * somewhere else: installs that load their drop-ins from a relocated
-     * content directory, and anything that needs the probe scoped away from
-     * the live one, would otherwise be reported as having no cache drop-in at
-     * all. Same shape as `abj404_host_pressure_probe_paths` and
-     * `abj404_ajax_trace_directory`. A non-string or empty return leaves the
-     * computed default in force, so a misbehaving filter degrades to today's
-     * behaviour rather than probing '/'. Throwing is safe too: every probe
-     * runs inside FeedbackEnvironmentExtras::recordProbe(), which records the
-     * failure and substitutes the default.
-     *
-     * @param string $dropinKey One of `advanced_cache` or `object_cache`.
-     * @return array{present: bool, owner: string}
-     */
-    public function probeCacheDropin(string $dropinKey): array {
-        $dropinFiles = array(
-            'advanced_cache' => 'advanced-cache.php',
-            'object_cache' => 'object-cache.php',
-        );
-        if (!isset($dropinFiles[$dropinKey])) {
-            return array('present' => false, 'owner' => '');
-        }
-
-        $contentDirectory = defined('WP_CONTENT_DIR')
-            ? rtrim((string)WP_CONTENT_DIR, '/\\')
-            : rtrim((string)ABSPATH, '/\\') . '/wp-content';
-        if (function_exists('apply_filters')) {
-            $filtered = apply_filters('abj404_cache_dropin_directory', $contentDirectory, $dropinKey);
-            if (is_string($filtered) && trim($filtered) !== '') {
-                $contentDirectory = rtrim($filtered, '/\\');
-            }
-        }
-        $dropinPath = $contentDirectory . '/' . $dropinFiles[$dropinKey];
-        if (!is_file($dropinPath)) {
-            return array('present' => false, 'owner' => '');
-        }
-        if (!function_exists('get_file_data')) {
-            return array('present' => true, 'owner' => 'unknown');
-        }
-
-        $headers = get_file_data($dropinPath, array('owner' => 'Plugin Name'), 'plugin');
-        if (!is_array($headers) || !isset($headers['owner']) || !is_scalar($headers['owner'])) {
-            return array('present' => true, 'owner' => 'unknown');
-        }
-        $owner = trim(strip_tags((string)$headers['owner']));
-        $owner = preg_replace('/[[:cntrl:]]+/', ' ', $owner);
-        $owner = is_string($owner) ? trim($owner) : '';
-
-        return array(
-            'present' => true,
-            'owner' => $owner !== '' ? $owner : 'unknown',
-        );
-    }
-
-    /**
-     * Object-cache backend NAME. The base payload's `object_cache` enum
-     * answers "external or default"; this answers "external WHAT": Redis
-     * (predis vs phpredis vs Redis Object Cache plugin), Memcached,
-     * APCu, W3TC, LiteSpeed, WP Engine native, Pantheon, etc.
-     *
-     * @return array<string, mixed>
-     */
-    public function probeObjectCacheBackend(): array {
-        $out = array(
-            'using_ext_cache' => false,
-            'backend'         => 'unknown',
-            'backend_detail'  => '',
-        );
-        if (function_exists('wp_using_ext_object_cache')) {
-            $out['using_ext_cache'] = (bool)wp_using_ext_object_cache();
-        }
-        // Known constants/classes/extensions from popular object-cache
-        // drop-ins. Each tuple is (name, type, marker): the first match
-        // wins so a Redis Object Cache Pro install is not also tagged
-        // as plain Redis.
-        $checks = array(
-            array('redis_object_cache_pro', 'const', 'WP_REDIS_VERSION'),
-            array('redis_object_cache_pro', 'class', 'RedisCachePro\\Plugin'),
-            array('redis_object_cache',     'class', 'WP_Object_Cache'),
-            array('memcached',              'class', 'Memcached'),
-            array('apcu',                   'ext',   'apcu'),
-            array('w3_total_cache',         'const', 'W3TC_VERSION'),
-            array('litespeed_cache',        'const', 'LSCWP_DIR'),
-            array('wp_engine_native',       'const', 'WPE_APIKEY'),
-            array('pantheon',               'const', 'PANTHEON_ENVIRONMENT'),
-        );
-        foreach ($checks as $check) {
-            list($name, $type, $marker) = $check;
-            if ($type === 'const' && defined($marker)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'const:' . $marker;
-                return $out;
-            }
-            if ($type === 'class' && class_exists($marker, false)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'class:' . $marker;
-                return $out;
-            }
-            if ($type === 'ext' && extension_loaded($marker)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'ext:' . $marker;
-                return $out;
-            }
-        }
-        // Default WP object cache used in-memory per request.
-        if (!$out['using_ext_cache']) {
-            $out['backend'] = 'default';
-            $out['backend_detail'] = 'wp_object_cache:in_memory';
-        }
-        return $out;
     }
 }

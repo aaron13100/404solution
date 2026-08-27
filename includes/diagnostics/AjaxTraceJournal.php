@@ -211,7 +211,17 @@ final class ABJ_404_Solution_AjaxTraceJournal {
      * uses: a manifest that described a DIFFERENT set of files than the read
      * would be worse than no manifest at all.
      *
-     * @return array{channel: string, directory: string, usable: bool, paths: array<int, string>}
+     * `writer_arming` is reported alongside, because a channel whose WRITER is
+     * opt-in has a second way to come back empty that stats of the directory
+     * cannot see. Support report 2026-08-27 (Azure App Service, plugin 4.3.4)
+     * spent the whole capture on that difference: usable directory, writable
+     * directory, zero files, and no way to learn that
+     * ABJ_404_Solution_AjaxDiagnosticRequestPolicy had never armed the writer
+     * on that site. "Nothing to record" and "recording was off" must not
+     * produce the same manifest.
+     *
+     * @return array{channel: string, directory: string, usable: bool, paths: array<int, string>,
+     *   writer_arming: array<string, mixed>}
      */
     public static function supportCollectionSource(): array {
         try {
@@ -221,10 +231,37 @@ final class ABJ_404_Solution_AjaxTraceJournal {
                 'directory' => $directory,
                 'usable' => $directory !== '',
                 'paths' => $directory === '' ? array() : self::supportExcerptPaths($directory),
+                'writer_arming' => self::writerArming(),
             );
         } catch (Throwable $e) {
             self::reportStaticFailure('AJAX trace support source resolution failed: ' . $e->getMessage());
-            return array('channel' => 'ajax_stage_trace', 'directory' => '', 'usable' => false, 'paths' => array());
+            return array(
+                'channel' => 'ajax_stage_trace',
+                'directory' => '',
+                'usable' => false,
+                'paths' => array(),
+                'writer_arming' => self::writerArming(),
+            );
+        }
+    }
+
+    /**
+     * What the trace WRITER would do on this site right now. Never throws: a
+     * manifest that cannot describe the arming policy still has to describe the
+     * files, so an unavailable policy is reported as such rather than removing
+     * the field.
+     *
+     * @return array<string, mixed>
+     */
+    private static function writerArming(): array {
+        if (!class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')) {
+            return array('status' => 'unavailable', 'reason' => 'policy_class_unavailable');
+        }
+        try {
+            return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::armingState();
+        } catch (Throwable $e) {
+            self::reportStaticFailure('AJAX trace arming state failed: ' . $e->getMessage());
+            return array('status' => 'unavailable', 'reason' => 'policy_read_failed');
         }
     }
 

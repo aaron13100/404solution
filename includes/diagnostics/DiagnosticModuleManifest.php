@@ -67,8 +67,12 @@ final class ABJ_404_Solution_DiagnosticModuleManifest {
         'ajax/AjaxClientReportBeaconResponder.php',
         // Response emission and connection detach.
         'ajax/AjaxResponseEmitter.php',
-        // Canary ladder and support collection endpoints.
+        // Canary ladder and support collection endpoints. The ladder's endpoint
+        // and its step execution are separate files and both are covered: a
+        // mixed OPcache generation across the two would leave the ladder
+        // authenticating on one build and probing on another.
         'ajax/Ajax_CanaryLadder.php',
+        'ajax/AjaxCanaryStepRunner.php',
         'ajax/Ajax_SupportRequest.php',
         'ajax/Ajax_SupportRequestPreview.php',
         // Request parsing is part of the canary interpretation boundary.

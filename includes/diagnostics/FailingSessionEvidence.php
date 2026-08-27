@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
  * independent sequences into one file. The support-request handler reads only
  * the CLICKING tab's session id, and both server-side conclusions
  * (ABJ_404_Solution_DetachAbEvidence::verdictForSession and
- * ABJ_404_Solution_CheckpointJournalReader::latestEncodedTableResponseForSession)
+ * ABJ_404_Solution_EncodedTableResponseSize::forSession)
  * were then scoped to that one session -- even when the failed request ids
  * carried in the same support payload belong to another tab, or to a tab the
  * admin has already closed. Multi-tab failure is established for Bruno, so the
@@ -273,7 +273,7 @@ final class ABJ_404_Solution_FailingSessionEvidence {
                 'detach' => self::compactVerdict(
                     ABJ_404_Solution_DetachAbEvidence::verdictForSession($rawSessionId)),
                 'encoded_size' =>
-                    ABJ_404_Solution_CheckpointJournalReader::latestEncodedTableResponseForSession(
+                    ABJ_404_Solution_EncodedTableResponseSize::forSession(
                         $rawSessionId),
             );
         }
