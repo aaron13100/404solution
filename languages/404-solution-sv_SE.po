@@ -4285,3 +4285,12 @@ msgstr "404 Solution, endast för administratörer: bästa träff %1$s, under de
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution, endast för administratörer: bästa träff %1$s, lika med eller över de %2$s som krävs för att omdirigera automatiskt."
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "Omdirigeringen %s hittades inte. Den kan ha tagits bort sedan den här sidan öppnades."
+msgstr[1] "Omdirigeringarna %s hittades inte. De kan ha tagits bort sedan den här sidan öppnades."
+
+msgid "No redirect was selected to edit."
+msgstr "Ingen omdirigering har valts för redigering."

@@ -276,6 +276,29 @@ class ABJ_404_Solution_EditRedirectHandler {
         $message = "";
         $redirectsRepo = $this->parent->getRedirectsRepo();
         $redirectsMultiple = $redirectsRepo->getRedirectsByIDs($idsMultiple);
+        if (empty($redirectsMultiple)) {
+            // Every selected row is gone: another admin deleted them, or
+            // deleteOldRedirectsCron did, while the list page holding the
+            // checkboxes was still open. Without this branch the loop below
+            // runs zero times and returns "", which handleActionEdit() reads
+            // as success and answers "Redirect Information Updated
+            // Successfully!" after writing nothing. Same "the id no longer has
+            // a row" condition the edit screen reports (production report 349),
+            // on the write side. Below error level for the same reason: the
+            // plugin worked correctly, the selection did not survive.
+            $this->parent->getLogger()->debugMessage("Bulk redirect update: no redirect rows exist " .
+                    "for requested id(s): " . esc_html(implode(', ', array_map('strval', $idsMultiple))));
+            return sprintf(
+                /* translators: %s is a comma-separated list of redirect id numbers. */
+                _n(
+                    'Redirect %s was not found. It may have been deleted since this page was opened.',
+                    'Redirects %s were not found. They may have been deleted since this page was opened.',
+                    count($idsMultiple),
+                    '404-solution'
+                ),
+                implode(', ', array_map('strval', $idsMultiple))
+            ) . "<BR/>";
+        }
         foreach ($redirectsMultiple as $redirect) {
             $redirectUrl = is_string($redirect['url']) ? $redirect['url'] : '';
             $redirectId = is_scalar($redirect['id']) ? (int)$redirect['id'] : 0;

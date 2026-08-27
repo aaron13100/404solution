@@ -4284,3 +4284,12 @@ msgstr "404 Solution, nur für Administratoren: bester Treffer %1$s, unter den %
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution, nur für Administratoren: bester Treffer %1$s, auf oder über den %2$s, die für eine automatische Weiterleitung nötig sind."
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "Weiterleitung %s wurde nicht gefunden. Möglicherweise wurde sie gelöscht, seit diese Seite geöffnet wurde."
+msgstr[1] "Weiterleitungen %s wurden nicht gefunden. Möglicherweise wurden sie gelöscht, seit diese Seite geöffnet wurde."
+
+msgid "No redirect was selected to edit."
+msgstr "Es wurde keine Weiterleitung zum Bearbeiten ausgewählt."

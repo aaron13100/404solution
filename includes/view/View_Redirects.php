@@ -6,6 +6,8 @@ if (!defined('ABSPATH')) {
 
 /**
  * Edit redirect page and destination option helpers.
+ *
+ * @phpstan-type EditPageContext array{sourcePage: string, backUrl: string, isSimpleMode: bool, isFromCaptured: bool, title: string, backLabel: string, filter: string, orderby: string, order: string, hiddenInputs: string}
  */
 class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
 
@@ -23,6 +25,9 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
 
     /** @var ABJ_404_Solution_RedirectDestinationResolver|null */
     private $destinationResolver = null;
+
+    /** @var ABJ_404_Solution_RedirectEditRequest|null */
+    private $editRequest = null;
 
     /**
      * @return ABJ_404_Solution_RedirectEditFormPresenter
@@ -104,16 +109,15 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     /**
      * Build hidden input + form-table row HTML for bulk redirect editing.
      *
+     * @param EditPageContext $context The edit page context, needed so the
+     *     missing-redirect notice offers the same way back as the form would have.
      * @param array<int, int> $recnums_multiple
      * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>, hiddenInput: string, rowHtml: string}|null Null on error (already echoed).
      */
-    public function renderBulkRedirectFormFields(array $recnums_multiple): ?array {
+    public function renderBulkRedirectFormFields(array $context, array $recnums_multiple): ?array {
         $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnums_multiple);
-        if ($redirects_multiple == null) {
-            echo "Error: Invalid ID Numbers! (ids: " . esc_html(implode(',', $recnums_multiple)) . ")";
-            $this->logger->debugMessage("Error: Invalid ID Numbers! (ids: " .
-                    esc_html(implode(',', $recnums_multiple)) . ")");
-            return null;
+        if (empty($redirects_multiple)) {
+            return $this->renderMissingRedirects($context, $recnums_multiple);
         }
 
         $rowHtml = $this->editFormPresenter()->buildBulkUrlsRowHtml($redirects_multiple);
@@ -157,7 +161,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $options = $this->optionsPresenter->getOptionsWithDefaults();
         $context = $this->editRedirectPageContext();
         $actionUrl = wp_nonce_url("?page=" . ABJ404_PP . "&subpage=abj404_edit", "abj404editRedirect");
-        $content = $this->editRedirectRecordContent($context['isSimpleMode'], $context['hiddenInputs']);
+        $content = $this->editRedirectRecordContent($context, $context['hiddenInputs']);
         if ($content === null) {
             return;
         }
@@ -224,16 +228,69 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     }
 
     /**
-     * @return array{sourcePage: string, backUrl: string, isSimpleMode: bool, isFromCaptured: bool, title: string, backLabel: string, filter: string, orderby: string, order: string, hiddenInputs: string}
+     * What the edit screen was asked for: which redirect ids, and which list
+     * page the admin came from. Built lazily so a view rendering some other
+     * subpage never reads the edit request at all.
+     *
+     * @return ABJ_404_Solution_RedirectEditRequest
+     */
+    private function editRequest(): ABJ_404_Solution_RedirectEditRequest {
+        if ($this->editRequest === null) {
+            $this->editRequest = new ABJ_404_Solution_RedirectEditRequest($this->f);
+        }
+        return $this->editRequest;
+    }
+
+    /**
+     * Render the edit screen's "those redirect ids no longer have a row"
+     * outcome, for both the single-id and the bulk branch.
+     *
+     * Deliberately below error level. A well-formed id that no longer resolves
+     * is a normal request condition, not a plugin failure: another admin can
+     * delete the row, this admin can trash it in a second tab, and
+     * deleteOldRedirectsCron removes rows on its own schedule, all while an
+     * already-rendered list page still carries the Edit link. The plugin keeps
+     * working, which by defensive-coding rule #8 makes this a non-error. It
+     * matters concretely because DebugLogReader::getLatestErrorLine() keys on
+     * the (ERROR) token to decide whether to mail the maintainer an error
+     * report, so logging a stale link at error level reports a bug that is not
+     * one (production report 349, plugin 4.3.4).
+     *
+     * A genuine database failure behind the same empty result is not hidden by
+     * this: DatabaseQueryExecutor::queryAndGetResults() is the centralized
+     * error handler and has already logged it via sqlErrorReporter.
+     *
+     * Takes the page context rather than resolving the destination again, so
+     * the notice's way back can never disagree with the way back the edit form
+     * itself would have offered.
+     *
+     * @param EditPageContext $context From editRedirectPageContext().
+     * @param array<int, int> $ids The redirect ids the request asked for. Empty
+     *     when the request carried no usable id at all.
+     * @return null Always null, so callers can `return $this->renderMissingRedirects(...)`.
+     */
+    private function renderMissingRedirects(array $context, array $ids) {
+        $backUrl = $context['backUrl'];
+        $backLabel = $context['backLabel'];
+
+        if (empty($ids)) {
+            echo $this->editFormPresenter()->buildNoRedirectIdsNoticeHtml($backUrl, $backLabel);
+            $this->logger->debugMessage('Edit redirect page: request carried no usable redirect id.');
+            return null;
+        }
+
+        echo $this->editFormPresenter()->buildMissingRedirectsNoticeHtml($ids, $backUrl, $backLabel);
+        $this->logger->debugMessage('Edit redirect page: no redirect row exists for requested id(s): ' .
+                esc_html(implode(', ', array_map('strval', $ids))));
+
+        return null;
+    }
+
+    /**
+     * @return EditPageContext
      */
     private function editRedirectPageContext(): array {
-        $sourcePage = $this->shared->viewGetPostOrGetSanitize('source_page');
-        if ($sourcePage === '') {
-            $sourcePage = $this->shared->viewGetPostOrGetSanitize('subpage');
-        }
-        if ($sourcePage === '' || $sourcePage == 'abj404_edit') {
-            $sourcePage = 'abj404_redirects';
-        }
+        $sourcePage = $this->editRequest()->getSourcePage();
 
         $isSimpleMode = abj_service('settings_mode_preference')->getMode() === 'simple';
         $isFromCaptured = ($sourcePage === 'abj404_captured');
@@ -248,7 +305,11 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             'isSimpleMode' => $isSimpleMode,
             'isFromCaptured' => $isFromCaptured,
             'title' => ($isSimpleMode && $isFromCaptured) ? __('Create Redirect', '404-solution') : __('Edit Redirect', '404-solution'),
-            'backLabel' => ($isSimpleMode && $isFromCaptured) ? __('Back to Captured 404s', '404-solution') : __('Back to Redirects', '404-solution'),
+            // Tracks $isFromCaptured alone, exactly like backUrl above, because
+            // the two are one link: keying the label off $isSimpleMode as well
+            // made the advanced-mode Captured 404s edit screen offer a link
+            // reading "Back to Redirects" that navigated to Captured 404s.
+            'backLabel' => $isFromCaptured ? __('Back to Captured 404s', '404-solution') : __('Back to Redirects', '404-solution'),
             'filter' => $filter,
             'orderby' => $orderby,
             'order' => $order,
@@ -257,18 +318,24 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     }
 
     /**
+     * @param EditPageContext $context
+     * @param string $baseHiddenInputs
      * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>, redirectUrl: string, startDate: string, endDate: string, hiddenInputs: string, formRows: string}|null
      */
-    private function editRedirectRecordContent(bool $isSimpleMode, string $baseHiddenInputs): ?array {
-        $request = $this->editRedirectRequestedIds();
+    private function editRedirectRecordContent(array $context, string $baseHiddenInputs): ?array {
+        $isSimpleMode = $context['isSimpleMode'];
+        $request = $this->editRequest()->getRequestedIds();
         if ($request === null) {
-            echo __('Error: No ID(s) found for edit request.', '404-solution');
-            $this->logger->debugMessage("No ID(s) found in GET or POST data for edit request.");
-            return null;
+            return $this->renderMissingRedirects($context, array());
         }
+        // Recorded here rather than inside RedirectEditRequest so that reader
+        // stays a pure getter (scripts/lint/lint-hidden-write-getters).
+        $this->logger->debugMessage('Edit redirect page. Requested via ' . $request['source'] . ': ' .
+                wp_kses_post((string)json_encode($request['recnum'] !== null
+                        ? $request['recnum'] : $request['recnumsMultiple'])));
 
         if ($request['recnum'] !== null) {
-            $singleResult = $this->buildSingleRecordContent($request['recnum'], $isSimpleMode);
+            $singleResult = $this->buildSingleRecordContent($context, $request['recnum'], $isSimpleMode);
             if ($singleResult === null) {
                 return null;
             }
@@ -276,7 +343,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             return $singleResult;
         }
 
-        $bulkResult = $this->renderBulkRedirectFormFields($request['recnumsMultiple']);
+        $bulkResult = $this->renderBulkRedirectFormFields($context, $request['recnumsMultiple']);
         if ($bulkResult === null) {
             return null;
         }
@@ -292,42 +359,18 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         );
     }
 
-    /** @return array{recnum: int|null, recnumsMultiple: array<int, int>}|null */
-    private function editRedirectRequestedIds(): ?array {
-        if (isset($_GET['id']) && is_scalar($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
-            $this->logger->debugMessage("Edit redirect page. GET ID: " .
-                    wp_kses_post((string)json_encode(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_GET['id']))));
-            return array('recnum' => absint($_GET['id']), 'recnumsMultiple' => array());
-        }
-
-        if (isset($_POST['id']) && is_scalar($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
-            $this->logger->debugMessage("Edit redirect page. POST ID: " .
-                    wp_kses_post((string)json_encode(ABJ_404_Solution_RequestInputNormalizer::normalizeScalar($_POST['id']))));
-            return array('recnum' => absint($_POST['id']), 'recnumsMultiple' => array());
-        }
-
-        if ($this->shared->viewGetPostOrGetSanitize('idnum') === '' && !isset($_GET['idnum']) && !isset($_POST['idnum'])) {
-            return null;
-        }
-
-        $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum'] : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->shared->viewGetPostOrGetSanitize('idnum'));
-        $recnumsMultiple = array_values(array_filter(array_map(function($v) { return absint($v); }, (array)$rawIdnum), function($v) { return $v > 0; }));
-        $this->logger->debugMessage("Edit redirect page. ids_multiple: " .
-                wp_kses_post((string)json_encode($recnumsMultiple)));
-        return array('recnum' => null, 'recnumsMultiple' => $recnumsMultiple);
-    }
-
     /**
      * Build the form-row HTML, hidden id input, and date strings for a single-record edit.
      *
+     * @param EditPageContext $context
+     * @param int $recnum
+     * @param bool $isSimpleMode
      * @return array{redirect: array<string, mixed>, redirects_multiple: array<int, array<string, mixed>>, redirectUrl: string, startDate: string, endDate: string, hiddenInputs: string, formRows: string}|null Null on error (already echoed).
      */
-    private function buildSingleRecordContent(int $recnum, bool $isSimpleMode): ?array {
+    private function buildSingleRecordContent(array $context, int $recnum, bool $isSimpleMode): ?array {
         $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs(array($recnum));
         if (empty($redirects_multiple)) {
-            echo "Error: Invalid ID Number! (id: " . esc_html((string)$recnum) . ")";
-            $this->logger->errorMessage("Error: Invalid ID Number! (id: " . esc_html((string)$recnum) . ")");
-            return null;
+            return $this->renderMissingRedirects($context, array($recnum));
         }
 
         /** @var array<string, mixed> $redirect */

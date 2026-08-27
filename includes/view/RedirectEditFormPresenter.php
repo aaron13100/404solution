@@ -114,6 +114,69 @@ class ABJ_404_Solution_RedirectEditFormPresenter {
     }
 
     /**
+     * Build the notice shown when the edit screen was asked for redirect ids
+     * that no longer have a row.
+     *
+     * Rendered as the stock WordPress warning notice (docs/ui-aesthetic:
+     * "All four notice states share the same structural shape") because the
+     * admin has done nothing wrong: the link they clicked was rendered before
+     * the row was removed. The link back is what makes the dead end
+     * recoverable.
+     *
+     * @param array<int, int> $missingIds Ids the request asked for.
+     * @param string $backUrl Where the "back to the list" link points.
+     * @param string $backLabel Visible text of that link.
+     * @return string
+     */
+    public function buildMissingRedirectsNoticeHtml(array $missingIds, string $backUrl, string $backLabel): string {
+        $idList = implode(', ', array_map('strval', $missingIds));
+        $message = sprintf(
+            /* translators: %s is a comma-separated list of redirect id numbers. */
+            _n(
+                'Redirect %s was not found. It may have been deleted since this page was opened.',
+                'Redirects %s were not found. They may have been deleted since this page was opened.',
+                count($missingIds),
+                '404-solution'
+            ),
+            $idList
+        );
+
+        return $this->buildEditScreenNoticeHtml($message, $backUrl, $backLabel);
+    }
+
+    /**
+     * Build the notice shown when the edit screen was reached with no usable
+     * redirect id at all (no id parameter, or only zero / non-numeric ones).
+     *
+     * @param string $backUrl Where the "back to the list" link points.
+     * @param string $backLabel Visible text of that link.
+     * @return string
+     */
+    public function buildNoRedirectIdsNoticeHtml(string $backUrl, string $backLabel): string {
+        return $this->buildEditScreenNoticeHtml(
+            __('No redirect was selected to edit.', '404-solution'),
+            $backUrl,
+            $backLabel
+        );
+    }
+
+    /**
+     * Shared renderer for every edit-screen dead end, so a second one cannot
+     * drift into a different shape or a different severity than the first.
+     *
+     * @param string $message Already-translated sentence, not yet escaped.
+     * @param string $backUrl Where the "back to the list" link points.
+     * @param string $backLabel Visible text of that link.
+     * @return string
+     */
+    private function buildEditScreenNoticeHtml(string $message, string $backUrl, string $backLabel): string {
+        $html = $this->readTemplate('editRedirectMissingNotice.html');
+        $html = $this->functions->str_replace('{message}', esc_html($message), $html);
+        $html = $this->functions->str_replace('{back_url}', esc_url($backUrl), $html);
+        return $this->functions->str_replace('{back_label}', esc_html($backLabel), $html);
+    }
+
+    /**
      * Build the URL form-table row with an optional "Auto-matched by" note.
      *
      * @return string

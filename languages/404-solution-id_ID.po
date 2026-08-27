@@ -4285,3 +4285,12 @@ msgstr "404 Solution, hanya untuk admin: kecocokan terbaik %1$s, di bawah %2$s y
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution, hanya untuk admin: kecocokan terbaik %1$s, sama dengan atau di atas %2$s yang diperlukan untuk mengalihkan secara otomatis."
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "Pengalihan %s tidak ditemukan. Kemungkinan sudah dihapus sejak halaman ini dibuka."
+msgstr[1] "Pengalihan %s tidak ditemukan. Kemungkinan sudah dihapus sejak halaman ini dibuka."
+
+msgid "No redirect was selected to edit."
+msgstr "Tidak ada pengalihan yang dipilih untuk disunting."

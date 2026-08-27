@@ -4309,3 +4309,16 @@ msgstr "404 Solution، للمسؤولين فقط: أفضل تطابق %1$s، أ�
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution، للمسؤولين فقط: أفضل تطابق %1$s، مساوٍ أو أعلى من %2$s المطلوبة لإعادة التوجيه تلقائيًا."
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "لم يتم العثور على أي إعادة توجيه %s. ربما تم حذفها منذ فتح هذه الصفحة."
+msgstr[1] "لم يتم العثور على إعادة التوجيه %s. ربما تم حذفها منذ فتح هذه الصفحة."
+msgstr[2] "لم يتم العثور على إعادتي التوجيه %s. ربما تم حذفهما منذ فتح هذه الصفحة."
+msgstr[3] "لم يتم العثور على عمليات إعادة التوجيه %s. ربما تم حذفها منذ فتح هذه الصفحة."
+msgstr[4] "لم يتم العثور على عمليات إعادة التوجيه %s. ربما تم حذفها منذ فتح هذه الصفحة."
+msgstr[5] "لم يتم العثور على عمليات إعادة التوجيه %s. ربما تم حذفها منذ فتح هذه الصفحة."
+
+msgid "No redirect was selected to edit."
+msgstr "لم يتم تحديد أي إعادة توجيه للتعديل."

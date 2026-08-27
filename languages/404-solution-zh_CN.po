@@ -4282,3 +4282,11 @@ msgstr "404 Solution，仅管理员可见：最佳匹配为 %1$s，低于自动�
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution，仅管理员可见：最佳匹配为 %1$s，达到或超过自动重定向所需的 %2$s。"
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "未找到重定向 %s。它可能在本页面打开后已被删除。"
+
+msgid "No redirect was selected to edit."
+msgstr "未选择要编辑的重定向。"

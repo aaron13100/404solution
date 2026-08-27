@@ -3737,3 +3737,14 @@ msgstr ""
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr ""
 
+
+#: includes/view/RedirectEditFormPresenter.php:135
+#: includes/admin/actions/EditRedirectHandler.php:293
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/view/RedirectEditFormPresenter.php:158
+msgid "No redirect was selected to edit."
+msgstr ""

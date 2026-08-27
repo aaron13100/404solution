@@ -110,7 +110,7 @@ require_once __DIR__ . '/View_Logs.php';
  * @method mixed outputAdminHeaderTabs($sub = 'list', $message = '')
  * @method mixed outputAdminStatsPage()
  * @method mixed rememberTableDataSignature($sub, $rows)
- * @method mixed renderBulkRedirectFormFields(array<mixed> $recnums_multiple)
+ * @method mixed renderBulkRedirectFormFields(array<mixed> $context, array<mixed> $recnums_multiple)
  * @method mixed renderRegexAutoPromoteNotice(array<mixed> $notice)
  * @method mixed renderSuggestionBlock(array<mixed> $suggestion)
  * @method mixed resolveDestinationWarnings(ABJ_404_Solution_RedirectDestinationWarningContext $ctx)

@@ -4284,3 +4284,13 @@ msgstr "404 Solution, только для администраторов: луч
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution, только для администраторов: лучшее совпадение %1$s, не ниже %2$s, необходимых для автоматического перенаправления."
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "Перенаправление %s не найдено. Возможно, оно было удалено после открытия этой страницы."
+msgstr[1] "Перенаправления %s не найдены. Возможно, они были удалены после открытия этой страницы."
+msgstr[2] "Перенаправления %s не найдены. Возможно, они были удалены после открытия этой страницы."
+
+msgid "No redirect was selected to edit."
+msgstr "Не выбрано ни одного перенаправления для редактирования."

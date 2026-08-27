@@ -4288,3 +4288,11 @@ msgstr "404 Solution、管理者のみ表示: 最良の候補は %1$s で、自�
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution、管理者のみ表示: 最良の候補は %1$s で、自動リダイレクトに必要な %2$s 以上です。"
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "リダイレクト %s が見つかりませんでした。このページを開いてから削除された可能性があります。"
+
+msgid "No redirect was selected to edit."
+msgstr "編集するリダイレクトが選択されていません。"

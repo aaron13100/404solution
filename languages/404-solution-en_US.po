@@ -4320,3 +4320,12 @@ msgstr "404 Solution, admin only: best match %1$s, under the %2$s needed to redi
 msgid "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 msgstr "404 Solution, admin only: best match %1$s, at or above the %2$s needed to redirect automatically."
 
+
+#: includes/
+msgid "Redirect %s was not found. It may have been deleted since this page was opened."
+msgid_plural "Redirects %s were not found. They may have been deleted since this page was opened."
+msgstr[0] "Redirect %s was not found. It may have been deleted since this page was opened."
+msgstr[1] "Redirects %s were not found. They may have been deleted since this page was opened."
+
+msgid "No redirect was selected to edit."
+msgstr "No redirect was selected to edit."
