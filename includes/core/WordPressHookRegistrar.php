@@ -22,10 +22,6 @@ class ABJ_404_Solution_WordPressHookRegistrar {
 
     /** @return void */
     private static function registerLifecycleHooks(): void {
-        if (!is_admin()) {
-            return;
-        }
-
         register_deactivation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogicLifecycle::runOnPluginDeactivation');
         register_activation_hook(ABJ404_NAME, 'ABJ_404_Solution_PluginLogicLifecycle::runOnPluginActivation');
 

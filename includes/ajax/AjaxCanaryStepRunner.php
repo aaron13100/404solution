@@ -233,6 +233,14 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                             $requestId, 'canary_stream_first_flush', $work, $startFields);
                     }
                 );
+                // The response declares the exact prefix it intentionally put
+                // on the wire. The delivery analyzer then proves those bytes
+                // arrived unchanged; a swallowed/coalesced flush becomes a
+                // failed control, while every undeclared prefix stays corrupt.
+                $flushOutcome['deliveryPrefix'] = array(
+                    'bytes' => $flushOutcome['streamWhitespaceBytes'],
+                    'byte' => ' ',
+                );
                 // The findings ride their own record rather than the
                 // bracket's end record: a support payload is read
                 // long after the run, and "did this step stream, and

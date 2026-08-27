@@ -299,17 +299,22 @@ if (file_exists($__abj404_loader_path)) {
 unset($__abj404_loader_path);
 
 if ($GLOBALS['abj404_boot_ok']) {
-	// admin
-	if (is_admin()) {
-		try {
-			ABJ_404_Solution_WordPress_Connector::init();
+	// Lifecycle hooks must be registered in every load context. WP-CLI loads
+	// the plugin outside wp-admin before `wp plugin activate`, then fires the
+	// callback registered during that load. Admin-only hooks remain guarded
+	// inside WordPressHookRegistrar::registerAdminHooks().
+	try {
+		ABJ_404_Solution_WordPress_Connector::init();
+		if (is_admin()) {
 			ABJ_404_Solution_AjaxAdminEndpointRegistrar::register();
-		} catch (\Throwable $e) {
-			// init() failed. Fall through to register the degraded admin page
-			// so the user still has a menu item with error details instead of nothing.
-			$GLOBALS['abj404_boot_ok'] = false;
-			$GLOBALS['abj404_boot_error'] = 'Plugin initialization failed: ' . $e->getMessage();
-			abj404_logRuntimeWarning('Admin initialization failed', $e);
+		}
+	} catch (\Throwable $e) {
+		// init() failed. On admin requests, register the degraded page so the
+		// user still gets the original error detail instead of a missing menu.
+		$GLOBALS['abj404_boot_ok'] = false;
+		$GLOBALS['abj404_boot_error'] = 'Plugin initialization failed: ' . $e->getMessage();
+		abj404_logRuntimeWarning('Plugin initialization failed', $e);
+		if (is_admin()) {
 			add_action('admin_menu', 'abj404_degraded_admin_menu');
 			add_action('admin_notices', 'abj404_degraded_admin_notice');
 		}
