@@ -81,7 +81,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
             $record['plugin_version'] = $session['plugin_version'];
             $record['journal_lines_scanned'] = count($traceLines) + count($checkpointLines);
             return self::reconstruct(
-                $record, $checkpointLines, $session['request_ids'], $sessionKey);
+                $record, $checkpointLines, $session['request_ids'], $sessionKey, $sessionId);
         } catch (Throwable $e) {
             $record['status'] = self::STATUS_ERROR;
             $record['error'] = substr($e->getMessage(), 0, 200);
@@ -101,6 +101,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
             'malformed_receipts' => 0,
             'missing_required_evidence' => array(),
             'journal_lines_scanned' => 0,
+            'body_delivery' => null,
             'interpretation' => null,
         );
     }
@@ -140,7 +141,8 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
         array $record,
         array $lines,
         array $sessionRequestIds,
-        string $sessionKey
+        string $sessionKey,
+        string $sessionId
     ): array {
         $receipts = self::sessionReceiptRecords($lines, $sessionRequestIds, $sessionKey);
         if ($receipts === array()) {
@@ -172,9 +174,20 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
         $observations = $projection['observations'];
         $observations[ABJ_404_Solution_AjaxCanaryLadder::STEP_CONCURRENT_CONTROL] =
             self::projectConcurrentControl($concurrent);
+        // The emitted-against-delivered join is rebuilt from the SAME
+        // receipts this reconstruction already holds. Recomputing the matrix
+        // without it would drop bodyRewrittenInTransitCausal from exactly the
+        // payload a maintainer reads when the live interpret response never
+        // arrived -- the case this whole path exists for.
+        $bodyDelivery = ABJ_404_Solution_ResponseBodyDeliveryEvidence::fromLines(
+            $lines,
+            $sessionKey,
+            ABJ_404_Solution_EncodedTableResponseSize::forSession($sessionId)
+        );
         $record['status'] = self::STATUS_RECONSTRUCTED;
+        $record['body_delivery'] = $bodyDelivery;
         $record['interpretation'] =
-            ABJ_404_Solution_AjaxCanaryLadder::interpretResults($observations, true);
+            ABJ_404_Solution_AjaxCanaryLadder::interpretResults($observations, true, $bodyDelivery);
         return $record;
     }
 

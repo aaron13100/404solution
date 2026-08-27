@@ -170,61 +170,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                     });
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM:
-                $obLevelBefore = isset($context['ob_level_before']) && is_numeric($context['ob_level_before'])
-                    ? (int)$context['ob_level_before'] : 0;
-                return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_stream',
-                    static function () use ($requestId, $obLevelBefore) {
-                        // Routed through the same output-buffer-management
-                        // filter every other flush in this codebase respects,
-                        // so a host or test that turns that management off
-                        // never gets a mid-response flush it did not ask for.
-                        //
-                        // The plan decides whether a whitespace block is
-                        // emitted at all. ob_flush() only moves the CURRENT
-                        // buffer into its PARENT, so behind any foreign
-                        // buffer this step used to prefix the body with 2048
-                        // non-JSON bytes that reached no client, escaped the
-                        // plugin's own containment floor, and confounded the
-                        // comparison against `inert`. See
-                        // ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan().
-                        //
-                        // around()-bracketed rather than announced by a bare
-                        // pre-call record (gap-hunt iteration 2, the same
-                        // Codex gap #5 shape fixed in AjaxResponseEmitter's
-                        // ob_close): a stall inside ob_flush()/flush() behind
-                        // a buffering intermediary is exactly what this canary
-                        // step exists to detect, and a record with no matching
-                        // end could only ever prove a flush was ATTEMPTED.
-                        // 'flushed' keeps the skip branch positive evidence
-                        // instead of an absence -- without it an elapsed of 0
-                        // reads as an instant flush rather than no flush.
-                        $manageOutputBuffer = (bool)apply_filters(
-                            'abj404_should_manage_output_buffer', true, array('source' => 'canaryLadder_stream'));
-                        $plan = ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan(
-                            $manageOutputBuffer, $obLevelBefore, ob_get_level());
-                        $flushOutcome = ABJ_404_Solution_AjaxCanaryStreamFlush::emitAndFlush(
-                            $plan,
-                            ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
-                            static function (): void {
-                                ABJ_404_Solution_AjaxResponseEmitter::emitJsonResponseHeadersEarly(200);
-                            },
-                            static function (callable $work, array $startFields) use ($requestId): void {
-                                ABJ_404_Solution_AjaxCheckpointLogger::around(
-                                    $requestId, 'canary_stream_first_flush', $work, $startFields);
-                            }
-                        );
-                        // The findings ride their own record rather than the
-                        // bracket's end record: a support payload is read
-                        // long after the run, and "did this step stream, and
-                        // if not why not" is the one thing that decides
-                        // whether its outcome is evidence about streaming at
-                        // all.
-                        ABJ_404_Solution_AjaxCheckpointLogger::record(
-                            $requestId, 'canary_stream_flush_outcome', $flushOutcome);
-                        return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
-                            $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM,
-                            ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES, $flushOutcome);
-                    });
+                return self::runStreamStep($requestId, $context);
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_INTERPRET:
                 return self::runInterpretStep($requestReader, $requestId, $context);
@@ -235,12 +181,104 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     }
 
     /**
-     * The ladder's closing step: two independent verdicts, both journaled.
+     * The mid-response flush probe: the only step that puts bytes on the wire
+     * before the JSON body exists.
      *
-     * The ladder interpretation matrix is computed by the BROWSER (it is
-     * the only side that saw every step) and journaled here. The detach A/B
-     * verdict is computed HERE, from the durable journal, because its two
-     * halves never meet on the client: the server chose each real table
+     * Its own method for the same reason runInterpretStep() is: it is the one
+     * arm of the ladder that is not a single call in a runStage() bracket. It
+     * decides whether a flush can reach the client at all on this host,
+     * performs it, and journals findings about it under two different record
+     * kinds. Leaving it inline made run() a switch a reader could no longer
+     * scan for the ordered probe sequence, which is that method's whole value.
+     *
+     * @param array<string, mixed> $context Mutated in place by runStage().
+     * @return array<string, mixed>
+     */
+    private static function runStreamStep(string $requestId, array &$context): array {
+        $obLevelBefore = isset($context['ob_level_before']) && is_numeric($context['ob_level_before'])
+            ? (int)$context['ob_level_before'] : 0;
+        $rawStreamSession = $context['session_id'] ?? '';
+        $streamSessionKey = ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey(
+            is_scalar($rawStreamSession) ? (string)$rawStreamSession : '');
+        return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_stream',
+            static function () use ($requestId, $obLevelBefore, $streamSessionKey) {
+                // Routed through the same output-buffer-management
+                // filter every other flush in this codebase respects,
+                // so a host or test that turns that management off
+                // never gets a mid-response flush it did not ask for.
+                //
+                // The plan decides whether a whitespace block is
+                // emitted at all. ob_flush() only moves the CURRENT
+                // buffer into its PARENT, so behind any foreign
+                // buffer this step used to prefix the body with 2048
+                // non-JSON bytes that reached no client, escaped the
+                // plugin's own containment floor, and confounded the
+                // comparison against `inert`. See
+                // ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan().
+                //
+                // around()-bracketed rather than announced by a bare
+                // pre-call record (gap-hunt iteration 2, the same
+                // Codex gap #5 shape fixed in AjaxResponseEmitter's
+                // ob_close): a stall inside ob_flush()/flush() behind
+                // a buffering intermediary is exactly what this canary
+                // step exists to detect, and a record with no matching
+                // end could only ever prove a flush was ATTEMPTED.
+                // 'flushed' keeps the skip branch positive evidence
+                // instead of an absence -- without it an elapsed of 0
+                // reads as an instant flush rather than no flush.
+                $manageOutputBuffer = (bool)apply_filters(
+                    'abj404_should_manage_output_buffer', true, array('source' => 'canaryLadder_stream'));
+                $plan = ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan(
+                    $manageOutputBuffer, $obLevelBefore, ob_get_level());
+                $flushOutcome = ABJ_404_Solution_AjaxCanaryStreamFlush::emitAndFlush(
+                    $plan,
+                    ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
+                    static function (): void {
+                        ABJ_404_Solution_AjaxResponseEmitter::emitJsonResponseHeadersEarly(200);
+                    },
+                    static function (callable $work, array $startFields) use ($requestId): void {
+                        ABJ_404_Solution_AjaxCheckpointLogger::around(
+                            $requestId, 'canary_stream_first_flush', $work, $startFields);
+                    }
+                );
+                // The findings ride their own record rather than the
+                // bracket's end record: a support payload is read
+                // long after the run, and "did this step stream, and
+                // if not why not" is the one thing that decides
+                // whether its outcome is evidence about streaming at
+                // all.
+                //
+                // The record names its OWN browser session, so
+                // ABJ_404_Solution_ResponseBodyDeliveryEvidence can
+                // scope it without waiting for the browser's receipt
+                // for this step to arrive. Requiring the receipt would
+                // make "did this step stream" depend on the very
+                // delivery channel under diagnosis -- the same
+                // cross-channel join that reported "no_receipts" over
+                // a complete set of them on the 2026-08-27 Azure
+                // capture. It rides the JOURNAL record only, not the
+                // response payload: the browser already knows its own
+                // session and the step stays byte-matched with its
+                // siblings.
+                ABJ_404_Solution_AjaxCheckpointLogger::record(
+                    $requestId,
+                    'canary_stream_flush_outcome',
+                    array_merge($flushOutcome, array('session_key' => $streamSessionKey)));
+                return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
+                    $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM,
+                    ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES, $flushOutcome);
+            });
+    }
+
+    /**
+     * The ladder's closing step: three independent verdicts, all journaled.
+     *
+     * The ladder interpretation matrix is computed from the BROWSER's
+     * observations (it is the only side that saw every step) and journaled
+     * here. The other two are computed HERE, from the durable journal,
+     * because each has two halves that never meet on the client.
+     *
+     * The detach A/B verdict: the server chose each real table
      * request's detach mode, the browser reported whether that request
      * completed, and until this call site existed nothing joined them --
      * ABJ_404_Solution_DetachAbVerdict::fromAttempts() was a
@@ -253,10 +291,21 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
      * payload and the developer log archive, and a defect in the trace class
      * cannot erase the conclusion drawn about it.
      *
-     * The two verdicts stay separate records computed from disjoint inputs.
+     * The body-delivery join: the server journaled how many bytes each
+     * response encoded, the browser journaled how many bytes its Resource
+     * Timing says arrived, and until this call site existed nothing compared
+     * them. That comparison is the one line that names support report
+     * 2026-08-27 (3072 bytes emitted for the `stream` canary, 6089 delivered,
+     * complete, unparseable): a body rewritten in transit. It rides its own
+     * checkpoint record for the same reason the A/B verdict does, and it is
+     * ALSO folded into the matrix, where it lets `streamingBufferCausal`
+     * require that the streaming step actually streamed. See
+     * ABJ_404_Solution_ResponseBodyDeliveryEvidence.
+     *
+     * The three verdicts stay separate records computed from disjoint inputs.
      * Merging them would let an ambiguous quadrant in one leak into the
-     * other's conclusion, which is the same reason the pure rules are
-     * separate functions.
+     * others' conclusions, which is the same reason the pure rules are
+     * separate classes.
      *
      * @param ABJ_404_Solution_RequestInputNormalizer $requestReader
      * @param array<string, mixed> $context
@@ -275,11 +324,21 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
 
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_interpret',
             static function () use ($parsed, $realFailed, $requestId, $sessionId) {
+                // Resolved HERE, not inside interpretResults(): the rule stays
+                // pure and the journal read stays in the request that has a
+                // session to scope it to. Read before the matrix so a failure
+                // to join degrades to unknown facts rather than to no matrix.
+                $bodyDelivery = ABJ_404_Solution_ResponseBodyDeliveryEvidence::forSession($sessionId);
+                ABJ_404_Solution_AjaxCheckpointLogger::record(
+                    $requestId,
+                    ABJ_404_Solution_ResponseBodyDeliveryEvidence::EVIDENCE_EVENT,
+                    $bodyDelivery);
+
                 $interpretation = null;
                 $stageMetadata = array();
                 if ($parsed['status'] === 'available') {
                     $interpretation = ABJ_404_Solution_AjaxCanaryLadder::interpretResults(
-                        $parsed['observations'], $realFailed);
+                        $parsed['observations'], $realFailed, $bodyDelivery);
                     foreach ($interpretation as $key => $value) {
                         if (is_scalar($value)) {
                             $stageMetadata[$key] = $value;
@@ -299,6 +358,11 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                     'interpretationUnavailable' => $parsed['status'] === 'unavailable'
                         ? $parsed['unavailable'] : null,
                     'detachAb' => $detachAb,
+                    // Returned even when the browser's observations were
+                    // rejected: the emitted/delivered join is derived entirely
+                    // from the server's own journal, so an unreadable
+                    // observations payload is no reason to withhold it.
+                    'bodyDelivery' => $bodyDelivery,
                     'received' => $parsed['status'] === 'available',
                 );
             });

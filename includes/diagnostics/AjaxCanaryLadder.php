@@ -117,6 +117,15 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
     const MAX_INERT_BYTES = 2000000;
     const DEFAULT_INERT_BYTES = 50000;
 
+    /** The `stream` step's flush was observed crossing the SAPI boundary. */
+    const STREAM_FLUSH_EVIDENCE_REACHED = 'reached_sapi';
+
+    /** The `stream` step ran and its flush provably reached nobody. */
+    const STREAM_FLUSH_EVIDENCE_NOT_REACHED = 'did_not_reach_sapi';
+
+    /** No journaled flush outcome for this session's `stream` step. */
+    const STREAM_FLUSH_EVIDENCE_UNKNOWN = 'unknown';
+
     /**
      * Whether the `stream` step's mid-response flush can actually reach the
      * client, decided from the output-buffer stack this request found.
@@ -280,9 +289,23 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      *   (the ladder only ever runs after a real failure); kept as an
      *   explicit parameter rather than a hard-coded assumption so the
      *   content-inspection rule stays honestly conditional and testable.
+     * @param array<string, mixed> $deliveryEvidence The server-resolved join
+     *   of what each response EMITTED against what the browser RECEIVED,
+     *   from ABJ_404_Solution_ResponseBodyDeliveryEvidence::forSession().
+     *   Kept as its own parameter rather than folded into $observations
+     *   because provenance is the point: everything in $observations is what
+     *   an untrusted browser said, while these facts were read out of the
+     *   server's own durable journal. Unknown keys are ignored and an absent
+     *   bag leaves every rule below it unknown, so an older client or an
+     *   unreadable journal degrades to "no verdict" rather than to a wrong
+     *   one.
      * @return array<string, mixed>
      */
-    public static function interpretResults(array $observations, bool $realRequestFailed = true): array {
+    public static function interpretResults(
+        array $observations,
+        bool $realRequestFailed = true,
+        array $deliveryEvidence = array()
+    ): array {
         $entry = static function (array $obs, string $step): array {
             $found = $obs[$step] ?? null;
             return is_array($found) ? $found : array();
@@ -302,6 +325,10 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
         $streamGapMs = isset($stream['gapMs']) && is_numeric($stream['gapMs']) ? (int)$stream['gapMs'] : 0;
         $concurrent = $entry($observations, self::STEP_CONCURRENT_CONTROL);
         $samePhaseControlFailed = self::samePhaseControlFailed($concurrent, $realRequestFailed);
+        $rawComparisons = $deliveryEvidence['comparisons'] ?? null;
+        $bodySizes = ABJ_404_Solution_ResponseBodyRewriteVerdict::fromComparisons(
+            is_array($rawComparisons) ? $rawComparisons : array(), self::MAX_REPORTED_STEP_CHARS);
+        $streamFlush = self::streamFlushEvidence($deliveryEvidence);
 
         return array_merge(array(
             'browserOrNetworkCausal' => !$ok($staticAsset),
@@ -317,8 +344,33 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
             'contentInspectionCausal' => !$samePhaseControlFailed && $ok($inert) && $realRequestFailed,
             'samePhaseControlFailed' => $samePhaseControlFailed,
             'compressionCausal' => $ok($compressOff) && !$ok($compressOn),
-            'streamingBufferCausal' => !$ok($stream) && $streamGapMs > 2000,
-        ), self::baselineTrend($observations));
+            // Requires POSITIVE proof that the step streamed at all. On the
+            // 2026-08-27 Azure host ob_flush() emptied the plugin's buffer
+            // into a foreign one below it, so nothing crossed the SAPI
+            // boundary and the step measured nothing about streaming -- yet
+            // its failure read as a streaming failure for a week. Unknown is
+            // therefore not "it streamed": with no journaled flush outcome
+            // this rule stays false and the run says why through
+            // streamFlushEvidence.
+            'streamingBufferCausal' => !$ok($stream) && $streamGapMs > 2000
+                && $streamFlush === self::STREAM_FLUSH_EVIDENCE_REACHED,
+            'streamFlushEvidence' => $streamFlush,
+        ), $bodySizes, self::baselineTrend($observations));
+    }
+
+    /**
+     * Whether this session's `stream` step provably crossed the SAPI
+     * boundary, named as a tri-state rather than collapsed to a boolean.
+     *
+     * @param array<string, mixed> $deliveryEvidence
+     */
+    private static function streamFlushEvidence(array $deliveryEvidence): string {
+        $reached = $deliveryEvidence['stream_flush_reached_sapi'] ?? null;
+        if (!is_bool($reached)) {
+            return self::STREAM_FLUSH_EVIDENCE_UNKNOWN;
+        }
+        return $reached
+            ? self::STREAM_FLUSH_EVIDENCE_REACHED : self::STREAM_FLUSH_EVIDENCE_NOT_REACHED;
     }
 
     /**

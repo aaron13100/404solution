@@ -119,7 +119,11 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         if (!self::$headersEmitted && !headers_sent()) {
             self::checkpointedEmitHeaders($checkpointRequestId, $ledgerRequestId, $httpStatus);
         }
-        self::checkpointedEncodeAndEcho($payload, $checkpointRequestId);
+        self::checkpointedEncodeAndEcho(
+            $payload,
+            $checkpointRequestId,
+            ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestIdFromGlobalContext()
+        );
 
         // Test hook: tests register `abj404_should_exit` returning false to skip exit.
         // This filter runs foreign WordPress callbacks (named + `all`) after the
@@ -222,28 +226,58 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * table-AJAX endpoint; skip the instrumentation but keep behavior
      * identical.
      *
+     * The post-hoc size record is scoped SEPARATELY, to
+     * $measuredRequestId (AjaxDiagnosticRequestPolicy::diagnosticRequestId()),
+     * because the two scopes answer different questions. The brackets are the
+     * table endpoint's expensive micro-boundary instrumentation, and widening
+     * that gate would also drag the canary ladder into the detach A/B
+     * experiment that AjaxResponseEmitter::checkpointedFlushAndFinish()
+     * deliberately keys off the same '' check -- confounding the very
+     * interpretation matrix the ladder exists to produce. "How many bytes did
+     * this response actually encode" is not instrumentation at all: it is a
+     * one-line fact about the response, and every endpoint with an armed
+     * durable trace needs it. Support report 2026-08-27 (Azure App Service,
+     * plugin 4.3.4) turned on exactly this gap: the ladder's `stream` step
+     * emitted 3072 bytes and the browser received 6089, and no record on the
+     * server named the 3072, so the ladder could only report that the step
+     * failed. See ABJ_404_Solution_ResponseBodyDeliveryEvidence.
+     *
      * @param mixed $payload
+     * @param string $measuredRequestId Request whose durable trace is armed,
+     *   or '' to record no size at all. Equals $checkpointRequestId on the
+     *   table endpoint, so that response still journals exactly one
+     *   `json_encode` size record.
      */
-    private static function checkpointedEncodeAndEcho($payload, string $checkpointRequestId): void {
-        if ($checkpointRequestId === '') {
-            echo json_encode($payload);
-            return;
-        }
+    private static function checkpointedEncodeAndEcho(
+        $payload,
+        string $checkpointRequestId,
+        string $measuredRequestId = ''
+    ): void {
         $json = null;
-        ABJ_404_Solution_AjaxCheckpointLogger::around(
-            $checkpointRequestId,
-            'json_encode',
-            static function () use ($payload, &$json) {
-                $json = json_encode($payload);
-            },
-            self::payloadShapeFields($payload)
-        );
-        ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'json_encode', array(
+        if ($checkpointRequestId === '') {
+            $json = json_encode($payload);
+        } else {
+            ABJ_404_Solution_AjaxCheckpointLogger::around(
+                $checkpointRequestId,
+                'json_encode',
+                static function () use ($payload, &$json) {
+                    $json = json_encode($payload);
+                },
+                self::payloadShapeFields($payload)
+            );
+        }
+        // record() is a no-op for '', so an endpoint with no armed trace
+        // behaves exactly as it did before this scope existed.
+        ABJ_404_Solution_AjaxCheckpointLogger::record($measuredRequestId, 'json_encode', array(
             'bytes' => is_string($json) ? strlen($json) : 0,
             'hash' => is_string($json) ? md5($json) : null,
             'json_last_error' => json_last_error(),
             'json_last_error_msg' => json_last_error() === JSON_ERROR_NONE ? '' : json_last_error_msg(),
         ));
+        if ($checkpointRequestId === '') {
+            echo $json;
+            return;
+        }
         ABJ_404_Solution_AjaxCheckpointLogger::around(
             $checkpointRequestId,
             'echo',
