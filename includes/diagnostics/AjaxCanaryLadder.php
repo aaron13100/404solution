@@ -102,9 +102,66 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
 
     const AUTH_ONLY_BYTES = 1024;
     const STREAM_WHITESPACE_BYTES = 2048;
+
+    /** The stack was unbuffered, so an echo reaches the SAPI directly. */
+    const STREAM_REASON_UNBUFFERED = 'unbuffered_output';
+    /** The plugin's own managed buffer is the only one, so ob_flush() reaches the SAPI. */
+    const STREAM_REASON_PLUGIN_OWNS_ONLY_BUFFER = 'plugin_owns_the_only_buffer';
+    /** A buffer the plugin does not own sits beneath its own; ob_flush() lands there, not on the wire. */
+    const STREAM_REASON_FOREIGN_BUFFER_BELOW = 'foreign_output_buffer_below';
+    /** Something opened buffers above the plugin's own, so the top buffer is not ours to flush. */
+    const STREAM_REASON_NOT_TOP_BUFFER = 'plugin_does_not_own_top_buffer';
+    /** Output-buffer management is filtered off for this request. */
+    const STREAM_REASON_MANAGEMENT_OFF = 'output_buffer_management_off';
     const MIN_INERT_BYTES = 64;
     const MAX_INERT_BYTES = 2000000;
     const DEFAULT_INERT_BYTES = 50000;
+
+    /**
+     * Whether the `stream` step's mid-response flush can actually reach the
+     * client, decided from the output-buffer stack this request found.
+     *
+     * ob_flush() flushes the CURRENT buffer into its PARENT, not to the SAPI.
+     * With any foreign buffer beneath the plugin's own managed buffer the
+     * whitespace block therefore never reaches the wire at all: it lands one
+     * level down, in a buffer the plugin does not own and deliberately will
+     * not reclaim (AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput()
+     * drains only to `ob_level_before`, so its containment reports "no stray
+     * output" while those bytes are already past it). The step then measures
+     * nothing about streaming while still prefixing the response body with
+     * STREAM_WHITESPACE_BYTES of non-JSON, which is two variables changed at
+     * once in the one experiment that is supposed to isolate streaming --
+     * so a failure there cannot be attributed to buffering, which is the
+     * only conclusion the step exists to support.
+     *
+     * Emitting a block that provably cannot be flushed buys nothing and
+     * costs the comparison against the `inert` step of the same shape, so on
+     * such a host the step emits nothing and reports why.
+     *
+     * @param bool $manageOutputBuffer The `abj404_should_manage_output_buffer` decision.
+     * @param int $obLevelBefore Buffer depth found before the plugin opened its own.
+     * @param int $obLevelNow Buffer depth at the moment of the flush.
+     * @return array{stream: bool, reason: string}
+     */
+    public static function resolveStreamFlushPlan(
+        bool $manageOutputBuffer,
+        int $obLevelBefore,
+        int $obLevelNow
+    ): array {
+        if (!$manageOutputBuffer) {
+            return array('stream' => false, 'reason' => self::STREAM_REASON_MANAGEMENT_OFF);
+        }
+        if ($obLevelNow <= 0) {
+            return array('stream' => true, 'reason' => self::STREAM_REASON_UNBUFFERED);
+        }
+        if ($obLevelBefore <= 0 && $obLevelNow === 1) {
+            return array('stream' => true, 'reason' => self::STREAM_REASON_PLUGIN_OWNS_ONLY_BUFFER);
+        }
+        if ($obLevelBefore > 0) {
+            return array('stream' => false, 'reason' => self::STREAM_REASON_FOREIGN_BUFFER_BELOW);
+        }
+        return array('stream' => false, 'reason' => self::STREAM_REASON_NOT_TOP_BUFFER);
+    }
 
     /**
      * @param mixed $raw
@@ -176,10 +233,19 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * repeated content -- the ladder measures size and transport behavior,
      * never anything resembling real redirect/URL data.
      *
-     * @return array{requestId: string, canaryStep: string, filler: string}
+     * @param array<string, mixed> $extraFields Step-specific findings folded
+     *   into the envelope before the filler is sized, so the response still
+     *   lands on $targetBytes.
+     * @return array{requestId: string, canaryStep: string, filler: string, ...}
      */
-    public static function buildFillerPayload(string $requestId, string $step, int $targetBytes): array {
-        return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller($requestId, $step, $targetBytes);
+    public static function buildFillerPayload(
+        string $requestId,
+        string $step,
+        int $targetBytes,
+        array $extraFields = array()
+    ): array {
+        return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller(
+            $requestId, $step, $targetBytes, $extraFields);
     }
 
     /**
@@ -314,176 +380,4 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
         );
     }
 
-    /**
-     * The decisive-measurement rule for the detach A/B experiment (Bruno
-     * timeout cause matrix, gap G9 / c434;
-     * ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode() picks the
-     * mode, ABJ_404_Solution_AjaxAdminEndpointSupport::checkpointedFlushAndFinish()
-     * records it per request ID). Kept as its own pure function rather than
-     * folded into interpretResults(): two independent verdicts computed from
-     * disjoint inputs -- the ladder's canary observations vs. the
-     * real table endpoint's own A/B attempts -- can never confound each
-     * other, whereas merging them into one matrix would let an ambiguous
-     * quadrant in one leak into the other's conclusion.
-     *
-     * If every 'on' attempt completed and every 'off' attempt did not, the
-     * detach fix is causal. If both modes completed uniformly, detach was
-     * never the cause and a transient (or one of the other three things
-     * beta.2 also ships) is the better explanation. If neither mode ever
-     * completed, something else dominates regardless of detach. Anything
-     * else -- mixed outcomes within a mode, or fewer than one full pair
-     * observed -- is honestly inconclusive rather than forced into one of
-     * the three clean verdicts.
-     *
-     * @param array<int, array<string, mixed>> $attempts
-     *   Chronological per-request outcomes for the real table endpoint's own
-     *   workload-matched A/B attempts (mode 'on'/'off', workload scope, and
-     *   ordinal as journaled by detach_ab_mode; ok = whether that attempt
-     *   completed from the client's own point of view).
-     * @return array<string, mixed>
-     */
-    public static function interpretDetachAbResults(array $attempts): array {
-        $tally = self::tallyDetachAbAttempts($attempts);
-        $onCount = $tally['on'];
-        $onOkCount = $tally['onOk'];
-        $offCount = $tally['off'];
-        $offOkCount = $tally['offOk'];
-
-        $pairs = self::matchedDetachAbPairs($attempts);
-        $pairCount = count($pairs);
-        $onFirstPairs = 0;
-        $offFirstPairs = 0;
-        $detachPairs = 0;
-        $transientPairs = 0;
-        $neitherPairs = 0;
-        foreach ($pairs as $pair) {
-            $pair['on_first'] ? $onFirstPairs++ : $offFirstPairs++;
-            if ($pair['on_ok'] && !$pair['off_ok']) {
-                $detachPairs++;
-            } else if ($pair['on_ok'] && $pair['off_ok']) {
-                $transientPairs++;
-            } else if (!$pair['on_ok'] && !$pair['off_ok']) {
-                $neitherPairs++;
-            }
-        }
-
-        $orderCounterbalanced = $onFirstPairs > 0 && $offFirstPairs > 0;
-        $detachCausal = $pairCount >= 2 && $orderCounterbalanced && $detachPairs === $pairCount;
-        $transientCausal = $pairCount > 0 && $transientPairs === $pairCount;
-        $neitherModeHelps = $pairCount > 0 && $neitherPairs === $pairCount;
-
-        return array(
-            'detachCausal' => $detachCausal,
-            'transientCausal' => $transientCausal,
-            'neitherModeHelps' => $neitherModeHelps,
-            'inconclusive' => !$detachCausal && !$transientCausal && !$neitherModeHelps,
-            'onCount' => $onCount,
-            'onOkCount' => $onOkCount,
-            'offCount' => $offCount,
-            'offOkCount' => $offOkCount,
-            'matchedPairCount' => $pairCount,
-            'onFirstPairCount' => $onFirstPairs,
-            'offFirstPairCount' => $offFirstPairs,
-            'orderCounterbalanced' => $orderCounterbalanced,
-        );
-    }
-
-    /**
-     * Complete, workload-matched pairs only. Missing partners, legacy records
-     * without scope fields, duplicated positions, and malformed mode pairs
-     * remain visible in raw attempt accounting but cannot decide causality.
-     *
-     * @param array<int, array<string, mixed>> $attempts
-     * @return array<int, array{on_ok: bool, off_ok: bool, on_first: bool}>
-     */
-    private static function matchedDetachAbPairs(array $attempts): array {
-        $grouped = array();
-        $duplicates = array();
-        foreach ($attempts as $attempt) {
-            $slot = self::detachAbPairSlot($attempt);
-            if ($slot === null) {
-                continue;
-            }
-            if (isset($grouped[$slot['key']][$slot['position']])) {
-                $duplicates[$slot['key']] = true;
-                continue;
-            }
-            $grouped[$slot['key']][$slot['position']] = array(
-                'mode' => $slot['mode'],
-                'ok' => $slot['ok'],
-            );
-        }
-
-        $pairs = array();
-        foreach ($grouped as $key => $positions) {
-            if (isset($duplicates[$key]) || !isset($positions[0], $positions[1])
-                    || $positions[0]['mode'] === $positions[1]['mode']) {
-                continue;
-            }
-            $on = $positions[0]['mode'] === 'on' ? $positions[0] : $positions[1];
-            $off = $positions[0]['mode'] === 'off' ? $positions[0] : $positions[1];
-            $pairs[] = array(
-                'on_ok' => $on['ok'],
-                'off_ok' => $off['ok'],
-                'on_first' => $positions[0]['mode'] === 'on',
-            );
-        }
-        return $pairs;
-    }
-
-    /**
-     * Validate one evidence record and derive pair coordinates from ordinal.
-     * Supplemental pair metadata is journaled but never overrides the ordinal.
-     * @param mixed $attempt
-     * @return array{key: string, position: int, mode: string, ok: bool}|null
-     */
-    private static function detachAbPairSlot($attempt): ?array {
-        if (!is_array($attempt)) {
-            return null;
-        }
-        $part = is_scalar($attempt['part'] ?? null) ? (string)$attempt['part'] : '';
-        $payloadKey = is_scalar($attempt['payload_key'] ?? null)
-            ? (string)$attempt['payload_key'] : '';
-        $ordinal = isset($attempt['ordinal']) && is_numeric($attempt['ordinal'])
-            ? (int)$attempt['ordinal'] : -1;
-        $mode = is_scalar($attempt['mode'] ?? null) ? (string)$attempt['mode'] : '';
-        if ($part === '' || $payloadKey === '' || $ordinal < 0
-                || ($mode !== 'on' && $mode !== 'off')) {
-            return null;
-        }
-        return array(
-            'key' => $part . '|' . $payloadKey . '|' . intdiv($ordinal, 2),
-            'position' => $ordinal % 2,
-            'mode' => $mode,
-            'ok' => !empty($attempt['ok']),
-        );
-    }
-
-    /**
-     * Count per-mode attempts and completions, split out of
-     * interpretDetachAbResults() purely to keep that method's cyclomatic
-     * complexity within the project's ceiling -- this loop is one
-     * self-contained tally, not logic that needs to be inlined at the call
-     * site.
-     *
-     * @param array<int, array{mode?: mixed, ok?: mixed}> $attempts
-     * @return array{on: int, onOk: int, off: int, offOk: int}
-     */
-    private static function tallyDetachAbAttempts(array $attempts): array {
-        $tally = array('on' => 0, 'onOk' => 0, 'off' => 0, 'offOk' => 0);
-        foreach ($attempts as $attempt) {
-            if (!is_array($attempt)) {
-                continue;
-            }
-            $mode = is_scalar($attempt['mode'] ?? null) ? (string)$attempt['mode'] : '';
-            if ($mode !== 'on' && $mode !== 'off') {
-                continue;
-            }
-            $tally[$mode]++;
-            if (!empty($attempt['ok'])) {
-                $tally[$mode . 'Ok']++;
-            }
-        }
-        return $tally;
-    }
 }

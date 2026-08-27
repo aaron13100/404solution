@@ -161,6 +161,8 @@ $abj404ClassesByDirectory = array(
         'RequestEnvironmentFingerprint', 'ClientBuildFingerprint', 'DiagnosticModuleManifest',
         'OpcacheGenerationProbe', 'BootWaypointRecorder',
         'ClientTransportReport', 'AjaxCanaryLadder', 'AjaxCanaryPayloadFactory',
+        'AjaxCanaryStreamFlush',
+        'DetachAbVerdict',
         'AjaxCanaryReceiptParser', 'DebugLogFileStore', 'DebugLogReader',
         'DebugLogArchiveBuilder', 'DeveloperLogMailer', 'ToolsDiagnostics',
     ),

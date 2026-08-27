@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
  * Joining them was, until this class, a manual step performed by a human
  * reading JSONL at analysis time. That is the same manual step that has
  * already gone wrong once in this investigation, and it is the reason the
- * decision rule (ABJ_404_Solution_AjaxCanaryLadder::interpretDetachAbResults())
+ * decision rule (ABJ_404_Solution_DetachAbVerdict::fromAttempts())
  * had no production caller at all.
  *
  * This class owns the join and nothing else: which mode records belong to one
@@ -133,7 +133,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
             'attempts_resolved' => 0,
             'attempts_unresolved' => 0,
             'journal_lines_scanned' => 0,
-            'verdict' => ABJ_404_Solution_AjaxCanaryLadder::interpretDetachAbResults(array()),
+            'verdict' => ABJ_404_Solution_DetachAbVerdict::fromAttempts(array()),
         );
     }
 
@@ -159,7 +159,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
         $record['attempts_resolved'] = count($resolved);
         $record['attempts_unresolved'] = $joined['unresolved'];
         $record['journal_lines_scanned'] = $linesScanned;
-        $record['verdict'] = ABJ_404_Solution_AjaxCanaryLadder::interpretDetachAbResults($resolved);
+        $record['verdict'] = ABJ_404_Solution_DetachAbVerdict::fromAttempts($resolved);
         return $record;
     }
 

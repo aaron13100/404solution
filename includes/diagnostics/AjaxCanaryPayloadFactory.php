@@ -53,10 +53,28 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
     }
 
     /**
-     * @return array{requestId: string, canaryStep: string, filler: string}
+     * @param array<string, mixed> $extraFields Step-specific fields carried by
+     *   this response. Part of the envelope BEFORE the filler is sized, so a
+     *   step that reports extra findings still lands on the same encoded byte
+     *   count as its size-matched siblings -- the whole size ladder compares
+     *   steps by response size, and a step that quietly ran larger than the
+     *   one it is compared against would read as a size effect that is really
+     *   just its own metadata.
+     * @return array{requestId: string, canaryStep: string, filler: string, ...}
      */
-    public static function buildFiller(string $requestId, string $step, int $targetBytes): array {
-        $envelope = array('requestId' => $requestId, 'canaryStep' => $step, 'filler' => '');
+    public static function buildFiller(
+        string $requestId,
+        string $step,
+        int $targetBytes,
+        array $extraFields = array()
+    ): array {
+        // Extras first, so the envelope's own three keys are always the
+        // envelope's: a step's findings extend the payload, they never
+        // redefine the identity every canary response is read by.
+        $envelope = array_merge(
+            $extraFields,
+            array('requestId' => $requestId, 'canaryStep' => $step, 'filler' => '')
+        );
         $overhead = strlen((string)json_encode($envelope));
         $envelope['filler'] = str_repeat('a', max(0, $targetBytes - $overhead));
         return $envelope;

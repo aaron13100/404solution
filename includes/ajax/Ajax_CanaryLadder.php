@@ -42,7 +42,11 @@ if (!defined('ABSPATH')) {
  *                        compression/output-handler behavior.
  *   9. stream         - a flushed leading-whitespace block before the JSON,
  *                        so the client can observe XHR progress and locate
- *                        downstream buffering.
+ *                        downstream buffering. Emitted only where the flush
+ *                        can actually reach the client (see
+ *                        AjaxCanaryLadder::resolveStreamFlushPlan); elsewhere
+ *                        the step reports why it could not stream rather than
+ *                        prefixing the body with bytes nobody sees early.
  *   interpret         - journals the client-computed interpretation matrix
  *                        (never re-derives it from server-side timing alone:
  *                        the browser is the only side that saw every step).
@@ -307,17 +311,23 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                     });
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM:
+                $obLevelBefore = isset($context['ob_level_before']) && is_numeric($context['ob_level_before'])
+                    ? (int)$context['ob_level_before'] : 0;
                 return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_stream',
-                    static function () use ($requestId) {
-                        echo str_repeat(' ', ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES);
+                    static function () use ($requestId, $obLevelBefore) {
                         // Routed through the same output-buffer-management
-                        // filter every other flush in this codebase respects
-                        // (AjaxAdminEndpointSupport::checkpointedFlushAndFinish),
-                        // so tests that disable OB management (and so must
-                        // read the whitespace back via ob_get_clean()) are
-                        // unaffected: this is a real mid-response flush only
-                        // in production, never a premature one in test output
-                        // buffering.
+                        // filter every other flush in this codebase respects,
+                        // so a host or test that turns that management off
+                        // never gets a mid-response flush it did not ask for.
+                        //
+                        // The plan decides whether a whitespace block is
+                        // emitted at all. ob_flush() only moves the CURRENT
+                        // buffer into its PARENT, so behind any foreign
+                        // buffer this step used to prefix the body with 2048
+                        // non-JSON bytes that reached no client, escaped the
+                        // plugin's own containment floor, and confounded the
+                        // comparison against `inert`. See
+                        // ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan().
                         //
                         // around()-bracketed rather than announced by a bare
                         // pre-call record (gap-hunt iteration 2, the same
@@ -331,27 +341,30 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                         // reads as an instant flush rather than no flush.
                         $manageOutputBuffer = (bool)apply_filters(
                             'abj404_should_manage_output_buffer', true, array('source' => 'canaryLadder_stream'));
-                        ABJ_404_Solution_AjaxCheckpointLogger::around(
-                            $requestId,
-                            'canary_stream_first_flush',
-                            static function () use ($manageOutputBuffer) {
-                                if (!$manageOutputBuffer) {
-                                    return;
-                                }
-                                if (ob_get_level() > 0) {
-                                    @ob_flush();
-                                }
-                                @flush();
+                        $plan = ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan(
+                            $manageOutputBuffer, $obLevelBefore, ob_get_level());
+                        $flushOutcome = ABJ_404_Solution_AjaxCanaryStreamFlush::emitAndFlush(
+                            $plan,
+                            ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
+                            static function (): void {
+                                ABJ_404_Solution_AjaxResponseEmitter::emitJsonResponseHeadersEarly(200);
                             },
-                            array(
-                                'bytes' => ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
-                                'flushed' => $manageOutputBuffer,
-                                'ob_level' => ob_get_level(),
-                            )
+                            static function (callable $work, array $startFields) use ($requestId): void {
+                                ABJ_404_Solution_AjaxCheckpointLogger::around(
+                                    $requestId, 'canary_stream_first_flush', $work, $startFields);
+                            }
                         );
+                        // The findings ride their own record rather than the
+                        // bracket's end record: a support payload is read
+                        // long after the run, and "did this step stream, and
+                        // if not why not" is the one thing that decides
+                        // whether its outcome is evidence about streaming at
+                        // all.
+                        ABJ_404_Solution_AjaxCheckpointLogger::record(
+                            $requestId, 'canary_stream_flush_outcome', $flushOutcome);
                         return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
                             $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM,
-                            ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES);
+                            ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES, $flushOutcome);
                     });
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_INTERPRET:
@@ -371,7 +384,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
      * halves never meet on the client: the server chose each real table
      * request's detach mode, the browser reported whether that request
      * completed, and until this call site existed nothing joined them --
-     * ABJ_404_Solution_AjaxCanaryLadder::interpretDetachAbResults() was a
+     * ABJ_404_Solution_DetachAbVerdict::fromAttempts() was a
      * decision rule with no production caller, so the verdict a beta session
      * exists to produce depended on a human joining two record kinds by hand.
      *

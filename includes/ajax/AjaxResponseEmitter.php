@@ -39,6 +39,63 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
     private const PAYLOAD_SHAPE_MAX_ELEMENTS = 5000;
 
     /**
+     * Whether this request has already emitted its JSON response head.
+     *
+     * headers_sent() alone cannot answer that: while any output buffer holds
+     * the body, the head is set but not yet on the wire, so a second
+     * emission would silently duplicate Content-type and X-ABJ404-Request-ID
+     * and journal a second headers_start/_end pair. Request-scoped, and reset
+     * per request by AjaxAdminEndpointSupport::startAjaxDebugContext().
+     *
+     * @var bool
+     */
+    private static $headersEmitted = false;
+
+    /**
+     * Re-arm the per-request header bookkeeping. Called from the endpoint's
+     * own arming point so this stays request state rather than a test-only
+     * back door: one PHP request serves one AJAX response, but one PHPUnit
+     * worker serves many.
+     *
+     * @return void
+     */
+    public static function resetForRequest(): void {
+        self::$headersEmitted = false;
+    }
+
+    /**
+     * Emit the JSON response head NOW, before any body byte can commit it.
+     *
+     * A handler that echoes and flushes mid-response (the canary ladder's
+     * `stream` step) commits the response head at that flush. By the time
+     * sendJsonResponseAndExit() runs, headers_sent() is true and its own
+     * emission is skipped -- so without this call the streamed response
+     * ships with PHP's default text/html and, worse, without the
+     * X-ABJ404-Request-ID header the ledger relies on to identify a request
+     * whose body never arrives, which is exactly the case the canary exists
+     * to diagnose.
+     *
+     * Committing the head here also pins the status code, so an error raised
+     * after this point can no longer change it. That is not a regression: on
+     * the only branch that calls this, the flush was already committing the
+     * head a few statements later regardless. The difference is whether the
+     * committed head is the right one.
+     *
+     * @param int $httpStatus
+     * @return void
+     */
+    public static function emitJsonResponseHeadersEarly($httpStatus = 200): void {
+        if (self::$headersEmitted || headers_sent()) {
+            return;
+        }
+        self::checkpointedEmitHeaders(
+            ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext(),
+            ABJ_404_Solution_AjaxRequestLedger::requestIdFromGlobalContext(),
+            $httpStatus
+        );
+    }
+
+    /**
      * @param mixed $payload
      * @param int $httpStatus
      * @return void
@@ -59,7 +116,7 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         // already finished. See ABJ_404_Solution_SameSiteRequestCensus::markPhase().
         ABJ_404_Solution_SameSiteRequestCensus::markPhase(
             ABJ_404_Solution_SameSiteRequestCensus::PHASE_RESPONSE_ENCODE);
-        if (!headers_sent()) {
+        if (!self::$headersEmitted && !headers_sent()) {
             self::checkpointedEmitHeaders($checkpointRequestId, $ledgerRequestId, $httpStatus);
         }
         self::checkpointedEncodeAndEcho($payload, $checkpointRequestId);
@@ -98,6 +155,7 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * @param int $httpStatus
      */
     private static function checkpointedEmitHeaders(string $checkpointRequestId, string $ledgerRequestId, $httpStatus): void {
+        self::$headersEmitted = true;
         $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
             ? $GLOBALS['abj404_ajax_context'] : array();
         $emitHeaders = static function () use ($ctx, $ledgerRequestId) {

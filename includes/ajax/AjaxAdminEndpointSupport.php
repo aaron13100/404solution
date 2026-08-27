@@ -283,6 +283,9 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
         $context['ajax_expected_json'] = true;
         $context['response_sent'] = false;
         $context['ob_level_before'] = ob_get_level();
+        // Response-head bookkeeping is request state, and this is the one
+        // arming point every JSON endpoint passes through.
+        ABJ_404_Solution_AjaxResponseEmitter::resetForRequest();
 
         // Prevent WordPress's "critical error" HTML page from masking details for AJAX calls.
         if (!headers_sent()) {

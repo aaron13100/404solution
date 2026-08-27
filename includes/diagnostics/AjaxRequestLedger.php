@@ -205,7 +205,7 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      * pair contains one ON and one OFF request, and the next pair reverses
      * their order, so a clean separation (ON completes, OFF times out) cannot
      * be manufactured by workload or monotonic time drift.
-     * AjaxCanaryLadder::interpretDetachAbResults() reads the resulting
+     * DetachAbVerdict::fromAttempts() reads the resulting
      * per-request evidence.
      *
      * Bounded to a small number of pairs and gated behind two independent
