@@ -57,13 +57,18 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
      * @return string the option name the request was registered under, or ''
      *   when it could not be registered at all.
      */
-    public static function add(int $startedAtMs, string $channel, string $action, int $pid,
-            string $phase = ''): string {
+    public static function add(int $startedAtMs, string $channel, string $action, ?int $pid,
+            string $phase = '', string $processToken = ''): string {
         $dbCore = self::dbCore();
         if ($dbCore === null) {
             return '';
         }
-        $optionName = self::OPTION_PREFIX . dechex($pid)
+        // Preserve the historical hexadecimal PID name on ordinary hosts;
+        // only the unavailable-PID branch needs the synthetic process token.
+        $identity = $pid !== null ? dechex($pid)
+            : ($processToken !== '' ? $processToken : 'unavailable');
+        $identity = substr((string)preg_replace('/[^A-Za-z0-9-]/', '', $identity), 0, 32);
+        $optionName = self::OPTION_PREFIX . $identity
             . preg_replace('/[^a-f0-9]/', '', uniqid('', true));
         $result = $dbCore->queryAndGetResults(
             "INSERT IGNORE INTO {wp_options} (option_name, option_value, autoload) "
@@ -99,7 +104,7 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
      * @return bool whether the row was updated.
      */
     public static function advance(string $optionName, int $startedAtMs, string $channel,
-            string $action, int $pid, string $phase): bool {
+            string $action, ?int $pid, string $phase): bool {
         $dbCore = self::dbCore();
         if ($dbCore === null || $optionName === '') {
             return false;
@@ -122,7 +127,7 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
      * bounded reading from a complete one instead of quietly believing the
      * smaller number.
      *
-     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int, phase: string}>, truncated: bool}
+     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int|null, phase: string}>, truncated: bool}
      */
     public static function readAll(): array {
         $dbCore = self::dbCore();
@@ -192,9 +197,10 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
      * for the same reason the decoder bounds every field: a value that could
      * introduce a sixth part would shift the meaning of the parts after it.
      */
-    private static function encode(int $startedAtMs, string $channel, string $action, int $pid,
+    private static function encode(int $startedAtMs, string $channel, string $action, ?int $pid,
             string $phase = ''): string {
-        return $startedAtMs . '|' . $channel . '|' . $action . '|' . $pid
+        return $startedAtMs . '|' . $channel . '|' . $action . '|'
+            . ($pid !== null ? (string)$pid : '')
             . '|' . str_replace('|', '', $phase);
     }
 
@@ -203,7 +209,7 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
      * class wrote in a format it understands.
      *
      * @param mixed $row
-     * @return array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int, phase: string}|null
+     * @return array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int|null, phase: string}|null
      */
     private static function decode($row): ?array {
         if (!is_array($row)) {
@@ -229,7 +235,7 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
             'started_at_ms' => (int)$parts[0],
             'channel' => isset($parts[1]) ? substr($parts[1], 0, 16) : '',
             'action' => isset($parts[2]) ? substr($parts[2], 0, 64) : '',
-            'pid' => isset($parts[3]) && ctype_digit($parts[3]) ? (int)$parts[3] : 0,
+            'pid' => isset($parts[3]) && ctype_digit($parts[3]) ? (int)$parts[3] : null,
             // A row from a build that predates phases has four parts. Reported
             // as an empty phase, which the census names explicitly, rather than
             // being confused with a request that reached no phase at all.
@@ -238,7 +244,7 @@ final class ABJ_404_Solution_SameSiteRequestRegistry {
     }
 
     /**
-     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int, phase: string}>, truncated: bool}
+     * @return array{status: string, reason: string, entries: array<int, array{option_name: string, started_at_ms: int, channel: string, action: string, pid: int|null, phase: string}>, truncated: bool}
      */
     private static function unreadable(string $reason): array {
         return array('status' => 'unavailable', 'reason' => $reason, 'entries' => array(),

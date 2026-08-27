@@ -109,12 +109,13 @@ final class ABJ_404_Solution_DiagnosticCollectionManifest {
      * @return array<string, mixed>
      */
     private static function collector(): array {
-        $hostname = gethostname();
+        $hostname = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::hostname();
         return array(
-            'hostname' => $hostname !== false ? $hostname : '',
-            'pid' => getmypid(),
+            'hostname' => $hostname !== null ? $hostname : '',
+            'pid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId(),
+            'process_token' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processToken(),
             'sapi' => PHP_SAPI,
-            'euid' => function_exists('posix_geteuid') ? posix_geteuid() : null,
+            'euid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::effectiveUserId(),
         );
     }
 

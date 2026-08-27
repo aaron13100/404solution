@@ -271,7 +271,7 @@ final class ABJ_404_Solution_HookInstrumentationLifecycleTracer {
                 'event' => $event,
                 'checkpoint_id' => 'hil-' . $operationId . '-'
                     . $this->recordSequence,
-                'pid' => getmypid(),
+                'pid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId(),
             ))
         );
         $result = ABJ_404_Solution_CheckpointIntentStore::append($record);

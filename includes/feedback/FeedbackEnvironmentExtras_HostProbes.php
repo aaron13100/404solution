@@ -38,11 +38,11 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
      * @return int
      */
     public function diskFreeBytesOrThrow(): int {
-        if (!function_exists('disk_free_space')) {
+        if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('disk_free_space')) {
             throw new \RuntimeException('disk_free_space unavailable');
         }
         $dir = $this->supportDiagnosticsDirectory();
-        $v = @disk_free_space($dir);
+        $v = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::diskFreeSpace($dir);
         if ($v === false) {
             throw new \RuntimeException('disk_free_space returned false for ' . $dir);
         }
@@ -57,11 +57,11 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
      * @return int
      */
     public function diskTotalBytesOrThrow(): int {
-        if (!function_exists('disk_total_space')) {
+        if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('disk_total_space')) {
             throw new \RuntimeException('disk_total_space unavailable');
         }
         $dir = $this->supportDiagnosticsDirectory();
-        $v = @disk_total_space($dir);
+        $v = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::diskTotalSpace($dir);
         if ($v === false) {
             throw new \RuntimeException('disk_total_space returned false for ' . $dir);
         }
@@ -91,8 +91,8 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
 
     /** @return bool */
     public function opcacheEnabled(): bool {
-        if (function_exists('opcache_get_status')) {
-            $st = @opcache_get_status(false);
+        if (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_get_status')) {
+            $st = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::opcacheStatus(false);
             if (is_array($st) && isset($st['opcache_enabled'])) {
                 return (bool)$st['opcache_enabled'];
             }
@@ -338,14 +338,14 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
      * @return int
      */
     public function probeTmpFreeBytesOrThrow(): int {
-        if (!function_exists('disk_free_space')) {
+        if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('disk_free_space')) {
             throw new \RuntimeException('disk_free_space unavailable');
         }
         $tmp = function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : '';
         if ($tmp === '') {
             throw new \RuntimeException('sys_get_temp_dir returned empty');
         }
-        $v = @disk_free_space($tmp);
+        $v = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::diskFreeSpace($tmp);
         if ($v === false) {
             throw new \RuntimeException('disk_free_space returned false for ' . $tmp);
         }

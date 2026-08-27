@@ -55,11 +55,11 @@ final class ABJ_404_Solution_OpcacheGenerationProbe {
             $summary['reason'] = 'opcache-api-restricted';
             return new self(null, $summary);
         }
-        if (!function_exists('opcache_get_status')) {
+        if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_get_status')) {
             return new self(null, $summary);
         }
 
-        $status = @opcache_get_status(true);
+        $status = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::opcacheStatus(true);
         if (!is_array($status) || (array_key_exists('opcache_enabled', $status) && !$status['opcache_enabled'])) {
             return new self(null, $summary);
         }

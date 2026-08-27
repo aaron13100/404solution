@@ -73,7 +73,7 @@ final class ABJ_404_Solution_AjaxFrequentCheckpointWriter {
                     'event' => $event,
                     'checkpoint_id' => $checkpointId,
                     'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                    'pid' => getmypid(),
+                    'pid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId(),
                 ))
             );
         }
@@ -93,16 +93,17 @@ final class ABJ_404_Solution_AjaxFrequentCheckpointWriter {
                 'request_id' => $requestId,
                 'event' => $event,
                 'checkpoint_id' => $checkpointId,
-                'pid' => getmypid(),
+                'pid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId(),
             ))
         ));
     }
 
     private static function checkpointId(): string {
         self::$checkpointSequence++;
-        $pid = getmypid();
         $startedNs = function_exists('hrtime') ? (int)hrtime(true) : 0;
-        return self::alphabeticHex(is_int($pid) ? $pid : 0) . '-'
+        return self::alphabeticHex(
+            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processNumericToken()
+        ) . '-'
             . self::alphabeticHex($startedNs) . '-f'
             . self::alphabeticHex(self::$checkpointSequence);
     }

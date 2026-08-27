@@ -339,10 +339,18 @@ if (!function_exists('abj404_opcache_target_files')) {
      * @return array{files: string[], source: string, truncated: bool}
      */
     function abj404_opcache_target_files($root) {
-        if (function_exists('opcache_get_status')) {
+        // Load the dependency-free capability boundary only after the upgrade
+        // guard has been consulted. Loading any ordinary plugin class before
+        // that decision would recreate the stale class-linking fatal this
+        // guard exists to prevent.
+        require_once dirname(__DIR__) . '/core/PhpRuntimeCapabilityAdapter.php';
+        if (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_get_status')) {
             // Suppressed because a host with opcache compiled in but disabled
             // for this SAPI raises a warning here rather than returning false.
-            $fromStatus = abj404_opcache_scripts_from_status(@opcache_get_status(true), $root);
+            $fromStatus = abj404_opcache_scripts_from_status(
+                ABJ_404_Solution_PhpRuntimeCapabilityAdapter::opcacheStatus(true),
+                $root
+            );
             if ($fromStatus !== null) {
                 return array(
                     'files' => $fromStatus,
@@ -438,7 +446,10 @@ if (!function_exists('abj404_opcache_refresh_after_upgrade')) {
             return $result;
         }
 
-        if (!function_exists('opcache_invalidate')) {
+        // This final, dependency-free class is safe to link only after the
+        // persistent version gate above has made the upgrade decision.
+        require_once dirname(__DIR__) . '/core/PhpRuntimeCapabilityAdapter.php';
+        if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_invalidate')) {
             $result['reason'] = 'opcache-unavailable';
             return $result;
         }
@@ -455,7 +466,7 @@ if (!function_exists('abj404_opcache_refresh_after_upgrade')) {
         foreach ($collected['files'] as $file) {
             // A file that is not currently cached returns false; that is a
             // normal outcome here, not an error, so only successes are recorded.
-            if (@opcache_invalidate($file, true)) {
+            if (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::invalidateOpcache($file, true)) {
                 $result['invalidated'][] = $file;
             }
         }

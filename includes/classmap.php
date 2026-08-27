@@ -80,6 +80,7 @@ $abj404ClassesByDirectory = array(
         'FileSystemService', 'Functions', 'RegexHelper', 'RegexHelperMb', 'RegexHelperPreg',
         'PermalinkResolver', 'UrlEncoder', 'Sanitizer', 'QueryStringHelper', 'PostRef', 'UserRef',
         'SiteRef', 'PluginLogic', 'PluginLogicInterface', 'Privacy', 'ServiceContainer', 'Clock',
+        'PhpRuntimeCapabilityAdapter',
         'SiteTimezone', 'SiteLocalTimestamp', 'PluginReleaseChannel', 'SetupWizard', 'SynchronizationUtils', 'Timer',
         'WordPressHookRegistrar', 'WordPress_Connector', 'WordPressConnectorDependencies',
         'ReviewFeedback', 'RebuildHealthState',

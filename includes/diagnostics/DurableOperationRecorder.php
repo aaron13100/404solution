@@ -356,7 +356,7 @@ final class ABJ_404_Solution_DurableOperationRecorder {
             'request_id' => $requestId,
             'event' => $event,
             'checkpoint_id' => $checkpointId,
-            'pid' => getmypid(),
+            'pid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId(),
         ));
     }
 
@@ -396,8 +396,9 @@ final class ABJ_404_Solution_DurableOperationRecorder {
 
     private static function newCheckpointId(): string {
         self::$checkpointSequence++;
-        $pid = getmypid();
-        $identity = dechex(is_int($pid) ? $pid : 0) . '-'
+        $identity = dechex(
+            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processNumericToken()
+        ) . '-'
             . dechex(function_exists('hrtime') ? (int)hrtime(true) : 0) . '-'
             . dechex(self::$checkpointSequence);
         return strtr($identity, '0123456789abcdef', 'ghijklmnopqrstuv');

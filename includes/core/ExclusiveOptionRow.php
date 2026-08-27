@@ -81,7 +81,7 @@ class ABJ_404_Solution_ExclusiveOptionRow {
 	 * @phpstan-impure
 	 */
 	public static function uniqueClaimValue($prefix) {
-		return $prefix . ':' . (string)getmypid() . ':' . uniqid('', true);
+		return $prefix . ':' . ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processToken() . ':' . uniqid('', true);
 	}
 
 	/** Take $optionName, but only if no row exists for it yet.

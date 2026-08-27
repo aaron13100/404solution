@@ -46,7 +46,8 @@ final class ABJ_404_Solution_DiagnosticDirectoryProbe {
                 self::recordStep($requestId, false, 'resolve_directory');
                 return;
             }
-            $path = $directory . self::FILE_PREFIX . $requestId . '_' . getmypid() . '.tmp';
+            $path = $directory . self::FILE_PREFIX . $requestId . '_'
+                . ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processToken() . '.tmp';
             $payload = 'abj404-selftest-' . $requestId;
 
             $handle = @fopen($path, 'wb');

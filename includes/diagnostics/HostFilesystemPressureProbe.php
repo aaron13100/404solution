@@ -90,8 +90,8 @@ final class ABJ_404_Solution_HostFilesystemPressureProbe {
                 'is_dir(' . $path . ')' => 'not_directory',
             ), $path);
         }
-        $freeBytes = @disk_free_space($path);
-        $totalBytes = @disk_total_space($path);
+        $freeBytes = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::diskFreeSpace($path);
+        $totalBytes = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::diskTotalSpace($path);
 
         return array(
             'status' => 'available',

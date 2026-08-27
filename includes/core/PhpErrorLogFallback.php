@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/PhpRuntimeCapabilityAdapter.php';
+
 if (!function_exists('abj404_logPhpFallback')) {
 /**
  * Emit a last-resort PHP error-log breadcrumb when plugin logging is
@@ -31,7 +33,8 @@ function abj404_logPhpFallback(string $category, string $message): void {
         : 'uncategorized:' . $category;
     $normalizedMessage = str_replace(array("\r", "\n"), ' ', $message);
 
-    // @abj404-raw-error-log-allowed: logger-internal centralized PHP error-log fallback is the single approved raw sink when plugin logging is unavailable.
-    @error_log('404 Solution: ' . $normalizedMessage . ' [' . $normalizedCategory . ']');
+    ABJ_404_Solution_PhpRuntimeCapabilityAdapter::writeErrorLog(
+        '404 Solution: ' . $normalizedMessage . ' [' . $normalizedCategory . ']'
+    );
 }
 }

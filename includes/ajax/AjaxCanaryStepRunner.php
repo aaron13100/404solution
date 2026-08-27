@@ -154,7 +154,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                             if (!headers_sent()) {
                                 header('Cache-Control: no-transform');
                             }
-                            @ini_set('zlib.output_compression', '0');
+                            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni('zlib.output_compression', '0');
                         }
                         $payload = ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload($requestId, $step, $bytes);
                         $payload['compressionMode'] = $step;

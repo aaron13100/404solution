@@ -30,7 +30,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
      * from canonical source and prevents a covered code change from shipping
      * with an old marker.
      */
-    const DIAGNOSTIC_BUILD_ID = '07f453df6bb893e8c31c0f2c8fcf9dc2e4a70365';
+    const DIAGNOSTIC_BUILD_ID = 'dfcb1268b04a342ba428de89b45de609ebf68758';
 
     const CHECKPOINT_FILE = ABJ_404_Solution_CheckpointJournalWriter::CHECKPOINT_FILE;
     const ROTATED_FILE = ABJ_404_Solution_CheckpointJournalWriter::ROTATED_FILE;
@@ -182,7 +182,7 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                     'request_id' => $requestId,
                     'event' => $event,
                     'checkpoint_id' => $checkpointId,
-                    'pid' => getmypid(),
+                    'pid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId(),
                 ))
             );
             $phases['envelope_build'] = self::elapsedMicroseconds($phaseStartedNs);
@@ -354,15 +354,16 @@ final class ABJ_404_Solution_AjaxCheckpointLogger {
                 'event' => $event,
                 'checkpoint_id' => $checkpointId,
                 'hrtime_ns' => function_exists('hrtime') ? (int)hrtime(true) : null,
-                'pid' => getmypid(),
+                'pid' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId(),
             ))
         );
     }
 
     private static function checkpointId(int $startedNs): string {
         self::$checkpointSequence++;
-        $pid = getmypid();
-        return self::alphabeticHex(is_int($pid) ? $pid : 0) . '-'
+        return self::alphabeticHex(
+            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processNumericToken()
+        ) . '-'
             . self::alphabeticHex($startedNs) . '-'
             . self::alphabeticHex(self::$checkpointSequence);
     }

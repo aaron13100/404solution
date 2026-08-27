@@ -46,18 +46,21 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
         $cacheProbe = $this->timedCacheProbe($cacheProbeKey);
         $cronDue = $this->cronDueEvents();
         $obInventory = function_exists('ob_get_status') ? ob_get_status(true) : array();
-        $rusage = function_exists('getrusage') ? getrusage() : null;
+        $rusage = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::resourceUsage();
+        $hostname = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::hostname();
+        $pid = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId();
 
         return array_merge(self::bootDelta($this->clock->nowFloat()), array(
             'sapi' => PHP_SAPI,
-            // gethostname() is a core PHP function (always available, no WP
-            // dependency), so this is a plain false-check, not a
-            // function_exists() guard -- avoids the R6 Brain\Monkey
-            // cross-worker stub-leak hazard those guards create in tests.
-            'hostname' => gethostname() !== false
-                ? (string)gethostname()
+            'hostname' => $hostname !== null
+                ? $hostname
                 : (is_scalar($_SERVER['SERVER_NAME'] ?? null) ? (string)$_SERVER['SERVER_NAME'] : ''),
-            'pid' => getmypid(),
+            'pid' => $pid,
+            'pid_status' => $pid !== null ? 'available'
+                : (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('getmypid')
+                    ? 'invalid_result' : 'function_unavailable'),
+            'process_token' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processToken(),
+            'disabled_functions' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::disabledFunctions(),
             'diagnostic_build_id' => defined('ABJ404_DIAGNOSTIC_BUILD_ID')
                 ? (string)ABJ404_DIAGNOSTIC_BUILD_ID
                 : ABJ_404_Solution_AjaxCheckpointLogger::DIAGNOSTIC_BUILD_ID,

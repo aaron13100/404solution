@@ -107,7 +107,9 @@ final class ABJ_404_Solution_AjaxRequestTrace implements ABJ_404_Solution_Diagno
         $stamp = str_replace('.', '', sprintf('%.6f', $this->requestStartedAt));
         $pendingPath = $directory . 'abj404_ajax_trace_'
             . $this->context['request_id'] . '_' . $this->context['part'] . '_'
-            . $this->context['retry_count'] . '_' . getmypid() . '_' . $stamp . '.pending.jsonl';
+            . $this->context['retry_count'] . '_'
+            . ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processToken()
+            . '_' . $stamp . '.pending.jsonl';
         $this->journal = new ABJ_404_Solution_AjaxTraceJournal($directory, $pendingPath, $clock);
         $this->teardownRecorder = new ABJ_404_Solution_AjaxTeardownRecorder(
             $clock, $directory, $this->journal);

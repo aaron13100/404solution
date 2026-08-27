@@ -223,7 +223,10 @@ class ABJ_404_Solution_FatalErrorProcessor {
             // the released memory reserve.
             $currentLimitBytes = $this->currentMemoryLimitBytes();
             if ($currentLimitBytes > 0) {
-                @ini_set('memory_limit', (string) ($currentLimitBytes + (8 * 1024 * 1024)));
+                ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
+                    'memory_limit',
+                    (string) ($currentLimitBytes + (8 * 1024 * 1024))
+                );
             }
 
             $path = isset($GLOBALS['abj404_crash_beacon_path']) && is_string($GLOBALS['abj404_crash_beacon_path'])

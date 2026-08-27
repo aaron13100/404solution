@@ -28,9 +28,7 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
      */
     public static function isSupported(): bool {
         return defined('SIGALRM')
-            && function_exists('pcntl_async_signals')
-            && function_exists('pcntl_signal')
-            && function_exists('pcntl_alarm');
+            && ABJ_404_Solution_PhpRuntimeCapabilityAdapter::supportsSignalBudget();
     }
 
     /**
@@ -51,8 +49,11 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
         }
 
         try {
-            pcntl_async_signals(true);
-            if (!pcntl_signal(SIGALRM, array(__CLASS__, 'expire'))) {
+            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::enableAsyncSignals();
+            if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::installSignalHandler(
+                SIGALRM,
+                array(__CLASS__, 'expire')
+            )) {
                 self::record($requestId, 'post_response_worker_budget_unavailable', array(
                     'budget_seconds' => self::BUDGET_SECONDS,
                     'reason' => 'pcntl_signal_registration_failed',
@@ -61,7 +62,7 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
             }
 
             // Do not extend a deadline another component already installed.
-            $priorAlarmSeconds = pcntl_alarm(0);
+            $priorAlarmSeconds = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::alarm(0);
             $budgetSeconds = $priorAlarmSeconds > 0
                 ? min(self::BUDGET_SECONDS, $priorAlarmSeconds)
                 : self::BUDGET_SECONDS;
@@ -72,7 +73,7 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
             // this last and cancels the process-global alarm before LSAPI
             // reuses the worker; a stuck earlier callback never reaches it.
             register_shutdown_function(array(__CLASS__, 'complete'));
-            pcntl_alarm($budgetSeconds);
+            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::alarm($budgetSeconds);
             self::record($requestId, 'post_response_worker_budget_armed', array(
                 'budget_seconds' => $budgetSeconds,
                 'configured_budget_seconds' => self::BUDGET_SECONDS,
@@ -116,7 +117,7 @@ final class ABJ_404_Solution_PostResponseWorkerBudget {
         if (!self::$armed) {
             return;
         }
-        $remainingSeconds = function_exists('pcntl_alarm') ? pcntl_alarm(0) : 0;
+        $remainingSeconds = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::alarm(0);
         $requestId = self::$requestId;
         self::$armed = false;
         self::$requestId = '';

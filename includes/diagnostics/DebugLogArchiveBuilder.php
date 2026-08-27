@@ -94,10 +94,15 @@ class ABJ_404_Solution_DebugLogArchiveBuilder {
      * @param array<int, string> $requestedPaths
      */
     private function manifest(array $requestedPaths): string {
+        $hostname = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::hostname();
+        $pid = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processId();
+        $processIdentity = $pid !== null
+            ? 'pid ' . $pid
+            : 'synthetic process ' . ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processToken();
         $lines = array(
             'Files this archive was asked to carry, and whether they were found.',
-            'Collected by ' . (gethostname() !== false ? (string)gethostname() : 'unknown-host')
-                . ' pid ' . (string)getmypid() . ' (' . PHP_SAPI . ').',
+            'Collected by ' . ($hostname !== null ? $hostname : 'unknown-host')
+                . ' ' . $processIdentity . ' (' . PHP_SAPI . ').',
             '',
         );
         foreach ($requestedPaths as $path) {

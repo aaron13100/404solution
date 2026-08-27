@@ -1,7 +1,10 @@
 <?php
+
 if (!defined('ABSPATH')) {
     exit;
 }
+
+require_once dirname(__DIR__) . '/core/PhpRuntimeCapabilityAdapter.php';
 
 /**
  * Plugin class autoloader.
@@ -86,10 +89,10 @@ function abj404_autoloader_read_classmap($mapFile, $refreshBytecode = false) {
 	if (!is_file($mapFile)) {
 		return array();
 	}
-	if ($refreshBytecode && function_exists('opcache_invalidate')
+	if ($refreshBytecode && ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_invalidate')
 			&& (!function_exists('abj404_opcache_api_is_restricted')
 				|| !abj404_opcache_api_is_restricted(ini_get('opcache.restrict_api'), __FILE__))) {
-		@opcache_invalidate($mapFile, true);
+		ABJ_404_Solution_PhpRuntimeCapabilityAdapter::invalidateOpcache($mapFile, true);
 	}
 	try {
 		$loadedMap = require $mapFile;

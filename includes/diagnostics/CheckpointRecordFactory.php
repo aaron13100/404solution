@@ -181,7 +181,7 @@ final class ABJ_404_Solution_CheckpointRecordFactory {
      * @return array<string, int>|null
      */
     private static function resourceUsage(): ?array {
-        $rusage = function_exists('getrusage') ? getrusage() : null;
+        $rusage = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::resourceUsage();
         if (!is_array($rusage)) {
             return null;
         }
@@ -230,7 +230,7 @@ final class ABJ_404_Solution_CheckpointRecordFactory {
      * @return array{utime_delta_us: int|null, stime_delta_us: int|null}
      */
     private static function intentCpuDelta(string $requestId): array {
-        $rusage = function_exists('getrusage') ? getrusage() : null;
+        $rusage = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::resourceUsage();
         if (!is_array($rusage)) {
             return array('utime_delta_us' => null, 'stime_delta_us' => null);
         }

@@ -141,12 +141,12 @@ final class ABJ_404_Solution_HostPressureSampler {
 
     /** @return array<string, mixed> */
     private static function systemLoadAverage(): array {
-        if (!function_exists('sys_getloadavg')) {
+        if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('sys_getloadavg')) {
             return self::unavailable('function_unavailable', array(
                 'function_exists(sys_getloadavg)' => 'false',
             ));
         }
-        $load = @sys_getloadavg();
+        $load = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::systemLoadAverage();
         if (!is_array($load) || count($load) < 3) {
             return self::unavailable('invalid_result', array(
                 'sys_getloadavg()' => 'invalid_result',
