@@ -68,8 +68,17 @@ final class ABJ_404_Solution_ClientBuildFingerprint {
         'telemetry_env' => array('file' => 'ajax/view_updater_client_telemetry_env.js', 'functions' => null),
         'resource_timing' => array(
             'file' => 'ajax/view_updater_client_resource_timing.js', 'functions' => null),
+        'response_body_shape' => array(
+            'file' => 'ajax/view_updater_response_body_shape.js', 'functions' => null),
         'transport_telemetry' => array('file' => 'ajax/view_updater_transport_telemetry.js', 'functions' => null),
         'telemetry_delivery' => array('file' => 'ajax/view_updater_transport_telemetry_delivery.js', 'functions' => null),
+        'health_bar' => array(
+            'file' => 'ajax/view_updater_health_bar.js',
+            'functions' => array('abj404BuildHealthBarFragment', 'abj404HealthBarTelemetry',
+                'abj404HealthBarAttemptUrl', 'abj404HealthBarOutcome',
+                'abj404HealthBarReportNonce',
+                'abj404HealthBarRequestContext', 'abj404RenderHealthBarResult',
+                'abj404HealthBarAjaxOptions', 'refreshHealthBarIfNeeded')),
         'canary_measurements' => array(
             'file' => 'ajax/view_updater_canary_measurements.js', 'functions' => null),
         'concurrent_control_evidence' => array(

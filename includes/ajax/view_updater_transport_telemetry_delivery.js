@@ -48,9 +48,10 @@
      * every step. Ordered least-diagnostic-value first: page-environment
      * detail and response headers before the event timeline itself, which is
      * dropped last of the optional fields. Identity/outcome fields (id, rid,
-     * part, attempt, subpage, outcome, durationMs, rs, status, bytes) are
-     * never in this list -- which attempt this was and how it ended matter
-     * more than any detail field, per the docstring on serializeBounded().
+     * part, attempt, subpage, outcome, durationMs, rs, status, bytes) and the
+     * bounded parsererror body shape are never in this list -- which attempt
+     * this was and how it ended matter more than any detail field, per the
+     * docstring on serializeBounded().
      */
     var TRIM_FIELD_ORDER = [
         ['assets'],
@@ -104,9 +105,9 @@
     }
 
     /**
-     * Last-resort record: only the scalar identity/outcome fields, which are
-     * already known to be small and bounded. Reached only if dropping every
-     * field in TRIM_FIELD_ORDER still left the record over budget.
+     * Last-resort record: the scalar identity/outcome fields plus the bounded
+     * parsererror body shape. Reached only if dropping every field in
+     * TRIM_FIELD_ORDER still left the record over budget.
      *
      * @param {object} record
      * @returns {string}
@@ -125,6 +126,7 @@
             rs: record.rs,
             status: record.status,
             bytes: record.bytes,
+            bodyShape: record.bodyShape,
             fieldsDropped: 'all-but-identity'
         });
     }

@@ -170,7 +170,8 @@
             rt: null,
             rtState: 'not-looked-up',
             transport: PAGE_TRANSPORT_FINGERPRINT,
-            env: null
+            env: null,
+            bodyShape: null
         };
         if (pageEnv) {
             pageEnv.registerInFlight(record.id, { part: record.part, requestId: record.rid });
@@ -407,6 +408,10 @@
             numberOr(jqXHR && jqXHR.readyState, 0));
         record.status = numberOr(transport.status, 0) || numberOr(jqXHR && jqXHR.status, 0);
         record.bytes = Math.max(record.bytes, responseLength(transport), responseLength(jqXHR));
+        if (record.jq === 'parsererror' && global.abj404ResponseBodyShape &&
+                typeof global.abj404ResponseBodyShape.inspect === 'function') {
+            record.bodyShape = global.abj404ResponseBodyShape.inspect(responseText(transport, jqXHR));
+        }
         if (record.firstHeadersMs === null && record.rs >= 2) {
             captureHeaders(record, transport);
         }
@@ -442,6 +447,19 @@
             warn('could not measure the table response length', accessError);
         }
         return 0;
+    }
+
+    /** @param {object} primary @param {object} fallback @returns {string} */
+    function responseText(primary, fallback) {
+        try {
+            if (primary && typeof primary.responseText === 'string' && primary.responseText !== '') {
+                return primary.responseText;
+            }
+            return fallback && typeof fallback.responseText === 'string' ? fallback.responseText : '';
+        } catch (accessError) {
+            warn('could not inspect the failed response body shape', accessError);
+            return '';
+        }
     }
 
     /** @param {object} record @returns {void} */

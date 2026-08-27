@@ -301,6 +301,8 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             $vuBase . 'view_updater_client_main_thread_observations.js', array('abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-client-resource-timing',
             $vuBase . 'view_updater_client_resource_timing.js', array('abj404-view-updater-client-build-registry'));
+        $enq('abj404-view-updater-response-body-shape',
+            $vuBase . 'view_updater_response_body_shape.js', array('abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-client-telemetry-env',
             $vuBase . 'view_updater_client_telemetry_env.js',
             array('abj404-view-updater-client-telemetry-store',
@@ -312,11 +314,17 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             $vuBase . 'view_updater_transport_telemetry.js',
             array('jquery', 'abj404-view-updater-client-telemetry-store',
                 'abj404-view-updater-client-telemetry-env',
-                'abj404-view-updater-client-resource-timing', 'abj404-view-updater-client-build-registry'));
+                'abj404-view-updater-client-resource-timing',
+                'abj404-view-updater-response-body-shape', 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-transport-telemetry-delivery',
             $vuBase . 'view_updater_transport_telemetry_delivery.js',
             array('abj404-view-updater-client-telemetry-store',
                 'abj404-view-updater-transport-telemetry', 'abj404-view-updater-client-build-registry'));
+        $enq('abj404-view-updater-health-bar', $vuBase . 'view_updater_health_bar.js',
+            array('jquery', 'abj404-view-updater-nonce-refresh',
+                'abj404-view-updater-transport-telemetry',
+                'abj404-view-updater-transport-telemetry-delivery',
+                'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-pagination-transport',
             $vuBase . 'view_updater_pagination_transport.js',
             array('jquery', 'abj404-view-updater-nonce-refresh',
@@ -327,7 +335,8 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             array('jquery', 'abj404-view-updater-nonce-refresh'));
         $enq('abj404-view-updater-pagination-response-apply',
             $vuBase . 'view_updater_pagination_response_apply.js',
-            array('jquery', 'abj404-view-updater-table-init', 'abj404-view-updater-lazy-backfill'));
+            array('jquery', 'abj404-view-updater-table-init', 'abj404-view-updater-health-bar',
+                'abj404-view-updater-lazy-backfill'));
         $enq('abj404-view-updater-pagination-error-notice',
             $vuBase . 'view_updater_pagination_error_notice.js',
             array('jquery', 'abj404-view-updater-stage-diagnostics',
@@ -355,7 +364,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
                 'abj404-view-updater-client-build-registry'));
         $enq('abj404-view-updater-pagination', $vuBase . 'view_updater_pagination.js',
             array('jquery', 'abj404-view-updater-compare', 'abj404-view-updater-stage-diagnostics',
-                'abj404-view-updater-table-init',
+                'abj404-view-updater-table-init', 'abj404-view-updater-health-bar',
                 'abj404-view-updater-refresh-pill',
                 'abj404-view-updater-nonce-refresh',
                 'abj404-view-updater-pagination-request',

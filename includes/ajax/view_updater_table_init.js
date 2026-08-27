@@ -11,15 +11,11 @@
  *   - triggerBackgroundTableRefreshIfEnabled: detect-only refresh that
  *     never overwrites the visible table, only flips the "Refresh
  *     available" pill when content has changed.
- *   - refreshHealthBarIfNeeded: hydrates the redirects-page health bar
- *     via its own AJAX call so the slow getHighImpactCapturedCount()
- *     query never blocks the table render.
- *
  * Also exposes the shared refresh-status host lookup and the AJAX
  * failure-details formatter consumed by the pagination error handler.
  *
  * Globals defined: abj404FormatAjaxFailureDetails, abj404RenderAjaxErrorNotice,
- * refreshHealthBarIfNeeded, getRefreshStatusHost, isDetectOnlyRefreshInFlight,
+ * getRefreshStatusHost, isDetectOnlyRefreshInFlight,
  * setDetectOnlyRefreshInFlight, triggerBackgroundTableRefreshIfEnabled,
  * triggerInitialTableLoadIfNeeded.
  *
@@ -151,125 +147,6 @@ function abj404RenderAjaxErrorNotice(options) {
         window.ABJ404.SupportRequestButton.mountAll();
     }
     return $notice;
-}
-
-/**
- * Build the health-bar's status-dot + message (+ optional "View" link) as
- * real DOM nodes. Assigning `link.href` and `.textContent` are DOM property
- * writes, not HTML parsing, so `message` and `viewLink` cannot break out of
- * an attribute or inject markup regardless of their content.
- *
- * @param {string} dotClass
- * @param {string} message
- * @param {string|null} viewLink Relative URL for the "View" link, or null to omit it.
- * @return {DocumentFragment}
- */
-function abj404BuildHealthBarFragment(dotClass, message, viewLink) {
-    var fragment = document.createDocumentFragment();
-    var dot = document.createElement('span');
-    dot.className = dotClass;
-    fragment.appendChild(dot);
-    fragment.appendChild(document.createTextNode(' ' + message));
-    if (viewLink) {
-        fragment.appendChild(document.createTextNode(' '));
-        var link = document.createElement('a');
-        link.href = viewLink;
-        link.textContent = 'View';
-        fragment.appendChild(link);
-    }
-    return fragment;
-}
-
-/**
- * Hydrate the redirects-page health bar via a dedicated AJAX call so the
- * slow getHighImpactCapturedCount() query never blocks the table render.
- *
- * Reads endpoint URL, action, and nonce from data-attrs on the placeholder
- * div emitted by ViewTrait_RedirectsTable.  No-op when no placeholder is
- * present (other admin pages, or when the bar is already hydrated).
- *
- * Idempotent: a `data-health-bar-loading` flag prevents duplicate concurrent
- * requests when this function is invoked from both jQuery.ready and the
- * pagination success handler on the same page load.
- */
-function refreshHealthBarIfNeeded() {
-    var $bar = jQuery('.abj404-health-bar[data-health-bar-placeholder]');
-    if ($bar.length === 0) {
-        return;
-    }
-    if ($bar.attr('data-health-bar-loading') === '1') {
-        return;
-    }
-
-    var url = $bar.attr('data-health-bar-ajax-url') || window.ajaxurl;
-    var action = $bar.attr('data-health-bar-ajax-action') || 'ajaxRefreshHealthBar';
-    var nonce = $bar.attr('data-health-bar-nonce') || '';
-    if (!url || !nonce) {
-        // Endpoint config missing: drop the placeholder so the page is usable.
-        $bar.removeAttr('data-health-bar-placeholder');
-        $bar.empty();
-        return;
-    }
-
-    $bar.attr('data-health-bar-loading', '1');
-    var requestId = abj404GenerateRequestId();
-
-    var healthBarAjaxRunner = (typeof abj404AjaxWithNonceRetry === 'function')
-        // ajax-direct-approved: fallback when abj404AjaxWithNonceRetry helper not yet loaded in this bundle
-        ? abj404AjaxWithNonceRetry : jQuery.ajax;
-    healthBarAjaxRunner({
-        url: url,
-        type: 'POST',
-        dataType: 'json',
-        data: {
-            action: action,
-            nonce: nonce,
-            page: getURLParameter('page') || '',
-            subpage: getURLParameter('subpage') || '',
-            requestId: requestId
-        },
-        success: function(result) {
-            $bar.removeAttr('data-health-bar-loading');
-            if (!result || typeof result.highImpactCapturedCount === 'undefined' || !result.statusCounts) {
-                $bar.removeAttr('data-health-bar-placeholder');
-                $bar.empty();
-                return;
-            }
-            var active = (result.statusCounts.all || 0) - (result.statusCounts.trash || 0);
-            var rollupAvailable = result.rollupAvailable !== false && result.highImpactCapturedCount !== null;
-            var high = result.highImpactCapturedCount || 0;
-            var fragment;
-            if (!rollupAvailable) {
-                fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-gray',
-                    active + ' redirects active, URL attention status unavailable while logs rebuild', null);
-            } else if (high === 0) {
-                fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-green',
-                    active + ' redirects active, no URLs need attention', null);
-            } else {
-                // getURLParameter('page') is a raw, unencoded slice of the browser's
-                // current location.search -- fully attacker-controlled via a crafted
-                // admin-panel link -- and _capturedFilter comes from server JSON.
-                // Both are percent-encoded and assigned via the DOM `.href` property
-                // (never parsed as HTML) so neither can break out of the attribute
-                // or change the link's scheme (the '?page=' prefix is a literal).
-                var viewLink = '?page=' + encodeURIComponent(getURLParameter('page') || 'abj404_solution') +
-                    '&subpage=abj404_captured&filter=' + encodeURIComponent(result.statusCounts._capturedFilter || '');
-                fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-yellow',
-                    // allow-em-dash: visible em-dash separator preserved verbatim from the original health-bar copy
-                    active + ' redirects active — ' + high + ' captured URLs have repeat visitors', viewLink);
-            }
-            $bar.empty().append(fragment);
-            $bar.removeAttr('data-health-bar-placeholder');
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-            // On error, drop the placeholder so the UI doesn't get stuck on
-            // "Loading status..." forever.  The failure has already been logged
-            // server-side via the ajaxRefreshHealthBar exception handler.
-            $bar.removeAttr('data-health-bar-loading');
-            $bar.removeAttr('data-health-bar-placeholder');
-            $bar.empty();
-        }
-    });
 }
 
 function getRefreshStatusHost() {
