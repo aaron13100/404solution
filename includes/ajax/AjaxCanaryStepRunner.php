@@ -57,15 +57,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_SIZE_TARGET:
                 $rawSessionId = $context['session_id'] ?? '';
                 $sessionId = is_scalar($rawSessionId) ? (string)$rawSessionId : '';
-                return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_size_target',
-                    static function () use ($sessionId) {
-                        $target = ABJ_404_Solution_EncodedTableResponseSize::forSession($sessionId);
-                        return array(
-                            'realResponseBytes' => $target['bytes'],
-                            'realResponseBytesSource' => $target['source'],
-                            'realResponseRequestId' => $target['request_id'],
-                        );
-                    });
+                return self::resolveSizeTarget($sessionId, $subpage, $context);
 
             case ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL:
                 $rawOrdinal = $requestReader->getPostOrGetSanitize('baselineOrdinal', '0');
@@ -366,5 +358,61 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                     'received' => $parsed['status'] === 'available',
                 );
             });
+    }
+
+    /**
+     * The byte count the size probes calibrate against, and where it came from.
+     *
+     * Recorded first, measured second, named either way. The recorded number is
+     * the exact size of the response that actually failed, so it always wins
+     * when it exists -- but it exists only on a site whose durable trace was
+     * already armed when the failure happened, and `debug_mode` is off by
+     * default on purpose (AjaxDiagnosticRequestPolicy::DIAGNOSTIC_TRACE_ACTIONS
+     * keeps `ajaxUpdatePaginationLinks` behind the 4.3.3 performance gate).
+     * The ladder self-arms, which is what gives the ladder its OWN evidence,
+     * but nothing can retroactively arm a request that has already run.
+     *
+     * So on the shipped default there is nothing to recover and the step used
+     * to answer with an absence, leaving the client to calibrate the whole size
+     * axis on a hardcoded default -- support report 2026-08-27 (Azure App
+     * Service, plugin 4.3.4) ran all ten steps and could neither confirm nor
+     * rule out size, because every probe ran at a size unrelated to this site's
+     * real response. A measurement is available on every site, so the absence
+     * is now the fallback's fallback.
+     *
+     * `realResponseRecordedSource` keeps the recorded channel's own answer
+     * whatever happens, so "measured because nothing was recorded" stays
+     * distinguishable from "measured because the trace named no table request"
+     * and from "recorded exactly". A number is never returned without the
+     * source that produced it.
+     *
+     * @param array<string, mixed> $context Mutated in place by the build's stages.
+     * @return array<string, mixed>
+     */
+    private static function resolveSizeTarget(string $sessionId, string $subpage, array &$context): array {
+        $recorded = ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_size_target',
+            static function () use ($sessionId) {
+                return ABJ_404_Solution_EncodedTableResponseSize::forSession($sessionId);
+            });
+        if (is_int($recorded['bytes']) && $recorded['bytes'] > 0) {
+            return array(
+                'realResponseBytes' => $recorded['bytes'],
+                'realResponseBytesSource' => $recorded['source'],
+                'realResponseRequestId' => $recorded['request_id'],
+                'realResponseRecordedSource' => $recorded['source'],
+            );
+        }
+        // Deliberately NOT inside the stage above: the builder opens its own
+        // stage and trace stages are flat, so nesting would only mark
+        // canary_size_target `superseded`. See MeasuredTableResponseSize.
+        $measured = ABJ_404_Solution_MeasuredTableResponseSize::forSubpage($subpage, $context);
+        return array(
+            'realResponseBytes' => $measured['bytes'],
+            'realResponseBytesSource' => $measured['source'],
+            // No request id: a measurement is of this site's table, not of any
+            // one request, and borrowing a request id would imply otherwise.
+            'realResponseRequestId' => '',
+            'realResponseRecordedSource' => $recorded['source'],
+        );
     }
 }

@@ -166,9 +166,15 @@
         var targetResult = observations && observations.size_target && observations.size_target.result;
         if (targetResult && typeof targetResult.realResponseBytes === 'number'
                 && targetResult.realResponseBytes > 0) {
+            // Never default to a source the number did not come from. The
+            // server names every one of its own paths (a recorded
+            // json_encode size, a measured table build, or an absence), so an
+            // empty source here means a server that answered without saying
+            // where the number came from -- which is a finding about that
+            // server, not licence to label it as a recorded encode.
             return {
                 bytes: targetResult.realResponseBytes,
-                source: String(targetResult.realResponseBytesSource || 'session_json_encode')
+                source: String(targetResult.realResponseBytesSource || 'server_source_unnamed')
             };
         }
         try {

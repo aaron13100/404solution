@@ -61,7 +61,7 @@ $abj404ClassesByDirectory = array(
         'Ajax_EngineProfiles', 'Ajax_UninstallPrefs', 'AjaxAdminEndpointRegistrar',
         'AjaxClientReportBeaconResponder',
         'AjaxAdminEndpointSupport', 'AjaxResponseEmitter', 'Ajax_GetPaginationLinks',
-        'AdminTableResponseParts',
+        'AdminTableResponseParts', 'MeasuredTableResponseSize',
         'Ajax_RefreshStatsDashboard', 'Ajax_RefreshHealthBar', 'Ajax_RefreshAdminNonces',
         'Ajax_CanaryLadder', 'AjaxCanaryStepRunner',
     ),

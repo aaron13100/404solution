@@ -36,9 +36,13 @@ final class ABJ_404_Solution_EncodedTableResponseSize {
      * channels. Missing, malformed, foreign-session, non-table and zero-byte
      * records all resolve to a named absence rather than to a number.
      *
-     * The client branches on `realResponseBytes` being a positive number and
-     * only echoes `source` back, so naming the absence precisely changes no
-     * ladder behaviour (view_updater_canary_measurements.js targetPayload()).
+     * An absence here is not the end of the ladder's size axis: the step falls
+     * through to a live measurement
+     * (ABJ_404_Solution_MeasuredTableResponseSize) and carries this channel's
+     * own answer alongside it as `realResponseRecordedSource`, so the reason
+     * the recorded number was unavailable survives even when a measured one
+     * replaces it. Naming the absence precisely is what makes that pair
+     * readable; see ABJ_404_Solution_AjaxCanaryStepRunner::resolveSizeTarget().
      *
      * @return array{bytes: int|null, source: string, request_id: string}
      */

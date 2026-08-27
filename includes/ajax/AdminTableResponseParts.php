@@ -43,6 +43,32 @@ class ABJ_404_Solution_AdminTableResponseParts {
      */
     private const DETECT_ONLY_QUERY_TIMEOUT_SECONDS = 10;
 
+    /**
+     * Which subpage renders which table, and under which trace stage.
+     *
+     * A constant rather than a local, because the set is also the answer to
+     * "is there a table here at all" -- asked by
+     * ABJ_404_Solution_MeasuredTableResponseSize before it builds one to
+     * measure. Two copies of this list would let a new tab be renderable and
+     * unmeasurable, or measurable as the error sentinel's byte count.
+     */
+    private const TABLE_RENDERERS = array(
+        'abj404_redirects' => array('stage' => 'table_redirects', 'method' => 'getAdminRedirectsPageTable'),
+        'abj404_captured' => array('stage' => 'table_captured', 'method' => 'getCapturedURLSPageTable'),
+        'abj404_logs' => array('stage' => 'table_logs', 'method' => 'getAdminLogsPageTable'),
+    );
+
+    /**
+     * Whether this subpage has a table renderer at all.
+     *
+     * Callers that intend to BUILD a table part ask first: buildTablePart()
+     * answers an unknown subpage with an error sentinel, and a caller that
+     * measures the response would otherwise measure that sentinel.
+     */
+    public static function rendersTablePart(string $subpage): bool {
+        return isset(self::TABLE_RENDERERS[$subpage]);
+    }
+
     /** @return array<string, int> */
     public static function queryBudgetOptions(bool $detectOnly = false): array {
         return array(
@@ -125,15 +151,10 @@ class ABJ_404_Solution_AdminTableResponseParts {
      * @return array<string, mixed>
      */
     private static function buildTablePart(string $subpage, $view, $viewReadService, array &$context): array {
-        $renderers = array(
-            'abj404_redirects' => array('stage' => 'table_redirects', 'method' => 'getAdminRedirectsPageTable'),
-            'abj404_captured' => array('stage' => 'table_captured', 'method' => 'getCapturedURLSPageTable'),
-            'abj404_logs' => array('stage' => 'table_logs', 'method' => 'getAdminLogsPageTable'),
-        );
-        if (!isset($renderers[$subpage])) {
+        if (!isset(self::TABLE_RENDERERS[$subpage])) {
             return array('table' => 'Error: Unexpected subpage requested.');
         }
-        $renderer = $renderers[$subpage];
+        $renderer = self::TABLE_RENDERERS[$subpage];
         $method = $renderer['method'];
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage(
             $context,
