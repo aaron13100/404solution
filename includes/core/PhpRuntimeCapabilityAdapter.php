@@ -178,25 +178,19 @@ final class ABJ_404_Solution_PhpRuntimeCapabilityAdapter {
     }
 
     /**
-     * Sorted intersection of php.ini disable_functions and functions this
-     * plugin actually calls. The raw directive is never exposed.
+     * Sorted plugin-owned functions that are not callable in this runtime.
+     * Configuration directives are deliberately not consulted or exposed.
      *
      * @return array<int, string>
      */
     public static function disabledFunctions(): array {
-        $configured = ini_get('disable_functions');
-        if (!is_string($configured) || trim($configured) === '') {
-            return array();
-        }
         $disabled = array();
-        foreach (explode(',', strtolower($configured)) as $name) {
-            $name = trim($name);
-            if ($name !== '' && in_array($name, self::ownedFunctions(), true)) {
-                $disabled[$name] = true;
+        foreach (self::ownedFunctions() as $name) {
+            if (!self::isFunctionAvailable($name)) {
+                $disabled[] = $name;
             }
         }
-        $names = array_keys($disabled);
-        sort($names, SORT_STRING);
-        return $names;
+        sort($disabled, SORT_STRING);
+        return $disabled;
     }
 }
