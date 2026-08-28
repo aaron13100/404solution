@@ -102,7 +102,7 @@ class ABJ_404_Solution_LogsMetricsReader {
      */
     public function getLogDiskUsage(): int {
         $query = 'SELECT (data_length+index_length) tablesize FROM information_schema.tables '
-                . 'WHERE table_name=\'{wp_abj404_logsv2}\'';
+                . 'WHERE table_schema=DATABASE() AND table_name=\'{wp_abj404_logsv2}\'';
 
         $result = $this->dbCore->queryAndGetResults($query);
 
