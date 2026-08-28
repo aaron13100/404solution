@@ -5,7 +5,7 @@ Tags: 404, redirect, 404 redirect, broken links, spell check
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 4.3.4
+Stable tag: 4.3.5
 License: GPL-3.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -202,6 +202,16 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 == Changelog ==
 
+= Version 4.3.5 (August 28, 2026) =
+
+**Bug Fixes**
+
+* Fixed hosts with disabled PHP functions receiving repeated error-log entries during admin requests and a fatal error when opening Statistics. The plugin now checks whether each required PHP function is callable before using it and safely degrades when the host removes it.
+
+**Improvements**
+
+* Runtime diagnostics now report the plugin functions that are actually unavailable, including functions missing with an extension or host policy, instead of relying only on the `disable_functions` setting.
+
 = Version 4.3.4 (August 20, 2026) =
 
 **Bug Fixes**
@@ -374,4 +384,3 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 **Internationalization**
 
 * Added translations for 13 admin strings that were previously displayed in English even on non-English sites.
-
