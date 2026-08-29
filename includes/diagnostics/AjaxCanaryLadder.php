@@ -147,29 +147,64 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
      * costs the comparison against the `inert` step of the same shape, so on
      * such a host the step emits nothing and reports why.
      *
-     * @param bool $manageOutputBuffer The `abj404_should_manage_output_buffer` decision.
-     * @param int $obLevelBefore Buffer depth found before the plugin opened its own.
-     * @param int $obLevelNow Buffer depth at the moment of the flush.
+     * Keyed rather than positional: `ob_level_before` and `ob_level_now` are
+     * adjacent ints, so a transposed call stays type-correct and answers a
+     * different question. (0, 2) means "a handler opened a buffer above the
+     * plugin's own", so no flush; swapped to (2, 0) it reads as an unbuffered
+     * host and the step flushes 2048 bytes that land in a foreign buffer,
+     * which is precisely the failure this plan exists to prevent.
+     *
+     * @param array{manage_output_buffer: bool, ob_level_before: int, ob_level_now: int} $observation
+     *   `manage_output_buffer`: the `abj404_should_manage_output_buffer` decision.
+     *   `ob_level_before`: buffer depth found before the plugin opened its own.
+     *   `ob_level_now`: buffer depth at the moment of the flush.
      * @return array{stream: bool, reason: string}
      */
-    public static function resolveStreamFlushPlan(
-        bool $manageOutputBuffer,
-        int $obLevelBefore,
-        int $obLevelNow
-    ): array {
-        if (!$manageOutputBuffer) {
-            return array('stream' => false, 'reason' => self::STREAM_REASON_MANAGEMENT_OFF);
+    public static function resolveStreamFlushPlan(array $observation): array {
+        $reason = self::streamFlushReason($observation);
+        // Derived, never carried alongside: the reason exists to explain the
+        // boolean, so a plan able to say "streaming, because a foreign buffer
+        // sits below us" would be a diagnosis contradicting itself while
+        // reading as evidence.
+        return array('stream' => self::reasonAllowsFlush($reason), 'reason' => $reason);
+    }
+
+    /**
+     * Whether a flush reaches the client under this reason. The single source
+     * of truth for the pairing, so no caller can invent a different one.
+     */
+    public static function reasonAllowsFlush(string $reason): bool {
+        $allows = array(
+            self::STREAM_REASON_MANAGEMENT_OFF => false,
+            self::STREAM_REASON_UNBUFFERED => true,
+            self::STREAM_REASON_PLUGIN_OWNS_ONLY_BUFFER => true,
+            self::STREAM_REASON_FOREIGN_BUFFER_BELOW => false,
+            self::STREAM_REASON_NOT_TOP_BUFFER => false,
+        );
+        // An unknown reason must not read as "go ahead and flush": the only
+        // safe default for a state nobody enumerated is to emit nothing.
+        return array_key_exists($reason, $allows) ? $allows[$reason] : false;
+    }
+
+    /**
+     * @param array{manage_output_buffer: bool, ob_level_before: int, ob_level_now: int} $observation
+     */
+    private static function streamFlushReason(array $observation): string {
+        $obLevelBefore = $observation['ob_level_before'];
+        $obLevelNow = $observation['ob_level_now'];
+        if (!$observation['manage_output_buffer']) {
+            return self::STREAM_REASON_MANAGEMENT_OFF;
         }
         if ($obLevelNow <= 0) {
-            return array('stream' => true, 'reason' => self::STREAM_REASON_UNBUFFERED);
+            return self::STREAM_REASON_UNBUFFERED;
         }
         if ($obLevelBefore <= 0 && $obLevelNow === 1) {
-            return array('stream' => true, 'reason' => self::STREAM_REASON_PLUGIN_OWNS_ONLY_BUFFER);
+            return self::STREAM_REASON_PLUGIN_OWNS_ONLY_BUFFER;
         }
         if ($obLevelBefore > 0) {
-            return array('stream' => false, 'reason' => self::STREAM_REASON_FOREIGN_BUFFER_BELOW);
+            return self::STREAM_REASON_FOREIGN_BUFFER_BELOW;
         }
-        return array('stream' => false, 'reason' => self::STREAM_REASON_NOT_TOP_BUFFER);
+        return self::STREAM_REASON_NOT_TOP_BUFFER;
     }
 
     /**

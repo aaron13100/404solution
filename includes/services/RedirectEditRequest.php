@@ -123,71 +123,51 @@ class ABJ_404_Solution_RedirectEditRequest {
      * selected", which is a different message from "these ids have no row" --
      * the latter would print an empty id list.
      *
-     * The `source` key reports which parameter the answer came from, so the
-     * caller can log the same GET / POST / ids_multiple distinction the edit
-     * page has always recorded without this method doing the logging itself.
-     *
-     * `truncated` reports that the request named more ids than
-     * MAX_SELECTED_IDS, and `requestedCount` how many it named. The caller
-     * REFUSES on that flag rather than proceeding with the remainder: editing
-     * a subset of what the admin selected is worse than the unbounded work the
-     * cap exists to prevent, and a partial answer they cannot see the edge of
-     * is worse still -- they would have no way to tell which of their
-     * selections had been dropped. `requestedCount` survives the slice so the
-     * refusal can name the real number back to them.
-     *
-     * @return array{recnum: int|null, recnumsMultiple: array<int, int>, source: string,
-     *   truncated: bool, requestedCount: int}|null
+     * Otherwise one of three mutually exclusive states, which is why the answer
+     * is an object and not a bag of keys: single, bulk, or refused-as-too-many.
+     * See ABJ_404_Solution_RequestedRedirectIds.
      */
-    public function getRequestedIds(): ?array {
-        if (isset($_GET['id']) && is_scalar($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
-            return array(
-                'recnum' => absint($_GET['id']),
-                'recnumsMultiple' => array(),
-                'source' => self::SOURCE_GET_ID,
-                'truncated' => false,
-                'requestedCount' => 1,
-            );
+    public function getRequestedIds(): ?ABJ_404_Solution_RequestedRedirectIds {
+        if (isset($_GET['id']) && is_scalar($_GET['id']) && $this->f->regexMatch('^[0-9]+$', (string)$_GET['id'])) {
+            return ABJ_404_Solution_RequestedRedirectIds::single(
+                self::SOURCE_GET_ID, absint($_GET['id']));
         }
 
-        if (isset($_POST['id']) && is_scalar($_POST['id']) && $this->f->regexMatch('[0-9]+', (string)$_POST['id'])) {
-            return array(
-                'recnum' => absint($_POST['id']),
-                'recnumsMultiple' => array(),
-                'source' => self::SOURCE_POST_ID,
-                'truncated' => false,
-                'requestedCount' => 1,
-            );
+        if (isset($_POST['id']) && is_scalar($_POST['id']) && $this->f->regexMatch('^[0-9]+$', (string)$_POST['id'])) {
+            return ABJ_404_Solution_RequestedRedirectIds::single(
+                self::SOURCE_POST_ID, absint($_POST['id']));
         }
 
-        if ($this->sanitizedScalar('idnum') === '' && !isset($_GET['idnum']) && !isset($_POST['idnum'])) {
+        // Presence only, read straight from the superglobals. This used to lead
+        // with sanitizedScalar('idnum'), which routes through
+        // RequestInputNormalizer::getPostOrGetSanitize() -- and that runs
+        // wp_unslash plus array_map('sanitize_text_field', ...) over the WHOLE
+        // array. So a million-element idnum[] was fully unslashed and sanitized
+        // here, one line above the cap that exists to stop exactly that work.
+        // The clause was also redundant: with neither superglobal set, that
+        // call returns '' by construction.
+        if (!isset($_GET['idnum']) && !isset($_POST['idnum'])) {
             return null;
         }
 
-        $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum']
-                : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->sanitizedScalar('idnum'));
-        // Bounded BEFORE the map, not after: the cap is there to limit the work
-        // this request can cause, and sanitizing a million ids to then keep two
-        // thousand of them has already done the work.
-        $rawIds = (array)$rawIdnum;
+        $rawIds = (array)(isset($_GET['idnum']) ? $_GET['idnum'] : $_POST['idnum']);
         $requestedCount = count($rawIds);
-        $truncated = $requestedCount > self::MAX_SELECTED_IDS;
-        if ($truncated) {
-            $rawIds = array_slice($rawIds, 0, self::MAX_SELECTED_IDS);
+        // Refused BEFORE a single id is touched. The ceiling exists to bound
+        // the work one request can cause, so a refused request must cost the
+        // count and nothing else -- sanitizing a million entries and then
+        // declining to use any of them has already done the damage.
+        if ($requestedCount > self::MAX_SELECTED_IDS) {
+            return ABJ_404_Solution_RequestedRedirectIds::refusedAsTooMany(
+                self::SOURCE_IDNUM, $requestedCount);
         }
-        $recnumsMultiple = array_values(array_filter(array_map(
+        $ids = array_values(array_filter(array_map(
                 function ($v): int { return is_scalar($v) ? absint($v) : 0; },
                 $rawIds), function (int $v): bool { return $v > 0; }));
-        if (empty($recnumsMultiple)) {
+        if (empty($ids)) {
             return null;
         }
-        return array(
-            'recnum' => null,
-            'recnumsMultiple' => $recnumsMultiple,
-            'source' => self::SOURCE_IDNUM,
-            'truncated' => $truncated,
-            'requestedCount' => $requestedCount,
-        );
+        return ABJ_404_Solution_RequestedRedirectIds::bulk(
+            self::SOURCE_IDNUM, $ids, $requestedCount);
     }
 
     /**

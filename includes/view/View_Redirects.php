@@ -297,17 +297,18 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         if ($request === null) {
             return $this->deadEnds()->missingRedirects($context, array());
         }
-        if ($request['truncated']) {
-            return $this->deadEnds()->tooManySelected($context, $request['requestedCount']);
+        if ($request->wasRefusedAsTooMany()) {
+            return $this->deadEnds()->tooManySelected($context, $request->requestedCount());
         }
         // Recorded here rather than inside RedirectEditRequest so that reader
         // stays a pure getter (scripts/lint/lint-hidden-write-getters).
-        $this->logger->debugMessage('Edit redirect page. Requested via ' . $request['source'] . ': ' .
-                wp_kses_post((string)json_encode($request['recnum'] !== null
-                        ? $request['recnum'] : $request['recnumsMultiple'])));
+        $this->logger->debugMessage('Edit redirect page. Requested via ' . $request->source() . ': ' .
+                wp_kses_post((string)json_encode($request->isSingle()
+                        ? $request->singleId() : $request->ids())));
 
-        if ($request['recnum'] !== null) {
-            $singleResult = $this->buildSingleRecordContent($context, $request['recnum'], $isSimpleMode);
+        if ($request->isSingle()) {
+            $singleResult = $this->buildSingleRecordContent(
+                $context, (int)$request->singleId(), $isSimpleMode);
             if ($singleResult === null) {
                 return null;
             }
@@ -315,7 +316,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
             return $singleResult;
         }
 
-        $bulkResult = $this->renderBulkRedirectFormFields($context, $request['recnumsMultiple']);
+        $bulkResult = $this->renderBulkRedirectFormFields($context, $request->ids());
         if ($bulkResult === null) {
             return null;
         }

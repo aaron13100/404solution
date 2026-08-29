@@ -383,8 +383,11 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                 // reads as an instant flush rather than no flush.
                 $manageOutputBuffer = (bool)apply_filters(
                     'abj404_should_manage_output_buffer', true, array('source' => 'canaryLadder_stream'));
-                $plan = ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan(
-                    $manageOutputBuffer, $obLevelBefore, ob_get_level());
+                $plan = ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan(array(
+                    'manage_output_buffer' => $manageOutputBuffer,
+                    'ob_level_before' => $obLevelBefore,
+                    'ob_level_now' => ob_get_level(),
+                ));
                 $flushOutcome = ABJ_404_Solution_AjaxCanaryStreamFlush::emitAndFlush(
                     $plan,
                     ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
