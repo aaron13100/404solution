@@ -309,7 +309,8 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                     if (!headers_sent()) {
                         header('Cache-Control: no-transform');
                     }
-                    ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni('zlib.output_compression', '0');
+                    ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
+                        array('directive' => 'zlib.output_compression', 'value' => '0'));
                 }
                 $payload = ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload($requestId, $step, $bytes);
                 $payload['compressionMode'] = $step;
@@ -411,7 +412,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                     // reader below matches on this exact string, so a rename
                     // that missed one copy would silently split producer from
                     // consumer and the outcome would simply stop being found.
-                    ABJ_404_Solution_ResponseBodyDeliveryEvidence::STREAM_FLUSH_EVENT,
+                    ABJ_404_Solution_BodyDeliveryObservations::STREAM_FLUSH_EVENT,
                     array_merge($flushOutcome, array('session_key' => $streamSessionKey)));
                 return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
                     $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM,

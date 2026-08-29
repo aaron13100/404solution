@@ -39,7 +39,10 @@ if (!defined('ABSPATH')) {
  * naming which source produced it, are shared with the delivered half in
  * ABJ_404_Solution_MeasuredBodyBytes: both halves have to answer that question
  * identically or their difference means nothing, so it is one definition
- * rather than a copy on each side.
+ * rather than a copy on each side. Nor does it own READING the journal:
+ * turning JSONL text into the three typed maps joined below, and deciding
+ * which fields of a half-written or older-version record can be read at all,
+ * is ABJ_404_Solution_BodyDeliveryObservations.
  *
  * Three properties are load-bearing rather than defensive:
  *
@@ -62,22 +65,6 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
 
     /** The journal event this class writes its joined evidence under. */
     const EVIDENCE_EVENT = 'body_delivery_evidence';
-
-    /**
-     * The browser's per-step receipt, written by ABJ_404_Solution_Ajax_CanaryLadder.
-     *
-     * Private, unlike EVIDENCE_EVENT and STREAM_FLUSH_EVENT above: this class
-     * is one of several readers of that journal rather than the owner of the
-     * name, so publishing it here would advertise an ownership that does not
-     * exist and invite a second class to import the name from the wrong place.
-     */
-    private const RECEIPT_EVENT = 'canary_step_client_receipt';
-
-    /** The post-encode size record written by ABJ_404_Solution_AjaxResponseEmitter. Private for the same reason as RECEIPT_EVENT. */
-    private const ENCODE_EVENT = 'json_encode';
-
-    /** The `stream` step's own flush findings, written by ABJ_404_Solution_AjaxCanaryStepRunner. */
-    const STREAM_FLUSH_EVENT = 'canary_stream_flush_outcome';
 
     /** The join was computed from this session's own records. */
     const STATUS_COMPUTED = 'computed';
@@ -116,11 +103,13 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     // real measurement" identically or the comparison is meaningless, which is
     // why it is one definition rather than a copy on each side.
 
-    // No cap on how many comparisons ride the record, deliberately. The count
+    // No cap on how many comparisons ride the record, deliberately: the count
     // is already bounded by the fixed AjaxCanaryLadder::STEPS list plus one
     // real-request row, so a cap could only ever start silently dropping rows
-    // off a diagnostic record if the ladder grew. comparisons_total states the
-    // count outright instead.
+    // off a diagnostic record if the ladder grew. There is no separate total
+    // field either -- with nothing truncated, a stored count could only ever
+    // agree with `comparisons` or be wrong about it, and a reader trusting the
+    // wrong one of two facts is worse than counting the rows.
 
     /**
      * The full emitted-against-delivered join for one browser session, ready
@@ -182,13 +171,8 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
         $record = self::emptyRecord($sessionKey);
         $joined = self::comparisonsIn($lines, $sessionKey, $realRequest);
         $record['comparisons'] = $joined['comparisons'];
-        $record['comparisons_total'] = count($joined['comparisons']);
         $record['stream_flush_reached_sapi'] = $joined['stream_flush_reached_sapi'];
         $record['journal_lines_scanned'] = count($lines);
-        // Decided over the WHOLE join, not the truncated copy above: the cap
-        // exists to bound one record's size, and a verdict that changed with
-        // it would silently depend on how long the browser session had been
-        // open.
         $record['verdict'] = ABJ_404_Solution_ResponseBodyRewriteVerdict::fromComparisons(
             $joined['comparisons'], ABJ_404_Solution_AjaxCanaryLadder::MAX_REPORTED_STEP_CHARS);
         return $record;
@@ -206,7 +190,6 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
             'status' => self::STATUS_COMPUTED,
             'session_key' => $sessionKey,
             'comparisons' => array(),
-            'comparisons_total' => 0,
             // null, never false: "this session journaled no stream step" and
             // "the stream step ran and reached nobody" are opposite findings.
             'stream_flush_reached_sapi' => null,
@@ -241,9 +224,9 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      *   stream_flush_reached_sapi: bool|null}
      */
     public static function comparisonsIn(array $lines, string $sessionKey, array $realRequest): array {
-        $receipts = self::receiptsInSession($lines, $sessionKey);
-        $encoded = self::encodedSizesIn($lines);
-        $streamFlush = self::streamFlushOutcomesIn($lines);
+        $receipts = ABJ_404_Solution_BodyDeliveryObservations::receiptsInSession($lines, $sessionKey);
+        $encoded = ABJ_404_Solution_BodyDeliveryObservations::encodedSizesIn($lines);
+        $streamFlush = ABJ_404_Solution_BodyDeliveryObservations::streamFlushOutcomesIn($lines);
 
         // Scoped by the record's OWN session first, so "did this session's
         // stream step reach the wire" survives a lost browser receipt: that
@@ -369,120 +352,4 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
         );
     }
 
-    /**
-     * The latest receipt this session's browser filed for each ladder step.
-     *
-     * Latest wins: a step the client retried reports twice, and the run the
-     * `interpret` step is closing is the later one.
-     *
-     * @param array<int, string> $lines
-     * @return array<string, array{request_id: string, delivered_bytes: int|null,
-     *   resource_timing_state: string}>
-     */
-    private static function receiptsInSession(array $lines, string $sessionKey): array {
-        $receipts = array();
-        foreach ($lines as $line) {
-            if ($sessionKey === '' || strpos($line, self::RECEIPT_EVENT) === false) {
-                continue;
-            }
-            $record = json_decode($line, true);
-            if (!is_array($record) || ($record['event'] ?? '') !== self::RECEIPT_EVENT
-                    || self::scalarField($record, 'session_key') !== $sessionKey) {
-                continue;
-            }
-            $step = self::scalarField($record, 'step');
-            $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
-                $record['step_request_id'] ?? null, '');
-            if ($step === '' || $requestId === ''
-                    || !in_array($step, ABJ_404_Solution_AjaxCanaryLadder::STEPS, true)) {
-                continue;
-            }
-            $receipts[$step] = array(
-                'request_id' => $requestId,
-                'delivered_bytes' => ABJ_404_Solution_MeasuredBodyBytes::disclosed($record['decoded_body_bytes'] ?? null),
-                'resource_timing_state' => self::scalarField($record, 'resource_timing_state'),
-            );
-        }
-        return $receipts;
-    }
-
-    /**
-     * Encoded response size by request id, latest write per id.
-     *
-     * @param array<int, string> $lines
-     * @return array<string, int>
-     */
-    private static function encodedSizesIn(array $lines): array {
-        $sizes = array();
-        foreach ($lines as $line) {
-            if (strpos($line, '"event":"' . self::ENCODE_EVENT . '"') === false) {
-                continue;
-            }
-            $record = json_decode($line, true);
-            if (!is_array($record) || ($record['event'] ?? '') !== self::ENCODE_EVENT) {
-                continue;
-            }
-            $requestId = self::scalarField($record, 'request_id');
-            $bytes = ABJ_404_Solution_MeasuredBodyBytes::disclosed($record['bytes'] ?? null);
-            if ($requestId === '' || $bytes === null) {
-                continue;
-            }
-            $sizes[$requestId] = $bytes;
-        }
-        return $sizes;
-    }
-
-    /**
-     * The `stream` step's own flush findings by request id.
-     *
-     * Both fields matter to a different consumer: `whitespace_bytes` corrects
-     * the emitted count, and `reached_sapi` is what lets
-     * `streamingBufferCausal` require that the streaming step actually
-     * streamed instead of assuming it did.
-     *
-     * @param array<int, string> $lines
-     * @return array<string, array{reached_sapi: bool|null, whitespace_bytes: int|null, session_key: string}>
-     */
-    private static function streamFlushOutcomesIn(array $lines): array {
-        $outcomes = array();
-        foreach ($lines as $line) {
-            if (strpos($line, self::STREAM_FLUSH_EVENT) === false) {
-                continue;
-            }
-            $record = json_decode($line, true);
-            if (!is_array($record) || ($record['event'] ?? '') !== self::STREAM_FLUSH_EVENT) {
-                continue;
-            }
-            $requestId = self::scalarField($record, 'request_id');
-            if ($requestId === '') {
-                continue;
-            }
-            // Absent or malformed fields become NULL, never false and never 0.
-            // Both feed causal verdicts, so collapsing "the record does not
-            // say" into "the flush did not reach the SAPI", or into "no
-            // whitespace was emitted", manufactures an observation out of a
-            // missing key. An understated emitted count in particular is the
-            // exact signature this class reports as a body rewritten in
-            // transit.
-            $reached = $record['streamFlushReachedSapi'] ?? null;
-            $whitespace = $record['streamWhitespaceBytes'] ?? null;
-            $outcomes[$requestId] = array(
-                'reached_sapi' => is_bool($reached) ? $reached
-                    : (is_numeric($reached) ? ((int)$reached === 1) : null),
-                'whitespace_bytes' => is_numeric($whitespace) ? max(0, (int)$whitespace) : null,
-                'session_key' => self::scalarField($record, 'session_key'),
-            );
-        }
-        return $outcomes;
-    }
-
-    /**
-     * One record field as a string, or '' when it is absent or not scalar.
-     *
-     * @param array<array-key, mixed> $record
-     */
-    private static function scalarField(array $record, string $field): string {
-        $value = $record[$field] ?? null;
-        return is_scalar($value) ? (string)$value : '';
-    }
 }
