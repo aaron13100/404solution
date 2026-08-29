@@ -38,6 +38,9 @@
             url: ajaxUrl,
             type: 'POST',
             dataType: 'json',
+            // A request with no deadline never reaches the error handler that
+            // re-enables the control this call disabled, so the page stays stuck.
+            timeout: 30000,
             data: {
                 action: 'abj404_engine_profiles_list',
                 nonce:  nonce
@@ -113,6 +116,9 @@
             url: ajaxUrl,
             type: 'POST',
             dataType: 'json',
+            // A request with no deadline never reaches the error handler that
+            // re-enables the control this call disabled, so the page stays stuck.
+            timeout: 30000,
             data: {
                 action: 'abj404_engine_profiles_list',
                 nonce:  nonce
@@ -209,6 +215,9 @@
             url: ajaxUrl,
             type: 'POST',
             dataType: 'json',
+            // A request with no deadline never reaches the error handler that
+            // re-enables the control this call disabled, so the page stays stuck.
+            timeout: 30000,
             data: {
                 action:          'abj404_engine_profiles_save',
                 nonce:           nonce,
@@ -263,6 +272,9 @@
             url: ajaxUrl,
             type: 'POST',
             dataType: 'json',
+            // A request with no deadline never reaches the error handler that
+            // re-enables the control this call disabled, so the page stays stuck.
+            timeout: 30000,
             data: {
                 action: 'abj404_engine_profiles_delete',
                 nonce:  nonce,

@@ -32,6 +32,9 @@
         $.ajax({
             url: abj404_suggestions.ajax_url,
             type: 'POST',
+            // A request with no deadline never reaches the error handler that
+            // re-enables the control this call disabled, so the page stays stuck.
+            timeout: 30000,
             data: {
                 action: 'abj404_poll_suggestions',
                 url: requestedURL,

@@ -70,20 +70,20 @@ function submitOptions(e) {
     // save / send the data via an ajax request.
     var saveOptionsURL = form.getAttribute('data-url')
 
-    // Set timeout to handle hung requests
-    var timeoutId = setTimeout(function() {
-        showSaveError('Request timed out. Please check your connection and try again.');
-    }, 30000); // 30 second timeout
-
     jQuery.ajax({
         url: saveOptionsURL,
         type: 'POST',
+        // Was a bare setTimeout that showed the error but left the request
+        // running, so a late success could still submit the redirect form
+        // under an error overlay. jQuery's own deadline aborts the request and
+        // routes it to the error handler below, which is the one place the
+        // overlay is cleared.
+        timeout: 30000,
         data: {
             'encodedData': encodedData
         },
         dataType :'json',
         success: function (data) {
-            clearTimeout(timeoutId);
             // Support both legacy payloads ({ newURL, message, error }) and WP-shaped responses
             // ({ success: true|false, data: { ... } }).
             var payload = data;
@@ -125,7 +125,12 @@ function submitOptions(e) {
             formEl.submit();
         },
         error: function (request, textStatus, errorThrown) {
-            clearTimeout(timeoutId);
+            // A deadline is the one failure the admin can act on directly, so
+            // it keeps its own wording instead of the generic save message.
+            if (textStatus === 'timeout') {
+                showSaveError('Request timed out. Please check your connection and try again.');
+                return;
+            }
             // Shared describe-and-record seam (abj404-admin-ajax.js), guarded
             // so a missing asset degrades to a generic message instead of
             // throwing out of the error handler and leaving the overlay stuck.

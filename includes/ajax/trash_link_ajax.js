@@ -19,6 +19,9 @@ function bindTrashLinkListeners() {
             url: theURL, 
             type : 'GET',
             dataType: "json",
+            // A request with no deadline never reaches the error handler that
+            // re-enables the control this call disabled, so the page stays stuck.
+            timeout: 30000,
             data: {
                 filter: trashFilter
             },

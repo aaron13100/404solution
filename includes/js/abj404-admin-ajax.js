@@ -1,9 +1,26 @@
 /**
+ * How long an admin AJAX request may run before jQuery aborts it and routes
+ * the failure to the caller's own error handler.
+ *
+ * Generous on purpose. The cost of being too short is a legitimate slow
+ * operation reported as a failure on a busy shared host; the cost of having no
+ * deadline at all is a control that stays disabled until the page is reloaded,
+ * because the handler that would re-enable it never runs. Thirty seconds is
+ * past the point where an admin has concluded the click did nothing, and well
+ * clear of any request this plugin issues on a healthy host.
+ */
+var ABJ404_ADMIN_AJAX_DEFAULT_TIMEOUT_MS = 30000;
+
+/**
  * Enforced single call-through point for admin AJAX. scripts/lint/lint-raw-ajax.sh
  * requires call sites to use this instead of raw jQuery.ajax / $.ajax / $.post /
  * $.get, so any future cross-cutting concern (retry, telemetry, error handling)
  * has one seam to attach to instead of N call sites; add
  * "// ajax-direct-approved: <reason>" to opt a call site out.
+ *
+ * Supplies a default request deadline. A caller that needs a different budget
+ * sets `timeout` itself and keeps it; the default only fills the gap, so a call
+ * site can never be shipped with no deadline at all merely by forgetting one.
  *
  * @param {object} options  jQuery.ajax settings (url, data, type, etc.)
  * @returns {jqXHR}         The jQuery AJAX promise, for chaining .done/.fail.
@@ -13,7 +30,14 @@ function abj404AdminAjax(options) {
         throw new Error('abj404AdminAjax: options object is required'); // allow-raw-error: internal caller-contract assertion, never reaches an end user
     }
 
-    return jQuery.ajax(options); // ajax-direct-approved: wrapper implementation
+    // Mutating the caller's object would surprise a caller that reuses one
+    // settings object across retries, so the deadline goes on a copy.
+    var settings = jQuery.extend({}, options);
+    if (typeof settings.timeout !== 'number') {
+        settings.timeout = ABJ404_ADMIN_AJAX_DEFAULT_TIMEOUT_MS;
+    }
+
+    return jQuery.ajax(settings); // ajax-direct-approved: wrapper implementation
 }
 
 /** Characters of the raw response body kept for the console entry. */
