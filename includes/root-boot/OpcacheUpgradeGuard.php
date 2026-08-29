@@ -348,7 +348,7 @@ if (!function_exists('abj404_opcache_target_files')) {
             // Suppressed because a host with opcache compiled in but disabled
             // for this SAPI raises a warning here rather than returning false.
             $fromStatus = abj404_opcache_scripts_from_status(
-                ABJ_404_Solution_PhpRuntimeCapabilityAdapter::opcacheStatus(true),
+                ABJ_404_Solution_OpcacheAdapter::status(true),
                 $root
             );
             if ($fromStatus !== null) {
@@ -466,7 +466,7 @@ if (!function_exists('abj404_opcache_refresh_after_upgrade')) {
         foreach ($collected['files'] as $file) {
             // A file that is not currently cached returns false; that is a
             // normal outcome here, not an error, so only successes are recorded.
-            if (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::invalidateOpcache($file, true)) {
+            if (ABJ_404_Solution_OpcacheAdapter::invalidate($file, true)) {
                 $result['invalidated'][] = $file;
             }
         }

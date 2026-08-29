@@ -99,7 +99,8 @@ class ABJ_404_Solution_ErrorHandler {
                 // for our own plugin errors make sure we see them.
                 if ($GLOBALS['abj404_display_errors']) {
                     error_reporting(E_ALL);
-                    ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni('display_errors', '1');
+                    ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
+                array('directive' => 'display_errors', 'value' => '1'));
                 }
             }
 
@@ -160,7 +161,8 @@ class ABJ_404_Solution_ErrorHandler {
         // show all warnings and errors.
         if ($GLOBALS['abj404_display_errors']) {
             error_reporting(E_ALL);
-            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni('display_errors', '1');
+            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
+                array('directive' => 'display_errors', 'value' => '1'));
         }
         // let the original error handler handle it.
         return false;

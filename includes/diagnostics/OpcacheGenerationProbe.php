@@ -59,7 +59,7 @@ final class ABJ_404_Solution_OpcacheGenerationProbe {
             return new self(null, $summary);
         }
 
-        $status = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::opcacheStatus(true);
+        $status = ABJ_404_Solution_OpcacheAdapter::status(true);
         if (!is_array($status) || (array_key_exists('opcache_enabled', $status) && !$status['opcache_enabled'])) {
             return new self(null, $summary);
         }

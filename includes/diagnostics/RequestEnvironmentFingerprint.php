@@ -60,7 +60,17 @@ final class ABJ_404_Solution_RequestEnvironmentFingerprint {
                 : (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('getmypid')
                     ? 'invalid_result' : 'function_unavailable'),
             'process_token' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::processToken(),
-            'disabled_functions' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::disabledFunctions(),
+            // The union across every capability boundary, composed here rather
+            // than inside one of them: a host that removed the pcntl or OPcache
+            // extension is exactly the host whose report needs to say so, and
+            // asking only the main adapter would silently drop five names.
+            'disabled_functions' => ABJ_404_Solution_PhpRuntimeCapabilityAdapter::disabledAmong(
+                array_merge(
+                    ABJ_404_Solution_PhpRuntimeCapabilityAdapter::ownedFunctions(),
+                    ABJ_404_Solution_PcntlSignalAdapter::ownedFunctions(),
+                    ABJ_404_Solution_OpcacheAdapter::ownedFunctions()
+                )
+            ),
             'diagnostic_build_id' => defined('ABJ404_DIAGNOSTIC_BUILD_ID')
                 ? (string)ABJ404_DIAGNOSTIC_BUILD_ID
                 : ABJ_404_Solution_AjaxCheckpointLogger::DIAGNOSTIC_BUILD_ID,

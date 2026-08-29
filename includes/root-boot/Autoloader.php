@@ -92,7 +92,7 @@ function abj404_autoloader_read_classmap($mapFile, $refreshBytecode = false) {
 	if ($refreshBytecode && ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_invalidate')
 			&& (!function_exists('abj404_opcache_api_is_restricted')
 				|| !abj404_opcache_api_is_restricted(ini_get('opcache.restrict_api'), __FILE__))) {
-		ABJ_404_Solution_PhpRuntimeCapabilityAdapter::invalidateOpcache($mapFile, true);
+		ABJ_404_Solution_OpcacheAdapter::invalidate($mapFile, true);
 	}
 	try {
 		$loadedMap = require $mapFile;

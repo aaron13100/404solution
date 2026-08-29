@@ -92,7 +92,7 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_HostProbes {
     /** @return bool */
     public function opcacheEnabled(): bool {
         if (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_get_status')) {
-            $st = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::opcacheStatus(false);
+            $st = ABJ_404_Solution_OpcacheAdapter::status(false);
             if (is_array($st) && isset($st['opcache_enabled'])) {
                 return (bool)$st['opcache_enabled'];
             }

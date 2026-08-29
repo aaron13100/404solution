@@ -15,7 +15,15 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_PhpRuntimeCapabilityAdapter {
 
-    /** Functions the plugin actually invokes and this adapter owns. */
+    /**
+     * Functions the plugin actually invokes and THIS adapter owns.
+     *
+     * Not the whole boundary: the pcntl and OPcache extensions have their own
+     * adapters and their own lists, because a host removes those as a unit
+     * rather than a function at a time. scripts/lint/lint-disable-functions-boundary.php
+     * composes the union across all three, so a raw call to any of them is
+     * still flagged.
+     */
     private const OWNED_FUNCTIONS = array(
         'disk_free_space',
         'disk_total_space',
@@ -24,11 +32,6 @@ final class ABJ_404_Solution_PhpRuntimeCapabilityAdapter {
         'getmypid',
         'getrusage',
         'ini_set',
-        'opcache_get_status',
-        'opcache_invalidate',
-        'pcntl_alarm',
-        'pcntl_async_signals',
-        'pcntl_signal',
         'posix_geteuid',
         'sys_getloadavg',
     );
@@ -130,21 +133,24 @@ final class ABJ_404_Solution_PhpRuntimeCapabilityAdapter {
         return self::isFunctionAvailable('sys_getloadavg') ? @sys_getloadavg() : false;
     }
 
-    /** @return array<string, mixed>|false */
-    public static function opcacheStatus(bool $includeScripts = true) {
-        return self::isFunctionAvailable('opcache_get_status')
-            ? @opcache_get_status($includeScripts) : false;
-    }
-
-    /** Attempt to invalidate one OPcache entry. */
-    public static function invalidateOpcache(string $path, bool $force = false): bool {
-        return self::isFunctionAvailable('opcache_invalidate')
-            && @opcache_invalidate($path, $force);
-    }
-
-    /** @return string|false Previous value, or false when unavailable/refused. */
-    public static function setIni(string $name, string $value) {
-        return self::isFunctionAvailable('ini_set') ? @ini_set($name, $value) : false;
+    /**
+     * Set one INI directive for the rest of this request.
+     *
+     * Keyed, not positional. Both parts are strings, and a transposed call is
+     * not an error anywhere: ini_set() would be asked to set a directive named
+     * "0" and would simply return false, so `display_errors` would stay ON
+     * while the caller believed it had turned it off -- which at two of the
+     * call sites here means PHP notices printed into an AJAX response body,
+     * the exact corruption this plugin's canary ladder exists to diagnose.
+     * Shipped code has a PHP 7.4 floor, so a keyed bag is what makes the swap
+     * unwriteable.
+     *
+     * @param array{directive: string, value: string} $setting
+     * @return string|false Previous value, or false when unavailable/refused.
+     */
+    public static function setIni(array $setting) {
+        return self::isFunctionAvailable('ini_set')
+            ? @ini_set($setting['directive'], $setting['value']) : false;
     }
 
     /** Write the final PHP-log fallback, or return false when no sink exists. */
@@ -152,40 +158,23 @@ final class ABJ_404_Solution_PhpRuntimeCapabilityAdapter {
         return self::isFunctionAvailable('error_log') && @error_log($message);
     }
 
-    /** Whether all functions required for the post-response signal budget exist. */
-    public static function supportsSignalBudget(): bool {
-        return self::isFunctionAvailable('pcntl_async_signals')
-            && self::isFunctionAvailable('pcntl_signal')
-            && self::isFunctionAvailable('pcntl_alarm');
-    }
-
-    /** Enable asynchronous signal dispatch when supported. */
-    public static function enableAsyncSignals(): bool {
-        return self::isFunctionAvailable('pcntl_async_signals') && pcntl_async_signals(true);
-    }
-
-    /** Install one signal handler when supported. */
-    public static function installSignalHandler(int $signal, callable $handler): bool {
-        return self::isFunctionAvailable('pcntl_signal') && pcntl_signal($signal, $handler);
-    }
-
-    /** Set or clear the process alarm; zero means unavailable or no prior alarm. */
-    public static function alarm(int $seconds): int {
-        if (!self::isFunctionAvailable('pcntl_alarm')) {
-            return 0;
-        }
-        return pcntl_alarm($seconds);
-    }
-
     /**
-     * Sorted plugin-owned functions that are not callable in this runtime.
+     * Which of the given plugin-owned functions are not callable here, sorted.
+     *
+     * Takes the names rather than reading its own list, so a caller can ask
+     * about the union across every capability boundary without this class
+     * having to depend on the other two -- the support fingerprint does
+     * exactly that, and it must, because a host that removed the pcntl
+     * extension is precisely the host whose diagnostics need to say so.
+     *
      * Configuration directives are deliberately not consulted or exposed.
      *
+     * @param array<int, string> $owned
      * @return array<int, string>
      */
-    public static function disabledFunctions(): array {
+    public static function disabledAmong(array $owned): array {
         $disabled = array();
-        foreach (self::ownedFunctions() as $name) {
+        foreach ($owned as $name) {
             if (!self::isFunctionAvailable($name)) {
                 $disabled[] = $name;
             }

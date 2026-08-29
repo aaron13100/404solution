@@ -295,7 +295,8 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
             if (array_key_exists('subpage', $context) && is_string($context['subpage']) && $context['subpage'] !== '') {
                 header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $context['subpage']));
             }
-            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni('display_errors', '0');
+            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
+                array('directive' => 'display_errors', 'value' => '0'));
         }
         if (apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'viewUpdater_startAjaxDebugContext'))) {
             @ob_start();
