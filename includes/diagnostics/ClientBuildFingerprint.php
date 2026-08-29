@@ -74,10 +74,13 @@ final class ABJ_404_Solution_ClientBuildFingerprint {
         'telemetry_delivery' => array('file' => 'ajax/view_updater_transport_telemetry_delivery.js', 'functions' => null),
         'health_bar' => array(
             'file' => 'ajax/view_updater_health_bar.js',
-            'functions' => array('abj404BuildHealthBarFragment', 'abj404HealthBarTelemetry',
+            'functions' => array('abj404HealthBarState', 'abj404HealthBarFragmentParts',
+                'abj404BuildHealthBarFragment', 'abj404RetireHealthBar',
+                'abj404HealthBarTelemetry',
                 'abj404HealthBarAttemptUrl', 'abj404HealthBarOutcome',
                 'abj404HealthBarReportNonce',
-                'abj404HealthBarRequestContext', 'abj404RenderHealthBarResult',
+                'abj404HealthBarRequestPlan', 'abj404BeginHealthBarRequest',
+                'abj404RenderHealthBarResult',
                 'abj404HealthBarAjaxOptions', 'refreshHealthBarIfNeeded')),
         'canary_measurements' => array(
             'file' => 'ajax/view_updater_canary_measurements.js', 'functions' => null),
