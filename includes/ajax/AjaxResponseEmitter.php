@@ -259,8 +259,13 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             // around() runs a foreign-callback dispatch; if anything ever
             // prevents the closure from assigning, an envelope still ships
             // rather than `echo null`.
+            // Same shape as the encoder's own envelope and as
+            // buildAjaxErrorResponse(): data.message is what the client notice
+            // reads, so this last-resort body renders instead of showing the
+            // browser's generic AJAX error.
             $encoded = new ABJ_404_Solution_EncodedJsonResponse(
-                '{"success":false,"errorText":"The plugin could not encode this response."}',
+                sprintf(ABJ_404_Solution_JsonResponseEncoder::ERROR_ENVELOPE_TEMPLATE,
+                    'The plugin could not encode this response.'),
                 ABJ_404_Solution_EncodedJsonResponse::STRATEGY_ERROR_ENVELOPE
             );
         }

@@ -53,8 +53,18 @@ final class ABJ_404_Solution_JsonResponseEncoder {
      * produces, so the browser's existing error notice renders it with no
      * client change. Written as a literal template rather than encoded from an
      * array: step 4 runs precisely when json_encode() is the thing that failed.
+     *
+     * `data.message`, because that is the field the consumer actually reads
+     * (view_updater_pagination_error_notice.js:52). This template previously
+     * said `errorText` while its docblock claimed to match
+     * buildAjaxErrorResponse(), which produces `data.message` -- so the one
+     * useful fact on the whole degraded path, the real json_last_error cause,
+     * landed in a field nothing renders and the admin saw a generic AJAX
+     * failure. A diagnostic nobody can read is a silent error path.
+     * JsonResponseEncoderTest pins this against the notice source itself, since
+     * asserting each side in isolation is exactly what let the two drift.
      */
-    const ERROR_ENVELOPE_TEMPLATE = '{"success":false,"errorText":"%s"}';
+    const ERROR_ENVELOPE_TEMPLATE = '{"success":false,"data":{"message":"%s"}}';
 
     /**
      * Encode a response payload, degrading rather than failing.
