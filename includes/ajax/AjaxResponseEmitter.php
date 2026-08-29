@@ -78,10 +78,7 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             return;
         }
         self::checkpointedEmitHeaders(
-            ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext(),
-            ABJ_404_Solution_AjaxRequestLedger::requestIdFromGlobalContext(),
-            $httpStatus
-        );
+            ABJ_404_Solution_AjaxRequestIdScopes::fromGlobalContext(), $httpStatus);
     }
 
     /**
@@ -90,9 +87,9 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * @return void
      */
     public static function sendJsonResponseAndExit($payload, $httpStatus = 200) {
-        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
-        $ledgerRequestId = ABJ_404_Solution_AjaxRequestLedger::requestIdFromGlobalContext();
-        $payload = ABJ_404_Solution_AjaxRequestLedger::stampOnPayload($payload, $ledgerRequestId);
+        $scopes = ABJ_404_Solution_AjaxRequestIdScopes::fromGlobalContext();
+        $checkpointRequestId = $scopes->checkpoint();
+        $payload = ABJ_404_Solution_AjaxRequestLedger::stampOnPayload($payload, $scopes->ledger());
         // Close the per-query attribution timeline here rather than in the
         // stage runner: this is the one choke point every exit passes through,
         // including the rate-limit 429 and auth-failure 403 branches that
@@ -106,13 +103,9 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         ABJ_404_Solution_SameSiteRequestCensus::markPhase(
             ABJ_404_Solution_SameSiteRequestCensus::PHASE_RESPONSE_ENCODE);
         if (!self::$headersEmitted && !headers_sent()) {
-            self::checkpointedEmitHeaders($checkpointRequestId, $ledgerRequestId, $httpStatus);
+            self::checkpointedEmitHeaders($scopes, $httpStatus);
         }
-        self::checkpointedEncodeAndEcho(
-            $payload,
-            $checkpointRequestId,
-            ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestIdFromGlobalContext()
-        );
+        self::checkpointedEncodeAndEcho($payload, $scopes);
 
         // Test hook: tests register `abj404_should_exit` returning false to skip exit.
         // This filter runs foreign WordPress callbacks (named + `all`) after the
@@ -141,14 +134,15 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * measured before this fix, so a blocking header filter (e.g. an
      * optimizer plugin hooked on `status_header`) left `trace_finish_end`
      * followed by nothing, indistinguishable from a worker kill.
-     * $checkpointRequestId === '' means this response is outside the Bruno
-     * table-AJAX endpoint; skip the instrumentation but keep behavior
-     * identical.
+     * A response with no checkpoint scope is outside the Bruno table-AJAX
+     * endpoint; skip the instrumentation but keep behavior identical.
      *
      * @param int $httpStatus
      */
-    private static function checkpointedEmitHeaders(string $checkpointRequestId, string $ledgerRequestId, $httpStatus): void {
+    private static function checkpointedEmitHeaders(
+            ABJ_404_Solution_AjaxRequestIdScopes $scopes, $httpStatus): void {
         self::$headersEmitted = true;
+        $ledgerRequestId = $scopes->ledger();
         $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
             ? $GLOBALS['abj404_ajax_context'] : array();
         $emitHeaders = static function () use ($ctx, $ledgerRequestId) {
@@ -171,10 +165,10 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             }
             header('Content-type: application/json; charset=UTF-8');
         };
-        if ($checkpointRequestId === '') {
+        if (!$scopes->hasCheckpoints()) {
             $emitHeaders();
         } else {
-            ABJ_404_Solution_AjaxCheckpointLogger::around($checkpointRequestId, 'headers', $emitHeaders);
+            ABJ_404_Solution_AjaxCheckpointLogger::around($scopes->checkpoint(), 'headers', $emitHeaders);
         }
 
         $emitStatus = static function () use ($httpStatus) {
@@ -194,11 +188,11 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
                 http_response_code($httpStatus);
             }
         };
-        if ($checkpointRequestId === '') {
+        if (!$scopes->hasCheckpoints()) {
             $emitStatus();
         } else {
             ABJ_404_Solution_AjaxCheckpointLogger::around(
-                $checkpointRequestId, 'status_header', $emitStatus, array('http_status' => $httpStatus));
+                $scopes->checkpoint(), 'status_header', $emitStatus, array('http_status' => $httpStatus));
         }
     }
 
@@ -211,12 +205,11 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * uninstrumented gap. The post-hoc 'json_encode' record (bytes, content
      * hash, json_last_error()) is unchanged -- it still needs the encoded
      * result, which only exists after the bracketed call returns.
-     * $checkpointRequestId === '' means this response is outside the Bruno
-     * table-AJAX endpoint; skip the instrumentation but keep behavior
-     * identical.
+     * A response with no checkpoint scope is outside the Bruno table-AJAX
+     * endpoint; skip the instrumentation but keep behavior identical.
      *
      * The post-hoc size record is scoped SEPARATELY, to
-     * $measuredRequestId (AjaxDiagnosticRequestPolicy::diagnosticRequestId()),
+     * $scopes->measured() (AjaxDiagnosticRequestPolicy::diagnosticRequestId()),
      * because the two scopes answer different questions. The brackets are the
      * table endpoint's expensive micro-boundary instrumentation, and widening
      * that gate would also drag the canary ladder into the detach A/B
@@ -231,23 +224,21 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
      * server named the 3072, so the ladder could only report that the step
      * failed. See ABJ_404_Solution_ResponseBodyDeliveryEvidence.
      *
+     * The measured scope equals the checkpoint scope on the table endpoint, so
+     * that response still journals exactly one `json_encode` size record.
+     *
      * @param mixed $payload
-     * @param string $measuredRequestId Request whose durable trace is armed,
-     *   or '' to record no size at all. Equals $checkpointRequestId on the
-     *   table endpoint, so that response still journals exactly one
-     *   `json_encode` size record.
      */
     private static function checkpointedEncodeAndEcho(
         $payload,
-        string $checkpointRequestId,
-        string $measuredRequestId = ''
+        ABJ_404_Solution_AjaxRequestIdScopes $scopes
     ): void {
         $encoded = null;
-        if ($checkpointRequestId === '') {
+        if (!$scopes->hasCheckpoints()) {
             $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($payload);
         } else {
             ABJ_404_Solution_AjaxCheckpointLogger::around(
-                $checkpointRequestId,
+                $scopes->checkpoint(),
                 'json_encode',
                 static function () use ($payload, &$encoded) {
                     $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($payload);
@@ -256,37 +247,62 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             );
         }
         if (!($encoded instanceof ABJ_404_Solution_EncodedJsonResponse)) {
-            // around() runs a foreign-callback dispatch; if anything ever
-            // prevents the closure from assigning, an envelope still ships
-            // rather than `echo null`.
-            // Same shape as the encoder's own envelope and as
-            // buildAjaxErrorResponse(): data.message is what the client notice
-            // reads, so this last-resort body renders instead of showing the
-            // browser's generic AJAX error.
-            $encoded = new ABJ_404_Solution_EncodedJsonResponse(
-                sprintf(ABJ_404_Solution_JsonResponseEncoder::ERROR_ENVELOPE_TEMPLATE,
-                    'The plugin could not encode this response.'),
-                ABJ_404_Solution_EncodedJsonResponse::STRATEGY_ERROR_ENVELOPE
-            );
+            $encoded = self::encodeWithoutInstrumentation($payload);
         }
         // record() is a no-op for '', so an endpoint with no armed trace
         // behaves exactly as it did before this scope existed.
         ABJ_404_Solution_AjaxCheckpointLogger::record(
-            $measuredRequestId, 'json_encode', $encoded->diagnosticFields());
+            $scopes->measured(), 'json_encode', $encoded->diagnosticFields());
         self::reportDegradedEncode($encoded);
         $json = $encoded->json();
-        if ($checkpointRequestId === '') {
+        if (!$scopes->hasCheckpoints()) {
             echo $json;
             return;
         }
         ABJ_404_Solution_AjaxCheckpointLogger::around(
-            $checkpointRequestId,
+            $scopes->checkpoint(),
             'echo',
             static function () use ($json) {
                 echo $json;
             },
             array('bytes' => strlen($json))
         );
+    }
+
+    /**
+     * Encode again with the instrumentation taken out of the way.
+     *
+     * Reached when around() returned without the closure having assigned --
+     * around() dispatches foreign callbacks, so that is a property of the
+     * MEASUREMENT, not of the payload. Recovery therefore comes before
+     * reporting, per the self-healing ladder: the encoder is pure and already
+     * degrades rather than fails, so calling it directly succeeds for every
+     * payload the bracketed call would have encoded, and the admin sees their
+     * table instead of an apology. This costs one extra encode on a path that
+     * has never been observed in the wild.
+     *
+     * Only if that ALSO fails -- which now means a thrown Throwable, since
+     * encode() is typed to return an EncodedJsonResponse -- does an envelope
+     * ship, and it carries the thrown class and message rather than a canned
+     * sentence. A user-facing error is either recovered from invisibly or says
+     * what actually happened; "the plugin could not encode this response" with
+     * no cause is neither, and it was the whole content of this branch before.
+     *
+     * @param mixed $payload
+     */
+    private static function encodeWithoutInstrumentation($payload): ABJ_404_Solution_EncodedJsonResponse {
+        try {
+            return ABJ_404_Solution_JsonResponseEncoder::encode($payload);
+        } catch (Throwable $t) {
+            return new ABJ_404_Solution_EncodedJsonResponse(
+                ABJ_404_Solution_AjaxErrorEnvelope::encodeSafely(
+                    'The plugin could not encode this response ('
+                        . get_class($t) . ': ' . $t->getMessage() . ').'),
+                ABJ_404_Solution_EncodedJsonResponse::STRATEGY_ERROR_ENVELOPE,
+                JSON_ERROR_NONE,
+                get_class($t) . ': ' . $t->getMessage()
+            );
+        }
     }
 
     /**

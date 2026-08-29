@@ -50,7 +50,7 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
             if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_stats_dashboard', 30, 60)) {
                 ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshStatsDashboard.', $context);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                $payload = ABJ_404_Solution_AjaxErrorEnvelope::build('Rate limit exceeded. Please try again later.', null, false);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
                 return;
@@ -90,7 +90,7 @@ class ABJ_404_Solution_Ajax_RefreshStatsDashboard {
             }
 
             ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-            $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+            $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
                 'Server error while refreshing stats.',
                 $details,
                 $isPluginAdmin

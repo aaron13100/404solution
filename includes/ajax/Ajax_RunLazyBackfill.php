@@ -59,7 +59,7 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
                     $context
                 );
                 ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+                $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
                     'Rate limit exceeded. Please try again later.',
                     null,
                     false
@@ -71,7 +71,7 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
 
             if (!$this->runBackfillPass($context)) {
                 ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+                $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
                     'Server error while running lazy backfill.',
                     array('context' => $context, 'reason' => 'database_upgrades service unavailable'),
                     $isPluginAdmin
@@ -116,7 +116,7 @@ class ABJ_404_Solution_Ajax_RunLazyBackfill {
             }
 
             ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-            $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+            $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
                 'Server error while running lazy backfill.',
                 $details,
                 $isPluginAdmin

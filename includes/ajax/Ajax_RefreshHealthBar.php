@@ -65,7 +65,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_health_bar', 1500, 60)) {
                 ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshHealthBar.', $context);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+                $payload = ABJ_404_Solution_AjaxErrorEnvelope::build('Rate limit exceeded. Please try again later.', null, false);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
                 return;
@@ -116,7 +116,7 @@ class ABJ_404_Solution_Ajax_RefreshHealthBar {
             }
 
             ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-            $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+            $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
                 'Server error while refreshing health bar.',
                 $details,
                 $isPluginAdmin

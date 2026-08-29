@@ -255,7 +255,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             static fn() => $context
         );
         ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+        $payload = ABJ_404_Solution_AjaxErrorEnvelope::build('Rate limit exceeded. Please try again later.', null, false);
         ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
         ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
         return false;
@@ -318,7 +318,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         }
 
         ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+        $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
             'Server error while updating the table.',
             $details,
             $isPluginAdmin

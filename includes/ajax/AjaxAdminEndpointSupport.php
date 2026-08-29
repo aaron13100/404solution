@@ -9,14 +9,14 @@ if (!defined('ABSPATH')) {
  * Cross-cutting infrastructure consumed by every admin-AJAX endpoint
  * handler in includes/ajax/Ajax_*.php. Owns the request lifecycle that
  * surrounds a response: debug-context start, response-sent marker, output
- * buffer management, error envelope construction, admin-status fallback
+ * buffer management, admin-status fallback
  * resolution, request reader, failure logging shim, and view instance
  * resolution. Actually emitting the JSON response (header/ledger stamping,
  * the encode+echo boundary, output-buffer drain, connection-detach, exit)
  * is ABJ_404_Solution_AjaxResponseEmitter's own cohesive responsibility --
  * see that class for why it is split out rather than kept here.
  *
- * Shared cross-cutting helpers (error-envelope builder, fatal-error
+ * Shared cross-cutting helpers (fatal-error
  * classifier, debug-context starter, admin-nonce action list) for the
  * per-endpoint admin-table AJAX handlers, so each handler can own a single
  * endpoint's logic in its own file while reusing this common surface.
@@ -55,25 +55,6 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
     }
 
     /**
-     * @param string $message
-     * @param array<string, mixed>|null $details
-     * @param bool $isPluginAdmin
-     * @return array<string, mixed>
-     */
-    public static function buildAjaxErrorResponse($message, $details, $isPluginAdmin) {
-        $data = array(
-            'message' => $message,
-        );
-        if ($isPluginAdmin && $details !== null) {
-            $data['details'] = $details;
-        }
-        return array(
-            'success' => false,
-            'data' => $data,
-        );
-    }
-
-    /**
      * Verify an admin AJAX nonce and plugin-admin authorization, then emit
      * this layer's diagnostic error envelope on failure.
      *
@@ -97,7 +78,7 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
             self::markAjaxResponseSent();
             self::getAndClearAjaxBufferedOutput();
             ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(
-                self::buildAjaxErrorResponse('Unauthorized', null, false),
+                ABJ_404_Solution_AjaxErrorEnvelope::build('Unauthorized', null, false),
                 403
             );
             return false;
@@ -127,7 +108,7 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
         self::markAjaxResponseSent();
         self::getAndClearAjaxBufferedOutput();
         ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(
-            self::buildAjaxErrorResponse($message, null, false),
+            ABJ_404_Solution_AjaxErrorEnvelope::build($message, null, false),
             $status
         );
         return false;

@@ -102,7 +102,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
             if ($step === '') {
                 ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX unknown canary step in ajaxRunCanaryStep.', $context);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-                $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Unknown canary step.', null, false);
+                $payload = ABJ_404_Solution_AjaxErrorEnvelope::build('Unknown canary step.', null, false);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
                 ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 400);
                 return;
@@ -200,7 +200,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
         }
         ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRunCanaryStep.', $context);
         ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Rate limit exceeded. Please try again later.', null, false);
+        $payload = ABJ_404_Solution_AjaxErrorEnvelope::build('Rate limit exceeded. Please try again later.', null, false);
         ABJ_404_Solution_AjaxAdminEndpointSupport::getAndClearAjaxBufferedOutput();
         ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit($payload, 429);
         return false;
@@ -229,7 +229,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
         }
 
         ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-        $payload = ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+        $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
             'Server error while running the canary ladder.',
             $details,
             $isPluginAdmin

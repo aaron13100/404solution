@@ -31,6 +31,43 @@ if (!defined('ABSPATH')) {
 class ABJ_404_Solution_FeedbackEnvironmentExtras_CacheFingerprint {
 
     /**
+     * How the presence of one object-cache backend is detected. A closed set,
+     * because the alternative -- a bare string beside two other bare strings --
+     * lets one typo silently switch a probe off. These values are also the
+     * `backend_detail` prefix, so they are part of what a support payload says.
+     */
+    const MARKER_CONSTANT = 'const';
+    const MARKER_CLASS = 'class';
+    const MARKER_EXTENSION = 'ext';
+
+    /**
+     * The detector for each marker kind.
+     *
+     * A registry rather than three `if ($kind === ...)` branches: adding a
+     * fourth kind is then one entry that cannot be half-wired, and
+     * FeedbackEnvironmentExtras_CacheFingerprintTest asserts every kind used by
+     * probeObjectCacheBackend() has an entry here, so a marker whose kind has
+     * no detector fails a test instead of quietly never matching.
+     *
+     * @return array<string, callable(string): bool>
+     */
+    private static function markerDetectors(): array {
+        return array(
+            self::MARKER_CONSTANT => static function (string $marker): bool {
+                return defined($marker);
+            },
+            // Autoloading is deliberately off: a support probe must observe what
+            // is already loaded, not cause a class to load as a side effect.
+            self::MARKER_CLASS => static function (string $marker): bool {
+                return class_exists($marker, false);
+            },
+            self::MARKER_EXTENSION => static function (string $marker): bool {
+                return extension_loaded($marker);
+            },
+        );
+    }
+
+    /**
      * Report whether one of WordPress's two cache drop-ins is installed and
      * the owner declared by its `Plugin Name` header. No file body, path, or
      * other header is returned.
@@ -109,35 +146,32 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_CacheFingerprint {
             $out['using_ext_cache'] = (bool)wp_using_ext_object_cache();
         }
         // Known constants/classes/extensions from popular object-cache
-        // drop-ins. Each tuple is (name, type, marker): the first match
-        // wins so a Redis Object Cache Pro install is not also tagged
-        // as plain Redis.
+        // drop-ins. The first match wins, so a Redis Object Cache Pro install
+        // is not also tagged as plain Redis.
+        //
+        // Keyed rather than a (name, kind, marker) tuple, and the kind is one
+        // of the MARKER_* constants rather than a bare string, because a
+        // mistyped kind used to fail OPEN: no branch matched, the check simply
+        // never ran, and the probe reported "no object cache" for a host that
+        // has one. A detector that silently stops detecting is worse than one
+        // that reports nothing, since the answer still looks like an answer.
         $checks = array(
-            array('redis_object_cache_pro', 'const', 'WP_REDIS_VERSION'),
-            array('redis_object_cache_pro', 'class', 'RedisCachePro\\Plugin'),
-            array('redis_object_cache',     'class', 'WP_Object_Cache'),
-            array('memcached',              'class', 'Memcached'),
-            array('apcu',                   'ext',   'apcu'),
-            array('w3_total_cache',         'const', 'W3TC_VERSION'),
-            array('litespeed_cache',        'const', 'LSCWP_DIR'),
-            array('wp_engine_native',       'const', 'WPE_APIKEY'),
-            array('pantheon',               'const', 'PANTHEON_ENVIRONMENT'),
+            array('backend' => 'redis_object_cache_pro', 'kind' => self::MARKER_CONSTANT, 'marker' => 'WP_REDIS_VERSION'),
+            array('backend' => 'redis_object_cache_pro', 'kind' => self::MARKER_CLASS, 'marker' => 'RedisCachePro\\Plugin'),
+            array('backend' => 'redis_object_cache', 'kind' => self::MARKER_CLASS, 'marker' => 'WP_Object_Cache'),
+            array('backend' => 'memcached', 'kind' => self::MARKER_CLASS, 'marker' => 'Memcached'),
+            array('backend' => 'apcu', 'kind' => self::MARKER_EXTENSION, 'marker' => 'apcu'),
+            array('backend' => 'w3_total_cache', 'kind' => self::MARKER_CONSTANT, 'marker' => 'W3TC_VERSION'),
+            array('backend' => 'litespeed_cache', 'kind' => self::MARKER_CONSTANT, 'marker' => 'LSCWP_DIR'),
+            array('backend' => 'wp_engine_native', 'kind' => self::MARKER_CONSTANT, 'marker' => 'WPE_APIKEY'),
+            array('backend' => 'pantheon', 'kind' => self::MARKER_CONSTANT, 'marker' => 'PANTHEON_ENVIRONMENT'),
         );
+        $detectors = self::markerDetectors();
         foreach ($checks as $check) {
-            list($name, $type, $marker) = $check;
-            if ($type === 'const' && defined($marker)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'const:' . $marker;
-                return $out;
-            }
-            if ($type === 'class' && class_exists($marker, false)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'class:' . $marker;
-                return $out;
-            }
-            if ($type === 'ext' && extension_loaded($marker)) {
-                $out['backend'] = $name;
-                $out['backend_detail'] = 'ext:' . $marker;
+            $detector = $detectors[$check['kind']];
+            if ($detector($check['marker'])) {
+                $out['backend'] = $check['backend'];
+                $out['backend_detail'] = $check['kind'] . ':' . $check['marker'];
                 return $out;
             }
         }

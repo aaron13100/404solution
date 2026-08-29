@@ -47,15 +47,11 @@ class ABJ_404_Solution_AjaxFatalErrorResponder {
             $this->diagnostics->safeJsonEncode($details);
         $this->diagnostics->writeLine($line);
 
-        $payload = array(
-            'success' => false,
-            'data' => array(
-                'message' => 'Server error while updating the table.',
-            ),
+        $payload = ABJ_404_Solution_AjaxErrorEnvelope::build(
+            'Server error while updating the table.',
+            $details,
+            $this->isPluginAdmin($context)
         );
-        if ($this->isPluginAdmin($context)) {
-            $payload['data']['details'] = $details;
-        }
 
         if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
             $GLOBALS['abj404_ajax_context']['response_sent'] = true;

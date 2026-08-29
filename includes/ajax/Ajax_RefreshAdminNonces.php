@@ -28,13 +28,13 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
             if (!$userIsPluginAdmin) {
                 ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX unauthorized in ajaxRefreshAdminNonces.', $ctx);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse('Unauthorized', null, false), 403);
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_AjaxErrorEnvelope::build('Unauthorized', null, false), 403);
                 return;
             }
             if (ABJ_404_Solution_Ajax_Php::consumeRateLimit('refresh_admin_nonces', 60, 60)) {
                 ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX rate limit in ajaxRefreshAdminNonces.', $ctx);
                 ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+                ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_AjaxErrorEnvelope::build(
                     'Rate limit exceeded. Please try again later.', null, false), 429);
                 return;
             }
@@ -48,7 +48,7 @@ class ABJ_404_Solution_Ajax_RefreshAdminNonces {
         } catch (Throwable $e) {
             ABJ_404_Solution_AjaxAdminEndpointSupport::safeLogAjaxFailure('AJAX exception in ajaxRefreshAdminNonces.', $ctx, $e);
             ABJ_404_Solution_AjaxAdminEndpointSupport::markAjaxResponseSent();
-            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_AjaxAdminEndpointSupport::buildAjaxErrorResponse(
+            ABJ_404_Solution_AjaxResponseEmitter::sendJsonResponseAndExit(ABJ_404_Solution_AjaxErrorEnvelope::build(
                 'Server error while refreshing nonces.', null, false), 500);
         }
     }
