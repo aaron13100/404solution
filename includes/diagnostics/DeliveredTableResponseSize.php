@@ -27,12 +27,6 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_DeliveredTableResponseSize {
 
-    /** The browser reported a Resource Timing octet count for this response. */
-    const SOURCE_RESOURCE_TIMING = 'resource_timing_decoded_body';
-
-    /** No usable count: no report, no timing entry, or a size the browser withheld. */
-    const SOURCE_UNAVAILABLE = 'unavailable';
-
     /**
      * What the browser said one table request weighed, or a named absence.
      *
@@ -54,8 +48,8 @@ final class ABJ_404_Solution_DeliveredTableResponseSize {
     public static function forRequest(array $lines, string $requestId): array {
         $result = array(
             'bytes' => null,
-            'source' => self::SOURCE_UNAVAILABLE,
-            'resource_timing_state' => self::SOURCE_UNAVAILABLE,
+            'source' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE,
+            'resource_timing_state' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE,
         );
         if ($requestId === '') {
             return $result;
@@ -75,30 +69,16 @@ final class ABJ_404_Solution_DeliveredTableResponseSize {
             // and the later report describes the later delivery.
             $report = is_array($record['report'] ?? null) ? $record['report'] : array();
             $timing = is_array($report['rt'] ?? null) ? $report['rt'] : array();
-            $bytes = self::disclosedByteCount($timing['decodedBodySize'] ?? null);
+            $bytes = ABJ_404_Solution_MeasuredBodyBytes::disclosed($timing['decodedBodySize'] ?? null);
             $state = $report['rtState'] ?? null;
             $result = array(
                 'bytes' => $bytes,
-                'source' => $bytes === null ? self::SOURCE_UNAVAILABLE : self::SOURCE_RESOURCE_TIMING,
+                'source' => $bytes === null ? ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE : ABJ_404_Solution_MeasuredBodyBytes::SOURCE_RESOURCE_TIMING,
                 'resource_timing_state' => is_scalar($state)
-                    ? (string)$state : self::SOURCE_UNAVAILABLE,
+                    ? (string)$state : ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE,
             );
         }
         return $result;
     }
 
-    /**
-     * A byte count the browser positively disclosed, or null.
-     *
-     * Zero and the client's own -1 sentinel are both unknown: Resource Timing
-     * reports 0 for an entry it will not disclose (a timing-restricted or
-     * opaque response) exactly as it would for an empty body, and the plugin
-     * cannot tell those apart. Calling either one "0 bytes delivered" would
-     * invent a delivery finding out of a browser's refusal to answer.
-     *
-     * @param mixed $value
-     */
-    private static function disclosedByteCount($value): ?int {
-        return is_numeric($value) && (int)$value > 0 ? (int)$value : null;
-    }
 }

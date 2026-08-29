@@ -18,6 +18,13 @@ if (!defined('ABSPATH')) {
  * ABJ_404_Solution_MeasuredTableResponseSize) rather than among the probes
  * that consume its answer.
  *
+ * It lives in includes/ajax/ rather than includes/diagnostics/ because its
+ * fallback branch BUILDS a table response to measure it. deptrac's Diagnostics
+ * layer may not reach Presentation, and that rule is right: a class that
+ * renders a response has stopped being a recorder. This one genuinely does
+ * that, so it is classified where it belongs instead of being excepted from
+ * the rule. The recorded branch still reads only journal evidence.
+ *
  * Recorded first, measured second, named either way. The recorded number is
  * the exact size of the response that actually failed, so it always wins when
  * it exists -- but it exists only on a site whose durable trace was already

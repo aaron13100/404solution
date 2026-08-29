@@ -34,6 +34,13 @@ if (!defined('ABSPATH')) {
  * ABJ_404_Solution_DetachAbEvidence already uses against
  * ABJ_404_Solution_DetachAbVerdict.
  *
+ * It does not own what a measured byte count IS either. Whether a reported
+ * value is a real measurement or a refusal to answer, and the vocabulary
+ * naming which source produced it, are shared with the delivered half in
+ * ABJ_404_Solution_MeasuredBodyBytes: both halves have to answer that question
+ * identically or their difference means nothing, so it is one definition
+ * rather than a copy on each side.
+ *
  * Three properties are load-bearing rather than defensive:
  *
  *   1. Unknown is never a match. An absent `decodedBodySize` is a finding
@@ -56,11 +63,18 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     /** The journal event this class writes its joined evidence under. */
     const EVIDENCE_EVENT = 'body_delivery_evidence';
 
-    /** The browser's per-step receipt, written by ABJ_404_Solution_Ajax_CanaryLadder. */
-    const RECEIPT_EVENT = 'canary_step_client_receipt';
+    /**
+     * The browser's per-step receipt, written by ABJ_404_Solution_Ajax_CanaryLadder.
+     *
+     * Private, unlike EVIDENCE_EVENT and STREAM_FLUSH_EVENT above: this class
+     * is one of several readers of that journal rather than the owner of the
+     * name, so publishing it here would advertise an ownership that does not
+     * exist and invite a second class to import the name from the wrong place.
+     */
+    private const RECEIPT_EVENT = 'canary_step_client_receipt';
 
-    /** The post-encode size record written by ABJ_404_Solution_AjaxResponseEmitter. */
-    const ENCODE_EVENT = 'json_encode';
+    /** The post-encode size record written by ABJ_404_Solution_AjaxResponseEmitter. Private for the same reason as RECEIPT_EVENT. */
+    private const ENCODE_EVENT = 'json_encode';
 
     /** The `stream` step's own flush findings, written by ABJ_404_Solution_AjaxCanaryStepRunner. */
     const STREAM_FLUSH_EVENT = 'canary_stream_flush_outcome';
@@ -95,17 +109,12 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      */
     const REAL_REQUEST_STEP = 'real_request';
 
-    /** Emitted = the encoded JSON only. */
-    const EMITTED_SOURCE_ENCODE = 'json_encode';
-
-    /** Emitted = the encoded JSON plus the `stream` step's leading whitespace block. */
-    const EMITTED_SOURCE_ENCODE_PLUS_STREAM = 'json_encode_plus_stream_whitespace';
-
-    /** Delivered = Resource Timing `decodedBodySize`, the only octet count the browser measures. */
-    const DELIVERED_SOURCE_RESOURCE_TIMING = 'resource_timing_decoded_body';
-
-    /** Neither half was available for this response. */
-    const SOURCE_UNAVAILABLE = 'unavailable';
+    // The byte-provenance vocabulary (which source produced a count, and
+    // whether a reported value is a measurement at all) is shared with the
+    // delivered half of the comparison and lives in
+    // ABJ_404_Solution_MeasuredBodyBytes. Both halves must answer "is this a
+    // real measurement" identically or the comparison is meaningless, which is
+    // why it is one definition rather than a copy on each side.
 
     // No cap on how many comparisons ride the record, deliberately. The count
     // is already bounded by the fixed AjaxCanaryLadder::STEPS list plus one
@@ -273,15 +282,15 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
         // Through the same rule the receipt sizes use: two copies would
         // eventually disagree about zero and the -1 sentinel, and both halves
         // of a comparison must treat "unknown" identically.
-        $realEmitted = self::positiveIntOrNull($realRequest['bytes'] ?? null);
+        $realEmitted = ABJ_404_Solution_MeasuredBodyBytes::disclosed($realRequest['bytes'] ?? null);
         if ($realId !== '' || $realEmitted !== null) {
             $reported = ABJ_404_Solution_DeliveredTableResponseSize::forRequest($lines, $realId);
             $comparisons[] = self::comparison(array(
                 'step' => self::REAL_REQUEST_STEP,
                 'request_id' => $realId,
                 'emitted' => $realEmitted === null
-                    ? array('bytes' => null, 'source' => self::SOURCE_UNAVAILABLE)
-                    : array('bytes' => $realEmitted, 'source' => self::EMITTED_SOURCE_ENCODE),
+                    ? array('bytes' => null, 'source' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE)
+                    : array('bytes' => $realEmitted, 'source' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_ENCODE),
                 'delivered' => $reported['bytes'],
                 'timing_state' => $reported['resource_timing_state'],
             ));
@@ -326,7 +335,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
             'emitted_source' => $emitted['source'],
             'delivered_bytes' => $delivered,
             'delivered_source' => $delivered === null
-                ? self::SOURCE_UNAVAILABLE : self::DELIVERED_SOURCE_RESOURCE_TIMING,
+                ? ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE : ABJ_404_Solution_MeasuredBodyBytes::SOURCE_RESOURCE_TIMING,
             'resource_timing_state' => $row['timing_state'],
             'state' => $state,
         );
@@ -345,18 +354,18 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      */
     private static function emittedBytes(?int $encodedBytes, ?array $flush): array {
         if ($encodedBytes === null) {
-            return array('bytes' => null, 'source' => self::SOURCE_UNAVAILABLE);
+            return array('bytes' => null, 'source' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE);
         }
         if ($flush !== null && $flush['whitespace_bytes'] === null) {
-            return array('bytes' => null, 'source' => self::SOURCE_UNAVAILABLE);
+            return array('bytes' => null, 'source' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_UNAVAILABLE);
         }
         $whitespace = $flush === null ? 0 : max(0, $flush['whitespace_bytes']);
         if ($whitespace === 0) {
-            return array('bytes' => $encodedBytes, 'source' => self::EMITTED_SOURCE_ENCODE);
+            return array('bytes' => $encodedBytes, 'source' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_ENCODE);
         }
         return array(
             'bytes' => $encodedBytes + $whitespace,
-            'source' => self::EMITTED_SOURCE_ENCODE_PLUS_STREAM,
+            'source' => ABJ_404_Solution_MeasuredBodyBytes::SOURCE_ENCODE_PLUS_STREAM,
         );
     }
 
@@ -390,7 +399,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
             }
             $receipts[$step] = array(
                 'request_id' => $requestId,
-                'delivered_bytes' => self::positiveIntOrNull($record['decoded_body_bytes'] ?? null),
+                'delivered_bytes' => ABJ_404_Solution_MeasuredBodyBytes::disclosed($record['decoded_body_bytes'] ?? null),
                 'resource_timing_state' => self::scalarField($record, 'resource_timing_state'),
             );
         }
@@ -414,7 +423,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
                 continue;
             }
             $requestId = self::scalarField($record, 'request_id');
-            $bytes = self::positiveIntOrNull($record['bytes'] ?? null);
+            $bytes = ABJ_404_Solution_MeasuredBodyBytes::disclosed($record['bytes'] ?? null);
             if ($requestId === '' || $bytes === null) {
                 continue;
             }
@@ -465,22 +474,6 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
             );
         }
         return $outcomes;
-    }
-
-    /**
-     * A byte count the browser or server positively measured, or null.
-     *
-     * Zero and the client's own -1 sentinel are both unknown: Resource Timing
-     * reports 0 for an entry it will not disclose (an opaque or
-     * timing-restricted response) exactly as it would for an empty body, and
-     * the plugin cannot tell those apart. Calling either one "0 bytes
-     * delivered" would invent a delivery finding out of a browser's refusal to
-     * answer.
-     *
-     * @param mixed $value
-     */
-    private static function positiveIntOrNull($value): ?int {
-        return is_numeric($value) && (int)$value > 0 ? (int)$value : null;
     }
 
     /**
