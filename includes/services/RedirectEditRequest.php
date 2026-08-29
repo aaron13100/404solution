@@ -163,9 +163,9 @@ class ABJ_404_Solution_RedirectEditRequest {
         $ids = array_values(array_filter(array_map(
                 function ($v): int { return is_scalar($v) ? absint($v) : 0; },
                 $rawIds), function (int $v): bool { return $v > 0; }));
-        if (empty($ids)) {
-            return null;
-        }
+        // bulk() answers null for a set that sanitized down to nothing, which
+        // is the same "no usable id" this method returns for a missing
+        // parameter -- one definition of empty rather than two.
         return ABJ_404_Solution_RequestedRedirectIds::bulk(
             self::SOURCE_IDNUM, $ids, $requestedCount);
     }

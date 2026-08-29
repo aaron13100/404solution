@@ -112,10 +112,71 @@ class ABJ_404_Solution_RequestInputNormalizer {
     }
 
     /**
+     * Read a named request value under a byte ceiling and decode it as JSON.
+     *
+     * The size is measured on the RAW superglobal, before wp_unslash() or
+     * sanitize_text_field() touches it, and an oversized payload is refused
+     * without either. Reading through getPostOrGetSanitize() first and bounding
+     * afterwards inverts the point of the ceiling: a megabyte of observations
+     * was fully unslashed and sanitized and only then rejected for being too
+     * big, so the limit cost more on the input it exists to refuse than on the
+     * ones it accepts.
+     *
+     * @param array{name: string, max_bytes: int, unavailable_label: string} $options
+     * @return array{status: 'available', observations: array<mixed>}|array{
+     *   status: 'unavailable',
+     *   unavailable: array{code: string, message: string, payloadBytes: int, maxBytes: int}
+     * }
+     */
+    public static function decodeBoundedJsonRequestValue(array $options): array {
+        $bounded = self::readBoundedRaw($options['name'], $options['max_bytes']);
+        return self::decodeBoundedJsonArray(array(
+            'raw' => $bounded['value'],
+            'raw_bytes' => $bounded['bytes'],
+            'max_bytes' => $options['max_bytes'],
+            'unavailable_label' => $options['unavailable_label'],
+        ));
+    }
+
+    /**
+     * One request value, measured first and normalized only if it fits.
+     *
+     * @return array{value: string, bytes: int} `value` is empty when the raw
+     *   payload exceeded the ceiling; `bytes` is always the real raw length, so
+     *   the caller can report what the client sent.
+     */
+    private static function readBoundedRaw(string $name, int $maxBytes): array {
+        $maxBytes = max(1, $maxBytes);
+        $raw = isset($_GET[$name]) ? $_GET[$name] : (isset($_POST[$name]) ? $_POST[$name] : null);
+        if ($raw === null || !is_scalar($raw)) {
+            return array('value' => '', 'bytes' => 0);
+        }
+        $rawString = (string)$raw;
+        $bytes = strlen($rawString);
+        if ($bytes > $maxBytes) {
+            return array('value' => '', 'bytes' => $bytes);
+        }
+        // safeWpUnslash() is declared mixed because it forwards whatever
+        // wp_unslash() returns; a scalar in yields a string out, and falling
+        // back to the raw value keeps this total rather than assuming it.
+        $unslashed = self::safeWpUnslash($rawString);
+        $unslashedString = is_string($unslashed) ? $unslashed : $rawString;
+        $clean = function_exists('sanitize_text_field')
+            ? sanitize_text_field($unslashedString) : $unslashedString;
+        return array('value' => is_string($clean) ? $clean : '', 'bytes' => $bytes);
+    }
+
+    /**
      * Decode a size-bounded JSON array without truncating valid input into an
      * invalid document or silently converting parse failure to an empty array.
      *
-     * @param array{raw: string, max_bytes: int, unavailable_label: string} $options
+     * `raw_bytes` overrides the measured length of `raw`, for a caller that
+     * already refused an oversized payload WITHOUT normalizing it (see
+     * decodeBoundedJsonRequestValue below). Such a caller passes an empty
+     * `raw` with the real size, so the refusal still reports what the client
+     * actually sent rather than zero.
+     *
+     * @param array{raw: string, max_bytes: int, unavailable_label: string, raw_bytes?: int} $options
      * @return array{status: 'available', observations: array<mixed>}|array{
      *   status: 'unavailable',
      *   unavailable: array{code: string, message: string, payloadBytes: int, maxBytes: int}
@@ -125,7 +186,8 @@ class ABJ_404_Solution_RequestInputNormalizer {
         $raw = $options['raw'];
         $maxBytes = max(1, $options['max_bytes']);
         $label = $options['unavailable_label'];
-        $payloadBytes = strlen($raw);
+        $payloadBytes = array_key_exists('raw_bytes', $options)
+            ? (int)$options['raw_bytes'] : strlen($raw);
 
         if ($payloadBytes === 0) {
             $code = 'payload_missing';

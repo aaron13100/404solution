@@ -457,8 +457,11 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     private static function runInterpretStep(array $stepRequest, array &$context): array {
         $requestId = $stepRequest['request_id'];
         $requestReader = $stepRequest['request_reader'];
-        $parsed = ABJ_404_Solution_RequestInputNormalizer::decodeBoundedJsonArray(array(
-            'raw' => (string)$requestReader->getPostOrGetSanitize('observations', ''),
+        // Read AND bounded by the normalizer, so the ceiling reaches the raw
+        // payload before any per-byte normalization does. Why that ordering
+        // matters is on decodeBoundedJsonRequestValue() itself.
+        $parsed = ABJ_404_Solution_RequestInputNormalizer::decodeBoundedJsonRequestValue(array(
+            'name' => 'observations',
             'max_bytes' => self::MAX_INTERPRETATION_BYTES,
             'unavailable_label' => 'Interpretation unavailable: observations',
         ));

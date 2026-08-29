@@ -59,35 +59,51 @@ final class ABJ_404_Solution_RequestedRedirectIds {
     private $requestedCount;
 
     /**
-     * @param array<int, int> $ids
+     * Keyed, because `kind` and `source` are both strings: positionally they
+     * transpose into a type-correct call that labels a bulk request as a
+     * single one, which is the exact confusion this type exists to end. PHP 7.4
+     * is the floor here, so named arguments are not available.
+     *
+     * @param array{kind: string, source: string, ids: array<int, int>, requested_count: int} $state
      */
-    private function __construct(string $kind, string $source, array $ids, int $requestedCount) {
-        $this->kind = $kind;
-        $this->source = $source;
-        $this->ids = $ids;
-        $this->requestedCount = $requestedCount;
+    private function __construct(array $state) {
+        $this->kind = $state['kind'];
+        $this->source = $state['source'];
+        $this->ids = $state['ids'];
+        $this->requestedCount = $state['requested_count'];
     }
 
     /** One redirect, named through the GET or POST `id` parameter. */
     public static function single(string $source, int $id): self {
-        return new self(self::KIND_SINGLE, $source, array($id), 1);
+        return new self(array('kind' => self::KIND_SINGLE, 'source' => $source,
+            'ids' => array($id), 'requested_count' => 1));
     }
 
     /**
-     * A bulk selection within the ceiling.
+     * A bulk selection within the ceiling, or null when it names no ids.
      *
-     * @param array<int, int> $ids Non-empty; a set that sanitizes to nothing is
-     *   "no usable id", which callers represent as null rather than as this.
+     * @param array<int, int> $ids A set that sanitizes to nothing yields null
+     *   rather than an empty bulk request.
      * @param int $requestedCount How many the request NAMED, which can exceed
      *   count($ids) when some entries sanitized away to nothing.
      */
-    public static function bulk(string $source, array $ids, int $requestedCount): self {
-        return new self(self::KIND_BULK, $source, array_values($ids), $requestedCount);
+    public static function bulk(string $source, array $ids, int $requestedCount): ?self {
+        // An empty set is not a bulk request with nothing in it; it is "the
+        // request named no usable id", which callers already represent as null.
+        // Deciding that here rather than at the call site is what keeps a
+        // KIND_BULK holding zero ids unrepresentable instead of merely
+        // undocumented.
+        if ($ids === array()) {
+            return null;
+        }
+        return new self(array('kind' => self::KIND_BULK, 'source' => $source,
+            'ids' => array_values($ids), 'requested_count' => $requestedCount));
     }
 
     /** A selection larger than the plugin will carry. Names no ids on purpose. */
     public static function refusedAsTooMany(string $source, int $requestedCount): self {
-        return new self(self::KIND_REFUSED_TOO_MANY, $source, array(), $requestedCount);
+        return new self(array('kind' => self::KIND_REFUSED_TOO_MANY, 'source' => $source,
+            'ids' => array(), 'requested_count' => $requestedCount));
     }
 
     /** Which request parameter the answer came from. */
