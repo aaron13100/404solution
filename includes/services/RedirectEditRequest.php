@@ -37,6 +37,21 @@ class ABJ_404_Solution_RedirectEditRequest {
     /** Request named a set of redirects through the idnum parameter. */
     const SOURCE_IDNUM = 'idnum';
 
+    /**
+     * Most redirects one request may name at once.
+     *
+     * The set arrives as a repeatable form field, so its size is chosen by the
+     * client, and every consumer scales with it: one `IN (...)` lookup over the
+     * whole set, then a hidden input and a rendered table row per id. Without a
+     * ceiling the request decides how much work the server does.
+     *
+     * Set well above any real bulk selection -- the admin tables page in the
+     * dozens, and the REST list endpoint caps a page at 100 -- so an admin who
+     * selects everything on a very large page is unaffected, and only a set no
+     * screen produces is bounded.
+     */
+    const MAX_SELECTED_IDS = 2000;
+
     /** @var ABJ_404_Solution_Functions */
     private $f;
 
@@ -80,7 +95,14 @@ class ABJ_404_Solution_RedirectEditRequest {
      * caller can log the same GET / POST / ids_multiple distinction the edit
      * page has always recorded without this method doing the logging itself.
      *
-     * @return array{recnum: int|null, recnumsMultiple: array<int, int>, source: string}|null
+     * `truncated` reports that the request named more ids than
+     * MAX_SELECTED_IDS and the extras were dropped. Reported rather than
+     * silently applied: editing a subset of what the admin selected, with no
+     * indication that it happened, is a worse outcome than the unbounded work
+     * the cap exists to prevent.
+     *
+     * @return array{recnum: int|null, recnumsMultiple: array<int, int>, source: string,
+     *   truncated: bool}|null
      */
     public function getRequestedIds(): ?array {
         if (isset($_GET['id']) && is_scalar($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
@@ -88,6 +110,7 @@ class ABJ_404_Solution_RedirectEditRequest {
                 'recnum' => absint($_GET['id']),
                 'recnumsMultiple' => array(),
                 'source' => self::SOURCE_GET_ID,
+                'truncated' => false,
             );
         }
 
@@ -96,6 +119,7 @@ class ABJ_404_Solution_RedirectEditRequest {
                 'recnum' => absint($_POST['id']),
                 'recnumsMultiple' => array(),
                 'source' => self::SOURCE_POST_ID,
+                'truncated' => false,
             );
         }
 
@@ -105,9 +129,17 @@ class ABJ_404_Solution_RedirectEditRequest {
 
         $rawIdnum = isset($_GET['idnum']) ? $_GET['idnum']
                 : (isset($_POST['idnum']) ? $_POST['idnum'] : $this->sanitizedScalar('idnum'));
+        // Bounded BEFORE the map, not after: the cap is there to limit the work
+        // this request can cause, and sanitizing a million ids to then keep two
+        // thousand of them has already done the work.
+        $rawIds = (array)$rawIdnum;
+        $truncated = count($rawIds) > self::MAX_SELECTED_IDS;
+        if ($truncated) {
+            $rawIds = array_slice($rawIds, 0, self::MAX_SELECTED_IDS);
+        }
         $recnumsMultiple = array_values(array_filter(array_map(
                 function ($v): int { return is_scalar($v) ? absint($v) : 0; },
-                (array)$rawIdnum), function (int $v): bool { return $v > 0; }));
+                $rawIds), function (int $v): bool { return $v > 0; }));
         if (empty($recnumsMultiple)) {
             return null;
         }
@@ -115,6 +147,7 @@ class ABJ_404_Solution_RedirectEditRequest {
             'recnum' => null,
             'recnumsMultiple' => $recnumsMultiple,
             'source' => self::SOURCE_IDNUM,
+            'truncated' => $truncated,
         );
     }
 

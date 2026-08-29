@@ -18,11 +18,42 @@
 }(typeof window !== 'undefined' ? window : this, /* abj404-client-module:start */ function (global) {
     'use strict';
 
-    /** @param {string} text @param {number} from @param {number} direction @returns {number} */
-    function whitespaceBoundary(text, from, direction) {
-        var index = from;
-        while (index >= 0 && index < text.length && /\s/.test(text.charAt(index))) {
-            index += direction;
+    /**
+     * The delimiter pairs, each written once.
+     *
+     * Passing an opener and a closer as two separate string arguments left an
+     * order to get wrong, and getting it wrong is invisible: `indexOf` then
+     * searches for the closing brace and the wrapper is simply never found, so
+     * a body with foreign prefix bytes is reported as ordinary `invalid-json`.
+     */
+    var OBJECT_DELIMITERS = { opener: '{', closer: '}' };
+    var ARRAY_DELIMITERS = { opener: '[', closer: ']' };
+
+    /**
+     * Index of the first non-whitespace code unit, or text.length when there
+     * is none.
+     *
+     * Deliberately two functions rather than one scanner taking a start and a
+     * step: those are both numbers, so the call site could transpose them, and
+     * a step of 0 never advances the index -- an infinite loop in the admin's
+     * browser, inside a classifier whose entire job is to describe a response
+     * that has already failed.
+     *
+     * @param {string} text @returns {number}
+     */
+    function firstSignificantIndex(text) {
+        var index = 0;
+        while (index < text.length && /\s/.test(text.charAt(index))) {
+            index += 1;
+        }
+        return index;
+    }
+
+    /** @param {string} text @returns {number} Index of the last non-whitespace code unit, or -1. */
+    function lastSignificantIndex(text) {
+        var index = text.length - 1;
+        while (index >= 0 && /\s/.test(text.charAt(index))) {
+            index -= 1;
         }
         return index;
     }
@@ -39,10 +70,10 @@
         }
     }
 
-    /** @param {string} text @param {string} opener @param {string} closer @returns {object|null} */
-    function wrappedJsonCandidate(text, opener, closer) {
-        var start = text.indexOf(opener);
-        var end = text.lastIndexOf(closer);
+    /** @param {string} text @param {{opener: string, closer: string}} delimiters @returns {object|null} */
+    function wrappedJsonCandidate(text, delimiters) {
+        var start = text.indexOf(delimiters.opener);
+        var end = text.lastIndexOf(delimiters.closer);
         if (start < 0 || end < start) {
             return null;
         }
@@ -63,12 +94,12 @@
         var firstChar = text.charAt(first);
         var wrapped;
         if (firstChar === '{') {
-            wrapped = wrappedJsonCandidate(text, '{', '}');
+            wrapped = wrappedJsonCandidate(text, OBJECT_DELIMITERS);
         } else if (firstChar === '[') {
-            wrapped = wrappedJsonCandidate(text, '[', ']');
+            wrapped = wrappedJsonCandidate(text, ARRAY_DELIMITERS);
         } else {
-            wrapped = wrappedJsonCandidate(text, '{', '}') ||
-                wrappedJsonCandidate(text, '[', ']');
+            wrapped = wrappedJsonCandidate(text, OBJECT_DELIMITERS) ||
+                wrappedJsonCandidate(text, ARRAY_DELIMITERS);
         }
         if (!wrapped) {
             return false;
@@ -88,8 +119,8 @@
      */
     function inspect(body) {
         var text = typeof body === 'string' ? body : '';
-        var first = whitespaceBoundary(text, 0, 1);
-        var last = whitespaceBoundary(text, text.length - 1, -1);
+        var first = firstSignificantIndex(text);
+        var last = lastSignificantIndex(text);
         var shape = {
             classification: text.length === 0 ? 'empty' : 'invalid-json',
             length: text.length,

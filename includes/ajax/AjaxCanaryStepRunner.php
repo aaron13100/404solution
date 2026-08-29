@@ -375,7 +375,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                     $plan,
                     ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
                     static function (): void {
-                        ABJ_404_Solution_AjaxResponseEmitter::emitJsonResponseHeadersEarly(200);
+                        ABJ_404_Solution_JsonResponseHead::emitEarly(200);
                     },
                     static function (callable $work, array $startFields) use ($requestId): void {
                         ABJ_404_Solution_AjaxCheckpointLogger::around(

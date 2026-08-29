@@ -62,7 +62,7 @@ $abj404ClassesByDirectory = array(
         'AjaxClientReportBeaconResponder',
         'AjaxAdminEndpointSupport', 'AjaxResponseEmitter', 'Ajax_GetPaginationLinks',
         'AdminTableResponseParts', 'MeasuredTableResponseSize',
-        'JsonResponseEncoder', 'EncodedJsonResponse', 'AjaxErrorEnvelope', 'AjaxRequestIdScopes',
+        'JsonResponseEncoder', 'EncodedJsonResponse', 'JsonResponseHead', 'AjaxErrorEnvelope', 'AjaxRequestIdScopes',
         'Ajax_RefreshStatsDashboard', 'Ajax_RefreshHealthBar', 'Ajax_RefreshAdminNonces',
         'Ajax_CanaryLadder', 'AjaxCanaryStepRunner', 'CanarySizeTarget',
     ),

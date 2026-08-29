@@ -73,8 +73,21 @@ final class ABJ_404_Solution_MeasuredTableResponseSize {
     /** The build threw. The size is unknown; that the build fails is the finding. */
     const SOURCE_BUILD_FAILED = 'measure_build_failed';
 
-    /** The build returned something json_encode() could not turn into bytes. */
+    /** The build returned something the response encoder could not turn into bytes. */
     const SOURCE_ENCODE_FAILED = 'measure_encode_failed';
+
+    /**
+     * The client gives up on this step at 15 seconds
+     * (view_updater_canary_ladder.js), so the build's own per-query budget is
+     * held below that. The shared foreground budget is 20 seconds, which is
+     * correct for the table endpoint and wrong here: it would leave a query
+     * holding a worker for five seconds after the only party waiting on the
+     * answer has already stopped listening.
+     */
+    const CLIENT_DEADLINE_SECONDS = 15;
+
+    /** Leaves room inside the deadline for the render and the encode. */
+    const QUERY_BUDGET_SECONDS = 10;
 
     /**
      * Build this subpage's table response part and return its encoded size.
@@ -101,13 +114,29 @@ final class ABJ_404_Solution_MeasuredTableResponseSize {
             if (!is_object($view) || !is_object($viewReadService)) {
                 return self::noSize(self::SOURCE_SERVICES_UNAVAILABLE);
             }
-            $data = ABJ_404_Solution_AdminTableResponseParts::build(
-                'table', $subpage, $view, $viewReadService, $context);
-            $json = json_encode($data);
-            if (!is_string($json) || strlen($json) === 0) {
+            $tableResponse = ABJ_404_Solution_AdminTableResponseParts::build(
+                array(
+                    'part' => 'table',
+                    'subpage' => $subpage,
+                    'view' => $view,
+                    'viewReadService' => $viewReadService,
+                    'queryTimeoutSeconds' => self::QUERY_BUDGET_SECONDS,
+                ),
+                $context
+            );
+            // Through the SAME encoder the endpoint emits with, not a raw
+            // json_encode(). A payload the encoder recovers -- substituted
+            // invalid UTF-8, a partial-output fallback -- is one the endpoint
+            // really would have delivered, and measuring it with json_encode()
+            // reports `false` and throws away the size on exactly the degraded
+            // sites this measurement exists to explain. An error envelope is
+            // the one strategy that is NOT a table, so its bytes are not the
+            // number being asked for.
+            $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($tableResponse);
+            if (!$encoded->carriesPayload() || strlen($encoded->json()) === 0) {
                 return self::noSize(self::SOURCE_ENCODE_FAILED);
             }
-            return array('bytes' => strlen($json), 'source' => self::SOURCE_MEASURED);
+            return array('bytes' => strlen($encoded->json()), 'source' => self::SOURCE_MEASURED);
         } catch (Throwable $e) {
             // Unconditional; abj404_logPhpFallback() is defined at plugin
             // entry, before any class here can be autoloaded.

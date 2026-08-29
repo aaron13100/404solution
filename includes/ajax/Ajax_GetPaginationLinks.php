@@ -185,10 +185,12 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             }
 
             $data = ABJ_404_Solution_AdminTableResponseParts::build(
-                $part,
-                $subpage,
-                $view,
-                $viewReadService,
+                array(
+                    'part' => $part,
+                    'subpage' => $subpage,
+                    'view' => $view,
+                    'viewReadService' => $viewReadService,
+                ),
                 $context
             );
             if ($detectOnly && isset($data['tableSignature'])) {

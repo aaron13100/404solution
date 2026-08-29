@@ -71,10 +71,26 @@ class ABJ_404_Solution_AdminTableResponseParts {
 
     /** @return array<string, int> */
     public static function queryBudgetOptions(bool $detectOnly = false): array {
+        return self::queryBudgetOptionsForSeconds($detectOnly
+            ? self::DETECT_ONLY_QUERY_TIMEOUT_SECONDS
+            : self::QUERY_TIMEOUT_SECONDS);
+    }
+
+    /**
+     * The same budget under a caller-supplied ceiling.
+     *
+     * The two constants above are the budgets for the two callers that were
+     * here first; they are not properties of the query. A caller whose own
+     * client deadline is SHORTER than the foreground budget (the canary
+     * ladder's measurement step gives up at 15 seconds) would otherwise leave
+     * a query holding a worker for seconds after the only party waiting on it
+     * has gone, which is the opposite of what the foreground budget is for.
+     *
+     * @return array<string, int>
+     */
+    public static function queryBudgetOptionsForSeconds(int $timeoutSeconds): array {
         return array(
-            '_abj404_query_timeout' => $detectOnly
-                ? self::DETECT_ONLY_QUERY_TIMEOUT_SECONDS
-                : self::QUERY_TIMEOUT_SECONDS,
+            '_abj404_query_timeout' => max(1, $timeoutSeconds),
             // This endpoint owns a structured, admin-only failure envelope.
             // Let view-query failures reach it instead of converting them to
             // an HTTP 200 empty/pending table that discards index diagnostics.
@@ -112,45 +128,67 @@ class ABJ_404_Solution_AdminTableResponseParts {
     /**
      * The requested part, or every part when 'all' was asked for.
      *
-     * @param ABJ_404_Solution_View $view
-     * @param ABJ_404_Solution_ViewReadServiceInterface $viewReadService
+     * @param array{part: string, subpage: string, view: ABJ_404_Solution_View,
+     *   viewReadService: ABJ_404_Solution_ViewReadServiceInterface,
+     *   queryTimeoutSeconds?: int} $request One keyed bag rather than four
+     *   positional arguments. It carried two adjacent strings (the part and the
+     *   subpage) and two adjacent objects (the view and the view-read service),
+     *   and both pairs transpose without a type error: a swapped part/subpage
+     *   builds nothing and returns an empty response the client renders as an
+     *   empty table, and a swapped view pair reaches a method_exists() guard
+     *   that answers false and silently drops the sort-readiness metadata.
+     *   `queryTimeoutSeconds` defaults to the foreground budget; pass it when
+     *   the caller's own deadline is shorter.
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    public static function build(
-        string $requestedPart,
-        string $subpage,
-        $view,
-        $viewReadService,
-        array &$context
-    ): array {
+    public static function build(array $request, array &$context): array {
         $builders = array(
             'table' => 'buildTablePart',
             'counts' => 'buildCountsPart',
             'pagination' => 'buildPaginationPart',
         );
-        $parts = $requestedPart === 'all' ? array_keys($builders) : array($requestedPart);
+        $parts = $request['part'] === 'all' ? array_keys($builders) : array($request['part']);
         $data = array();
         foreach ($parts as $part) {
             $method = $builders[$part] ?? '';
             if ($method === '') {
                 continue;
             }
-            $data = array_merge($data, self::$method($subpage, $view, $viewReadService, $context));
+            $data = array_merge($data, self::$method($request, $context));
         }
         return $data;
+    }
+
+    /**
+     * The query budget this request runs under.
+     *
+     * @param array{part: string, subpage: string, view: ABJ_404_Solution_View,
+     *   viewReadService: ABJ_404_Solution_ViewReadServiceInterface,
+     *   queryTimeoutSeconds?: int} $request
+     * @return array<string, int>
+     */
+    private static function budgetFor(array $request): array {
+        return isset($request['queryTimeoutSeconds'])
+            ? self::queryBudgetOptionsForSeconds((int)$request['queryTimeoutSeconds'])
+            : self::queryBudgetOptions();
     }
 
     /**
      * The table HTML for one subpage, plus the signature of the data it was
      * rendered from.
      *
-     * @param ABJ_404_Solution_View $view
-     * @param mixed $viewReadService
+     * @param array{part: string, subpage: string, view: ABJ_404_Solution_View,
+     *   viewReadService: ABJ_404_Solution_ViewReadServiceInterface,
+     *   queryTimeoutSeconds?: int} $request
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    private static function buildTablePart(string $subpage, $view, $viewReadService, array &$context): array {
+    private static function buildTablePart(array $request, array &$context): array {
+        $subpage = (string)$request['subpage'];
+        $view = $request['view'];
+        $viewReadService = $request['viewReadService'];
+        $budget = self::budgetFor($request);
         if (!isset(self::TABLE_RENDERERS[$subpage])) {
             return array('table' => 'Error: Unexpected subpage requested.');
         }
@@ -159,7 +197,7 @@ class ABJ_404_Solution_AdminTableResponseParts {
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage(
             $context,
             $renderer['stage'],
-            static function () use ($subpage, $view, $viewReadService, $method, &$context) {
+            static function () use ($subpage, $view, $viewReadService, $method, $budget, &$context) {
                 if (($subpage === 'abj404_redirects' || $subpage === 'abj404_captured')
                         && is_object($viewReadService)
                         && method_exists($viewReadService, 'sortReadinessStatusForOrderby')) {
@@ -169,7 +207,7 @@ class ABJ_404_Solution_AdminTableResponseParts {
                     ));
                 }
                 return array(
-                    'table' => $view->$method($subpage, self::queryBudgetOptions()),
+                    'table' => $view->$method($subpage, $budget),
                     'tableSignature' => self::currentTableSignature($view, $subpage),
                 );
             }
@@ -181,14 +219,16 @@ class ABJ_404_Solution_AdminTableResponseParts {
      * countsIncomplete rather than zeros: a zero count is a finding and a
      * missing count is not, and the tabs must not claim an empty site.
      *
-     * @param ABJ_404_Solution_View $view
-     * @param ABJ_404_Solution_ViewReadServiceInterface $viewReadService
+     * @param array{part: string, subpage: string, view: ABJ_404_Solution_View,
+     *   viewReadService: ABJ_404_Solution_ViewReadServiceInterface,
+     *   queryTimeoutSeconds?: int} $request
      * @param array<string, mixed> $context
      * @return array<string, mixed>
      */
-    private static function buildCountsPart(string $subpage, $view, $viewReadService, array &$context): array {
-        unset($view);
-        $queryOptions = self::queryBudgetOptions();
+    private static function buildCountsPart(array $request, array &$context): array {
+        $subpage = (string)$request['subpage'];
+        $viewReadService = $request['viewReadService'];
+        $queryOptions = self::budgetFor($request);
         if ($subpage === 'abj404_redirects') {
             $counts = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
                 $context,
@@ -251,14 +291,16 @@ class ABJ_404_Solution_AdminTableResponseParts {
      * second count query and a second read of paginationLinks.html on every
      * admin table request, on every tab, for every user.
      *
-     * @param ABJ_404_Solution_View $view
-     * @param mixed $viewReadService
+     * @param array{part: string, subpage: string, view: ABJ_404_Solution_View,
+     *   viewReadService: ABJ_404_Solution_ViewReadServiceInterface,
+     *   queryTimeoutSeconds?: int} $request
      * @param array<string, mixed> $context
      * @return array<string, string>
      */
-    private static function buildPaginationPart(string $subpage, $view, $viewReadService, array &$context): array {
-        unset($viewReadService);
-        $queryOptions = self::queryBudgetOptions();
+    private static function buildPaginationPart(array $request, array &$context): array {
+        $subpage = (string)$request['subpage'];
+        $view = $request['view'];
+        $queryOptions = self::budgetFor($request);
         $links = ABJ_404_Solution_AjaxStageDiagnostics::runStage(
             $context,
             'paginationLinks',

@@ -8,8 +8,8 @@ if (!defined('ABSPATH')) {
 require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
 
 /**
- * How a JSON AJAX response actually leaves the server: header + ledger
- * stamping, the measured json_encode + echo boundary, connection-detach
+ * How a JSON AJAX response actually leaves the server: ledger stamping, the
+ * measured json_encode + echo boundary, connection-detach
  * (fastcgi_finish_request / litespeed_finish_request,
  * including the Bruno timeout cause matrix gap G9 detach A/B diagnostic),
  * and exit. Split out of ABJ_404_Solution_AjaxAdminEndpointSupport (which
@@ -19,67 +19,17 @@ require_once dirname(__DIR__) . '/services/PostResponseWorkerBudget.php';
  * external caller list: every per-endpoint handler in
  * includes/ajax/Ajax_*.php calls sendJsonResponseAndExit() directly.
  *
+ * The response HEAD is not here. ABJ_404_Solution_JsonResponseHead owns the
+ * headers and the status code, because they are emitted independently of a
+ * body and from elsewhere -- the canary ladder commits them before its stream
+ * flush, and the endpoint re-arms them per request. This class asks it to emit
+ * before the body and is otherwise not involved.
+ *
  * Every micro-step in this path is bracketed with a start/end checkpoint
  * pair, not just a post-hoc record: gap-hunt iteration 2 (Codex gaps #4 and
- * #5, 2026-07-22) found that json_encode() ran raw. Header emission and the
- * status_header()/http_response_code() call were not measured at all. Those
- * operations are now around()-bracketed like echo already was.
+ * #5, 2026-07-22) found that json_encode() ran raw.
  */
 final class ABJ_404_Solution_AjaxResponseEmitter {
-
-    /**
-     * Whether this request has already emitted its JSON response head.
-     *
-     * headers_sent() alone cannot answer that: while any output buffer holds
-     * the body, the head is set but not yet on the wire, so a second
-     * emission would silently duplicate Content-type and X-ABJ404-Request-ID
-     * and journal a second headers_start/_end pair. Request-scoped, and reset
-     * per request by AjaxAdminEndpointSupport::startAjaxDebugContext().
-     *
-     * @var bool
-     */
-    private static $headersEmitted = false;
-
-    /**
-     * Re-arm the per-request header bookkeeping. Called from the endpoint's
-     * own arming point so this stays request state rather than a test-only
-     * back door: one PHP request serves one AJAX response, but one PHPUnit
-     * worker serves many.
-     *
-     * @return void
-     */
-    public static function resetForRequest(): void {
-        self::$headersEmitted = false;
-    }
-
-    /**
-     * Emit the JSON response head NOW, before any body byte can commit it.
-     *
-     * A handler that echoes and flushes mid-response (the canary ladder's
-     * `stream` step) commits the response head at that flush. By the time
-     * sendJsonResponseAndExit() runs, headers_sent() is true and its own
-     * emission is skipped -- so without this call the streamed response
-     * ships with PHP's default text/html and, worse, without the
-     * X-ABJ404-Request-ID header the ledger relies on to identify a request
-     * whose body never arrives, which is exactly the case the canary exists
-     * to diagnose.
-     *
-     * Committing the head here also pins the status code, so an error raised
-     * after this point can no longer change it. That is not a regression: on
-     * the only branch that calls this, the flush was already committing the
-     * head a few statements later regardless. The difference is whether the
-     * committed head is the right one.
-     *
-     * @param int $httpStatus
-     * @return void
-     */
-    public static function emitJsonResponseHeadersEarly($httpStatus = 200): void {
-        if (self::$headersEmitted || headers_sent()) {
-            return;
-        }
-        self::checkpointedEmitHeaders(
-            ABJ_404_Solution_AjaxRequestIdScopes::fromGlobalContext(), $httpStatus);
-    }
 
     /**
      * @param mixed $payload
@@ -102,8 +52,8 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         // already finished. See ABJ_404_Solution_SameSiteRequestCensus::markPhase().
         ABJ_404_Solution_SameSiteRequestCensus::markPhase(
             ABJ_404_Solution_SameSiteRequestCensus::PHASE_RESPONSE_ENCODE);
-        if (!self::$headersEmitted && !headers_sent()) {
-            self::checkpointedEmitHeaders($scopes, $httpStatus);
+        if (!ABJ_404_Solution_JsonResponseHead::isComplete() && !headers_sent()) {
+            ABJ_404_Solution_JsonResponseHead::emit($scopes, $httpStatus);
         }
         self::checkpointedEncodeAndEcho($payload, $scopes);
 
@@ -125,75 +75,6 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         self::checkpointedFlushAndFinish($checkpointRequestId);
 
         exit;
-    }
-
-    /**
-     * Response headers as two measured boundaries (gap-hunt iteration 2,
-     * Codex gap #5): the X-ABJ404 and Content-type header() calls, then
-     * separately the status_header()/http_response_code() call. Neither was
-     * measured before this fix, so a blocking header filter (e.g. an
-     * optimizer plugin hooked on `status_header`) left `trace_finish_end`
-     * followed by nothing, indistinguishable from a worker kill.
-     * A response with no checkpoint scope is outside the Bruno table-AJAX
-     * endpoint; skip the instrumentation but keep behavior identical.
-     *
-     * @param int $httpStatus
-     */
-    private static function checkpointedEmitHeaders(
-            ABJ_404_Solution_AjaxRequestIdScopes $scopes, $httpStatus): void {
-        self::$headersEmitted = true;
-        $ledgerRequestId = $scopes->ledger();
-        $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
-            ? $GLOBALS['abj404_ajax_context'] : array();
-        $emitHeaders = static function () use ($ctx, $ledgerRequestId) {
-            if ($ctx !== array()) {
-                if (array_key_exists('action', $ctx) && is_string($ctx['action'])) {
-                    header('X-ABJ404-Ajax: ' . preg_replace('/[\r\n]+/', '', $ctx['action']));
-                }
-                if (array_key_exists('subpage', $ctx) && is_string($ctx['subpage']) && $ctx['subpage'] !== '') {
-                    header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $ctx['subpage']));
-                }
-                // Immutable request ledger (matrix coverage req. 1): echo the
-                // request ID back as a response header so it is recoverable
-                // from the client/proxy side even when the JSON body itself
-                // never arrives. Normalized to the ledger format, so no
-                // header-splitting scrub is needed and no raw client value
-                // is ever reflected.
-                if ($ledgerRequestId !== '') {
-                    header('X-ABJ404-Request-ID: ' . $ledgerRequestId);
-                }
-            }
-            header('Content-type: application/json; charset=UTF-8');
-        };
-        if (!$scopes->hasCheckpoints()) {
-            $emitHeaders();
-        } else {
-            ABJ_404_Solution_AjaxCheckpointLogger::around($scopes->checkpoint(), 'headers', $emitHeaders);
-        }
-
-        $emitStatus = static function () use ($httpStatus) {
-            if (function_exists('status_header')) {
-                // WordPress dispatches the foreign `status_header` filter and
-                // global `all` hook before its core header() call. Attribute
-                // those callbacks inside the existing outer status boundary:
-                // completed callbacks followed by a missing status_header_end
-                // then isolate the remaining stall to WordPress/core emission.
-                ABJ_404_Solution_ResponseControlFilterTracer::traceDispatch(
-                    'status_header',
-                    static function () use ($httpStatus) {
-                        status_header($httpStatus);
-                    }
-                );
-            } else if (function_exists('http_response_code')) {
-                http_response_code($httpStatus);
-            }
-        };
-        if (!$scopes->hasCheckpoints()) {
-            $emitStatus();
-        } else {
-            ABJ_404_Solution_AjaxCheckpointLogger::around(
-                $scopes->checkpoint(), 'status_header', $emitStatus, array('http_status' => $httpStatus));
-        }
     }
 
     /**
@@ -233,21 +114,27 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         $payload,
         ABJ_404_Solution_AjaxRequestIdScopes $scopes
     ): void {
-        $encoded = null;
-        if (!$scopes->hasCheckpoints()) {
-            $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($payload);
-        } else {
-            ABJ_404_Solution_AjaxCheckpointLogger::around(
-                $scopes->checkpoint(),
-                'json_encode',
-                static function () use ($payload, &$encoded) {
-                    $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($payload);
-                },
-                ABJ_404_Solution_PayloadShapeFingerprint::measure($payload)
-            );
-        }
-        if (!($encoded instanceof ABJ_404_Solution_EncodedJsonResponse)) {
-            $encoded = self::encodeWithoutInstrumentation($payload);
+        try {
+            if (!$scopes->hasCheckpoints()) {
+                $encoded = ABJ_404_Solution_JsonResponseEncoder::encode($payload);
+            } else {
+                // around() RETURNS its closure's result, so the encoded
+                // response comes back down the return path rather than through
+                // a by-reference capture. That is not a style preference: the
+                // by-ref form left a variable that was null until a closure
+                // happened to run, which is what made an unreachable
+                // "did the closure run?" branch look necessary here.
+                $encoded = ABJ_404_Solution_AjaxCheckpointLogger::around(
+                    $scopes->checkpoint(),
+                    'json_encode',
+                    static function () use ($payload) {
+                        return ABJ_404_Solution_JsonResponseEncoder::encode($payload);
+                    },
+                    ABJ_404_Solution_PayloadShapeFingerprint::measure($payload)
+                );
+            }
+        } catch (Throwable $t) {
+            $encoded = self::lastResortEnvelope($t);
         }
         // record() is a no-op for '', so an endpoint with no armed trace
         // behaves exactly as it did before this scope existed.
@@ -270,41 +157,41 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
     }
 
     /**
-     * Encode again with the instrumentation taken out of the way.
+     * The response of last resort, when encoding threw rather than degraded.
      *
-     * Reached when around() returned without the closure having assigned --
-     * around() dispatches foreign callbacks, so that is a property of the
-     * MEASUREMENT, not of the payload. Recovery therefore comes before
-     * reporting, per the self-healing ladder: the encoder is pure and already
-     * degrades rather than fails, so calling it directly succeeds for every
-     * payload the bracketed call would have encoded, and the admin sees their
-     * table instead of an apology. This costs one extra encode on a path that
-     * has never been observed in the wild.
+     * This used to guard a condition that cannot happen: it re-encoded when
+     * around() "returned without the closure having assigned", but around()
+     * either returns the closure's result or throws, and
+     * AjaxCheckpointLogger::record() swallows its own failures, so there is no
+     * path on which it returns having not run the work. The real hazard was one
+     * line further out and unguarded -- encode() and
+     * PayloadShapeFingerprint::measure() can both throw on a pathological
+     * payload, and that killed the whole response. The try now wraps the
+     * encode, so this envelope ships for a failure that can actually occur.
      *
-     * Only if that ALSO fails -- which now means a thrown Throwable, since
-     * encode() is typed to return an EncodedJsonResponse -- does an envelope
-     * ship, and it carries the thrown class and message rather than a canned
-     * sentence. A user-facing error is either recovered from invisibly or says
-     * what actually happened; "the plugin could not encode this response" with
-     * no cause is neither, and it was the whole content of this branch before.
-     *
-     * @param mixed $payload
+     * The cause travels two ways. The debug log always receives the class and
+     * message via the returned object's errorMessage(). The BODY names the
+     * cause only for a plugin admin, matching the details gate every other
+     * error envelope on this endpoint already applies: an admin can act on
+     * "JsonException: ...", and everyone else gets a sentence that says what to
+     * do without publishing the plugin's internals. Neither audience gets the
+     * canned "something went wrong" that says nothing to anyone.
      */
-    private static function encodeWithoutInstrumentation($payload): ABJ_404_Solution_EncodedJsonResponse {
-        try {
-            return ABJ_404_Solution_JsonResponseEncoder::encode($payload);
-        } catch (Throwable $t) {
-            return new ABJ_404_Solution_EncodedJsonResponse(
-                ABJ_404_Solution_AjaxErrorEnvelope::encodeSafely(
-                    'The plugin could not encode this response ('
-                        . get_class($t) . ': ' . $t->getMessage()
-                        . '). Reload the page to try again; if it keeps happening, '
-                        . 'the 404 Solution debug log records the full cause.'),
-                ABJ_404_Solution_EncodedJsonResponse::STRATEGY_ERROR_ENVELOPE,
-                JSON_ERROR_NONE,
-                get_class($t) . ': ' . $t->getMessage()
-            );
-        }
+    private static function lastResortEnvelope(Throwable $t): ABJ_404_Solution_EncodedJsonResponse {
+        $cause = get_class($t) . ': ' . $t->getMessage();
+        $ctx = isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])
+            ? $GLOBALS['abj404_ajax_context'] : array();
+        $isPluginAdmin = !empty($ctx['is_plugin_admin']);
+        $message = 'The plugin could not encode this response'
+            . ($isPluginAdmin ? ' (' . $cause . ')' : '')
+            . '. Reload the page to try again; if it keeps happening, '
+            . 'the 404 Solution debug log records the full cause.';
+        return new ABJ_404_Solution_EncodedJsonResponse(
+            ABJ_404_Solution_AjaxErrorEnvelope::encodeSafely($message),
+            ABJ_404_Solution_EncodedJsonResponse::STRATEGY_ERROR_ENVELOPE,
+            JSON_ERROR_NONE,
+            $cause
+        );
     }
 
     /**
