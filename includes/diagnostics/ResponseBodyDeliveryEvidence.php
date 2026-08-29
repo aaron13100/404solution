@@ -132,11 +132,22 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
                 $record['status'] = self::STATUS_NO_SESSION;
                 return $record;
             }
+            // ONE read of the checkpoint journal, shared by both halves of the
+            // comparison. Both halves used to read it independently, and a
+            // record appended between the two reads let this method pair an
+            // emitted size from one snapshot with a delivery record from
+            // another -- a comparison neither read actually observed, reported
+            // with the same confidence as a real one. The trace journal is read
+            // separately because only the checkpoint half is shared.
             $source = ABJ_404_Solution_CheckpointJournalReader::supportCollectionSource();
+            $checkpointLines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($source['paths']);
+            $traceSource = ABJ_404_Solution_AjaxTraceJournal::supportCollectionSource();
+            $traceLines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($traceSource['paths']);
             return self::fromLines(
-                ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($source['paths']),
+                $checkpointLines,
                 $sessionKey,
-                ABJ_404_Solution_EncodedTableResponseSize::forSession($sessionId)
+                ABJ_404_Solution_EncodedTableResponseSize::fromLines(
+                    $traceLines, $checkpointLines, $sessionId)
             );
         } catch (Throwable $e) {
             $record = self::emptyRecord($sessionKey);
@@ -254,13 +265,13 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
                     && $step === ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM && $flush !== null) {
                 $streamReachedSapi = $flush['reached_sapi'];
             }
-            $comparisons[] = self::comparison(
-                $step,
-                $requestId,
-                self::emittedBytes($encoded[$requestId] ?? null, $flush),
-                $receipts[$step]['delivered_bytes'],
-                $receipts[$step]['resource_timing_state']
-            );
+            $comparisons[] = self::comparison(array(
+                'step' => $step,
+                'request_id' => $requestId,
+                'emitted' => self::emittedBytes($encoded[$requestId] ?? null, $flush),
+                'delivered' => $receipts[$step]['delivered_bytes'],
+                'timing_state' => $receipts[$step]['resource_timing_state'],
+            ));
         }
 
         $realId = ABJ_404_Solution_AjaxRequestLedger::normalizeId($realRequest['request_id'] ?? null, '');
@@ -268,15 +279,15 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
             && (int)$realRequest['bytes'] > 0 ? (int)$realRequest['bytes'] : null;
         if ($realId !== '' || $realEmitted !== null) {
             $reported = ABJ_404_Solution_DeliveredTableResponseSize::forRequest($lines, $realId);
-            $comparisons[] = self::comparison(
-                self::REAL_REQUEST_STEP,
-                $realId,
-                $realEmitted === null
+            $comparisons[] = self::comparison(array(
+                'step' => self::REAL_REQUEST_STEP,
+                'request_id' => $realId,
+                'emitted' => $realEmitted === null
                     ? array('bytes' => null, 'source' => self::SOURCE_UNAVAILABLE)
                     : array('bytes' => $realEmitted, 'source' => self::EMITTED_SOURCE_ENCODE),
-                $reported['bytes'],
-                $reported['resource_timing_state']
-            );
+                'delivered' => $reported['bytes'],
+                'timing_state' => $reported['resource_timing_state'],
+            ));
         }
         return array('comparisons' => $comparisons, 'stream_flush_reached_sapi' => $streamReachedSapi);
     }
@@ -286,16 +297,22 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      * known pair actually differs is a decision and stays in
      * ABJ_404_Solution_AjaxCanaryLadder::interpretResults().
      *
-     * @param array{bytes: int|null, source: string} $emitted
+     * Takes one keyed row rather than positional arguments. `step`,
+     * `request_id` and `timing_state` are all strings, so in positional form a
+     * caller could transpose any two of them and produce a perfectly typed row
+     * that attributes one step's delivery evidence to another. Nothing
+     * downstream could detect it: every field would still be a plausible
+     * string. Keys make the transposition unwriteable, and PHPStan checks the
+     * shape at each call site. (PHP 7.4 is the floor here, so named arguments
+     * are not available and a positional value-object constructor would move
+     * the same hazard rather than remove it.)
+     *
+     * @param array{step: string, request_id: string, emitted: array{bytes: int|null, source: string}, delivered: int|null, timing_state: string} $row
      * @return array<string, mixed>
      */
-    private static function comparison(
-        string $step,
-        string $requestId,
-        array $emitted,
-        ?int $delivered,
-        string $timingState
-    ): array {
+    private static function comparison(array $row): array {
+        $emitted = $row['emitted'];
+        $delivered = $row['delivered'];
         if ($emitted['bytes'] === null && $delivered === null) {
             $state = self::STATE_BOTH_UNKNOWN;
         } else if ($emitted['bytes'] === null) {
@@ -306,14 +323,14 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
             $state = self::STATE_COMPARABLE;
         }
         return array(
-            'step' => $step,
-            'request_id' => $requestId,
+            'step' => $row['step'],
+            'request_id' => $row['request_id'],
             'emitted_bytes' => $emitted['bytes'],
             'emitted_source' => $emitted['source'],
             'delivered_bytes' => $delivered,
             'delivered_source' => $delivered === null
                 ? self::SOURCE_UNAVAILABLE : self::DELIVERED_SOURCE_RESOURCE_TIMING,
-            'resource_timing_state' => $timingState,
+            'resource_timing_state' => $row['timing_state'],
             'state' => $state,
         );
     }

@@ -120,6 +120,7 @@ $abj404ClassesByDirectory = array(
         'ActiveOperationBreadcrumbs', 'ActiveOperationBoundaryManifest',
         'CheckpointJournalWriter',
         'CheckpointJournalReader', 'EncodedTableResponseSize', 'RequiredCheckpointEvidence', 'RequiredCheckpointIdentityEvidence',
+        'CanaryLadderVerdicts', 'CanarySizeTarget',
         'MalformedCheckpointEvidence',
         'DecisiveRecordManifest',
         'DecisiveRecordAuthorizationFamilies',

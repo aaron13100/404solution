@@ -47,22 +47,19 @@ final class ABJ_404_Solution_EncodedTableResponseSize {
      * @return array{bytes: int|null, source: string, request_id: string}
      */
     public static function forSession(string $sessionId): array {
-        $sessionId = substr($sessionId, 0, 64);
-        if ($sessionId === '') {
+        // Guarded before the reads, not inside fromLines(), so the no-session
+        // case still costs no journal I/O the way it always has.
+        if (substr($sessionId, 0, 64) === '') {
             return self::noEncodedSize('unavailable');
         }
         try {
             $traceSource = ABJ_404_Solution_AjaxTraceJournal::supportCollectionSource();
-            $traceLines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($traceSource['paths']);
-            $tableRequestIds = self::tableRequestIdsInSession($traceLines, $sessionId);
-            if ($tableRequestIds === array()) {
-                return self::noEncodedSize('session_not_traced');
-            }
-
             $source = ABJ_404_Solution_CheckpointJournalReader::supportCollectionSource();
-            $checkpointLines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($source['paths']);
-            return self::latestEncodedSizeForRequests(
-                $checkpointLines, $tableRequestIds, self::noEncodedSize('no_encoded_size_recorded'));
+            return self::fromLines(
+                ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($traceSource['paths']),
+                ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($source['paths']),
+                $sessionId
+            );
         } catch (Throwable $e) {
             // Unconditional; abj404_logPhpFallback() is defined at plugin
             // entry, before any class here can be autoloaded.
@@ -70,6 +67,38 @@ final class ABJ_404_Solution_EncodedTableResponseSize {
                 'ajax-checkpoint', 'Encoded table response-size lookup failed: ' . $e->getMessage());
             return self::noEncodedSize('journal_error');
         }
+    }
+
+    /**
+     * The same answer built from journal lines a caller already holds.
+     *
+     * Exists so a caller that reads the checkpoint journal for its own reasons
+     * can join against the EXACT lines it read. Two independent reads of the
+     * same growing file can straddle a concurrent append, which pairs a record
+     * from one instant with a record from another and reports a comparison
+     * neither read actually saw. ABJ_404_Solution_ResponseBodyDeliveryEvidence
+     * is that caller: it reads the checkpoint journal to find delivery records
+     * and needs the emitted size drawn from the same snapshot.
+     *
+     * The trace and checkpoint journals stay separate parameters because they
+     * are separate files answering separate halves of the join; only the
+     * checkpoint half is shared with that caller.
+     *
+     * @param array<int, string> $traceLines
+     * @param array<int, string> $checkpointLines
+     * @return array{bytes: int|null, source: string, request_id: string}
+     */
+    public static function fromLines(array $traceLines, array $checkpointLines, string $sessionId): array {
+        $sessionId = substr($sessionId, 0, 64);
+        if ($sessionId === '') {
+            return self::noEncodedSize('unavailable');
+        }
+        $tableRequestIds = self::tableRequestIdsInSession($traceLines, $sessionId);
+        if ($tableRequestIds === array()) {
+            return self::noEncodedSize('session_not_traced');
+        }
+        return self::latestEncodedSizeForRequests(
+            $checkpointLines, $tableRequestIds, self::noEncodedSize('no_encoded_size_recorded'));
     }
 
     /**

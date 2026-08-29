@@ -115,8 +115,12 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
 
             ABJ_404_Solution_AjaxStageDiagnostics::beginRequest($context);
 
-            $data = ABJ_404_Solution_AjaxCanaryStepRunner::run(
-                $step, $requestReader, $requestId, $subpage, $context);
+            $data = ABJ_404_Solution_AjaxCanaryStepRunner::dispatchStep(array(
+                'step' => $step,
+                'request_reader' => $requestReader,
+                'request_id' => $requestId,
+                'subpage' => $subpage,
+            ), $context);
             $data['requestId'] = $requestId;
             $data['canaryStep'] = $step;
 
