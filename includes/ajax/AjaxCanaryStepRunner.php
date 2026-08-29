@@ -10,8 +10,17 @@ if (!defined('ABSPATH')) {
  * Split from ABJ_404_Solution_Ajax_CanaryLadder, which owns the endpoint:
  * authentication, the rate limiter, journaling the browser's prior-step
  * receipts, emitting the response and handling a thrown step. This class owns
- * the other half -- the ordered probe sequence itself -- and knows nothing
- * about HTTP.
+ * the other half -- the ordered probe sequence itself.
+ *
+ * Some probes necessarily act ON the response -- `compress_off` suppresses
+ * compression, `stream` commits the response head before flushing -- because
+ * changing one transport variable per rung IS the diagnosis. The boundary is
+ * that none of it is implemented here: no header, status or output directive
+ * is written in this file. Each such probe delegates to the module owning that
+ * concern (ABJ_404_Solution_ResponseCompressionSuppression,
+ * ABJ_404_Solution_JsonResponseHead) and reports the outcome it gets back. An
+ * earlier docblock claimed "knows nothing about HTTP", which the raw header()
+ * call this replaced had already made false.
  *
  * The split matters beyond line count. The endpoint's concerns change when
  * WordPress auth or the response emitter changes; the probes change when a new
@@ -304,20 +313,25 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
             $stepRequest['request_reader']->getPostOrGetSanitize('payloadBytes', ''));
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_' . $step,
             static function () use ($requestId, $step, $bytes) {
+                $fields = array('compressionMode' => $step);
                 if ($step === ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_OFF) {
-                    // Ask any compressing intermediary (LiteSpeed,
-                    // Cloudflare) not to transform this response, and
-                    // disable PHP's own output compression if it was
-                    // on, so the on/off canaries actually differ.
-                    if (!headers_sent()) {
-                        header('Cache-Control: no-transform');
-                    }
-                    ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
-                        array('directive' => 'zlib.output_compression', 'value' => '0'));
+                    // Both halves of the suppression are refusable at runtime
+                    // and neither refusal is visible to a caller that discards
+                    // the outcome, so the outcome rides the payload: a rung
+                    // that suppressed nothing must not be readable as one that
+                    // did.
+                    $fields['compressionSuppression'] =
+                        ABJ_404_Solution_ResponseCompressionSuppression::apply();
                 }
-                $payload = ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload($requestId, $step, $bytes);
-                $payload['compressionMode'] = $step;
-                return $payload;
+                // Through $extraFields rather than assigned after the build, so
+                // the filler absorbs their cost and both rungs encode to the
+                // same number of bytes. Assigned after, every field is EXTRA
+                // bytes past the target: one byte while `compressionMode` was
+                // alone, 98 once the suppression outcome joined it -- the
+                // size-controlled comparison drifting in size because of what
+                // it reports about itself.
+                return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
+                    $requestId, $step, $bytes, $fields);
             });
     }
 

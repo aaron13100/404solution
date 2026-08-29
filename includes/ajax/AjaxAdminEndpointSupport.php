@@ -276,9 +276,20 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
             if (array_key_exists('subpage', $context) && is_string($context['subpage']) && $context['subpage'] !== '') {
                 header('X-ABJ404-Subpage: ' . preg_replace('/[\r\n]+/', '', $context['subpage']));
             }
-            ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
-                array('directive' => 'display_errors', 'value' => '0'));
         }
+        // Outside that guard on purpose. A header genuinely cannot be set once
+        // output has started, but display_errors is PHP_INI_ALL with no such
+        // restriction, so sharing the guard stopped suppressing notices on
+        // exactly the request that had ALREADY emitted stray bytes -- the one
+        // whose body was already suspect.
+        //
+        // Recorded rather than assumed, because ini_set is refusable: a host
+        // carrying it in disable_functions is a live user environment. Without
+        // this, PHP notices print into a body every consumer parses as JSON,
+        // and in a support payload that is indistinguishable from the
+        // transport corruption the canary ladder is investigating.
+        $context['display_errors_suppressed'] = ABJ_404_Solution_PhpRuntimeCapabilityAdapter::setIni(
+            array('directive' => 'display_errors', 'value' => '0')) !== false;
         if (apply_filters('abj404_should_manage_output_buffer', true, array('source' => 'viewUpdater_startAjaxDebugContext'))) {
             @ob_start();
         }
