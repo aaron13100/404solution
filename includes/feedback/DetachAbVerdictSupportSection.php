@@ -103,13 +103,12 @@ final class ABJ_404_Solution_DetachAbVerdictSupportSection {
     private static function summary(array $record): string {
         $verdict = isset($record['verdict']) && is_array($record['verdict'])
             ? $record['verdict'] : array();
-        $named = 'inconclusive';
-        foreach (array('detachCausal', 'transientCausal', 'neitherModeHelps') as $quadrant) {
-            if (!empty($verdict[$quadrant])) {
-                $named = $quadrant;
-                break;
-            }
-        }
+        // Read straight off the discriminant the rule decides. This used to
+        // loop the boolean flags to recover the one word they encode, which
+        // meant the renderer carried its own copy of the precedence order and
+        // would have disagreed with the rule if either side gained an outcome.
+        $named = isset($verdict['verdict']) && is_string($verdict['verdict']) && $verdict['verdict'] !== ''
+            ? $verdict['verdict'] : ABJ_404_Solution_DetachAbVerdict::VERDICT_INCONCLUSIVE;
         return self::textOf($record, 'status') . ': ' . $named . '; '
             . self::countOf($record, 'attempts_with_mode') . ' attempt(s) with a mode, '
             . self::countOf($record, 'attempts_resolved') . ' resolved by the browser, '

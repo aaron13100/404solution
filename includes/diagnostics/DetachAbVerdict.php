@@ -29,6 +29,22 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_DetachAbVerdict {
 
+    /** Detaching is what fixes it: every counterbalanced pair says so. */
+    const VERDICT_DETACH_CAUSAL = 'detachCausal';
+
+    /** Both modes succeeded in every pair, so the failure was transient. */
+    const VERDICT_TRANSIENT_CAUSAL = 'transientCausal';
+
+    /** Both modes failed in every pair, so the mode is not the variable. */
+    const VERDICT_NEITHER_MODE_HELPS = 'neitherModeHelps';
+
+    /**
+     * Not enough matched, counterbalanced evidence to say. The default, and
+     * deliberately reachable: a single mode with no pair to compare against
+     * must never be forced into one of the three findings above.
+     */
+    const VERDICT_INCONCLUSIVE = 'inconclusive';
+
     /**
      * The decisive-measurement rule for the detach A/B experiment (Bruno
      * timeout cause matrix, gap G9 / c434;
@@ -83,15 +99,30 @@ final class ABJ_404_Solution_DetachAbVerdict {
         }
 
         $orderCounterbalanced = $onFirstPairs > 0 && $offFirstPairs > 0;
-        $detachCausal = $pairCount >= 2 && $orderCounterbalanced && $detachPairs === $pairCount;
-        $transientCausal = $pairCount > 0 && $transientPairs === $pairCount;
-        $neitherModeHelps = $pairCount > 0 && $neitherPairs === $pairCount;
+        // ONE discriminant, then the flags read off it. Written as four
+        // independent booleans this was a shape in which "detach is the cause"
+        // and "neither mode helps" could both be true, or all four false: not
+        // reachable through today's arithmetic, but nothing prevented it, and a
+        // reader had to re-derive which single outcome was meant. The support
+        // renderer was already doing exactly that -- looping the flag names to
+        // recover one word -- which is the shape asking to be a discriminant.
+        $verdict = self::VERDICT_INCONCLUSIVE;
+        if ($pairCount >= 2 && $orderCounterbalanced && $detachPairs === $pairCount) {
+            $verdict = self::VERDICT_DETACH_CAUSAL;
+        } else if ($pairCount > 0 && $transientPairs === $pairCount) {
+            $verdict = self::VERDICT_TRANSIENT_CAUSAL;
+        } else if ($pairCount > 0 && $neitherPairs === $pairCount) {
+            $verdict = self::VERDICT_NEITHER_MODE_HELPS;
+        }
 
         return array(
-            'detachCausal' => $detachCausal,
-            'transientCausal' => $transientCausal,
-            'neitherModeHelps' => $neitherModeHelps,
-            'inconclusive' => !$detachCausal && !$transientCausal && !$neitherModeHelps,
+            'verdict' => $verdict,
+            // Derived, never decided here: exactly one is true on every path,
+            // by construction rather than by the arithmetic happening to agree.
+            'detachCausal' => $verdict === self::VERDICT_DETACH_CAUSAL,
+            'transientCausal' => $verdict === self::VERDICT_TRANSIENT_CAUSAL,
+            'neitherModeHelps' => $verdict === self::VERDICT_NEITHER_MODE_HELPS,
+            'inconclusive' => $verdict === self::VERDICT_INCONCLUSIVE,
             'onCount' => $onCount,
             'onOkCount' => $onOkCount,
             'offCount' => $offCount,
