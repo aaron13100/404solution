@@ -107,17 +107,11 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     /** Neither half was available for this response. */
     const SOURCE_UNAVAILABLE = 'unavailable';
 
-    // No cap on how many comparisons ride the record, deliberately.
-    //
-    // There used to be one, slicing at 24 against a claim that it stopped a
-    // long-lived session from producing a large record. It could not:
-    // comparisonsIn() iterates the fixed AjaxCanaryLadder::STEPS list and adds
-    // at most one real-request row, so the count is bounded by the ladder's own
-    // length (13 today) and the slice was unreachable. Worse than dead: had
-    // STEPS ever grown past 24, the cap would have started silently dropping
-    // rows off the end of a diagnostic record, which is the one place a silent
-    // loss is least affordable. The bound belongs to the ladder's shape, and
-    // comparisons_total states the count outright.
+    // No cap on how many comparisons ride the record, deliberately. The count
+    // is already bounded by the fixed AjaxCanaryLadder::STEPS list plus one
+    // real-request row, so a cap could only ever start silently dropping rows
+    // off a diagnostic record if the ladder grew. comparisons_total states the
+    // count outright instead.
 
     /**
      * The full emitted-against-delivered join for one browser session, ready
@@ -137,12 +131,10 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
                 return $record;
             }
             // ONE read of the checkpoint journal, shared by both halves of the
-            // comparison. Both halves used to read it independently, and a
-            // record appended between the two reads let this method pair an
-            // emitted size from one snapshot with a delivery record from
-            // another -- a comparison neither read actually observed, reported
-            // with the same confidence as a real one. The trace journal is read
-            // separately because only the checkpoint half is shared.
+            // comparison. Reading it twice let a record appended in between
+            // pair an emitted size from one snapshot with a delivery record
+            // from another -- a comparison neither read observed, reported with
+            // the confidence of a real one.
             $source = ABJ_404_Solution_CheckpointJournalReader::supportCollectionSource();
             $checkpointLines = ABJ_404_Solution_DiagnosticJournalExcerpt::readAllLines($source['paths']);
             $traceSource = ABJ_404_Solution_AjaxTraceJournal::supportCollectionSource();
@@ -278,8 +270,10 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
         }
 
         $realId = ABJ_404_Solution_AjaxRequestLedger::normalizeId($realRequest['request_id'] ?? null, '');
-        $realEmitted = isset($realRequest['bytes']) && is_numeric($realRequest['bytes'])
-            && (int)$realRequest['bytes'] > 0 ? (int)$realRequest['bytes'] : null;
+        // Through the same rule the receipt sizes use: two copies would
+        // eventually disagree about zero and the -1 sentinel, and both halves
+        // of a comparison must treat "unknown" identically.
+        $realEmitted = self::positiveIntOrNull($realRequest['bytes'] ?? null);
         if ($realId !== '' || $realEmitted !== null) {
             $reported = ABJ_404_Solution_DeliveredTableResponseSize::forRequest($lines, $realId);
             $comparisons[] = self::comparison(array(
@@ -341,12 +335,19 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     /**
      * Every body byte the server wrote for one response, or a named absence.
      *
+     * A stream step whose whitespace count is UNKNOWN yields an unknown total,
+     * not the encode count alone: the step put a prefix on the wire, and
+     * understating that is indistinguishable from a body rewritten in transit.
+     *
      * @param int|null $encodedBytes The `json_encode` record's own count.
-     * @param array{reached_sapi: bool, whitespace_bytes: int}|null $flush
+     * @param array{reached_sapi: bool|null, whitespace_bytes: int|null}|null $flush
      * @return array{bytes: int|null, source: string}
      */
     private static function emittedBytes(?int $encodedBytes, ?array $flush): array {
         if ($encodedBytes === null) {
+            return array('bytes' => null, 'source' => self::SOURCE_UNAVAILABLE);
+        }
+        if ($flush !== null && $flush['whitespace_bytes'] === null) {
             return array('bytes' => null, 'source' => self::SOURCE_UNAVAILABLE);
         }
         $whitespace = $flush === null ? 0 : max(0, $flush['whitespace_bytes']);
@@ -431,7 +432,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      * streamed instead of assuming it did.
      *
      * @param array<int, string> $lines
-     * @return array<string, array{reached_sapi: bool, whitespace_bytes: int, session_key: string}>
+     * @return array<string, array{reached_sapi: bool|null, whitespace_bytes: int|null, session_key: string}>
      */
     private static function streamFlushOutcomesIn(array $lines): array {
         $outcomes = array();
@@ -447,10 +448,19 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
             if ($requestId === '') {
                 continue;
             }
+            // Absent or malformed fields become NULL, never false and never 0.
+            // Both feed causal verdicts, so collapsing "the record does not
+            // say" into "the flush did not reach the SAPI", or into "no
+            // whitespace was emitted", manufactures an observation out of a
+            // missing key. An understated emitted count in particular is the
+            // exact signature this class reports as a body rewritten in
+            // transit.
+            $reached = $record['streamFlushReachedSapi'] ?? null;
             $whitespace = $record['streamWhitespaceBytes'] ?? null;
             $outcomes[$requestId] = array(
-                'reached_sapi' => !empty($record['streamFlushReachedSapi']),
-                'whitespace_bytes' => is_numeric($whitespace) ? max(0, (int)$whitespace) : 0,
+                'reached_sapi' => is_bool($reached) ? $reached
+                    : (is_numeric($reached) ? ((int)$reached === 1) : null),
+                'whitespace_bytes' => is_numeric($whitespace) ? max(0, (int)$whitespace) : null,
                 'session_key' => self::scalarField($record, 'session_key'),
             );
         }
