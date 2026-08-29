@@ -157,7 +157,10 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     private static function runBaselineControlStep(array $stepRequest, array &$context): array {
         $requestId = $stepRequest['request_id'];
         $rawOrdinal = $stepRequest['request_reader']->getPostOrGetSanitize('baselineOrdinal', '0');
-        $ordinal = is_numeric($rawOrdinal) ? max(0, min(20, (int)$rawOrdinal)) : 0;
+        // Exact, not truncated: two repetitions sent as 1 and '1.9' would both
+        // journal as ordinal 1 and the ladder would read one baseline sample
+        // where the browser took two.
+        $ordinal = min(20, ABJ_404_Solution_ExactInteger::readOr($rawOrdinal, 0, 0));
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage(
             $context,
             'canary_baseline_control',

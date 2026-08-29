@@ -176,34 +176,11 @@ class ABJ_404_Solution_ShowIndexRowReader {
         if (!is_scalar($value) || is_bool($value)) {
             return null;
         }
-        $text = trim((string)$value);
-        if ($text === '' || !is_numeric($text)) {
-            return null;
-        }
-        // Integrality is decided from the TEXT, never from the number the text
-        // converts to. Past 2^53 a double has no room left for the fractional
-        // part it was handed, so '9007199254740992.5' arrives already rounded
-        // to a whole number: a floor() check downstream sees nothing wrong and
-        // hands back a prefix length the server never reported, which the
-        // comparator answers with destructive DDL. Every field this reads is a
-        // plain whole number in every engine that reports it, so a value
-        // written any other way -- a fraction, an exponent -- is one this
-        // version does not read, and unreadable means undescribable rather
-        // than a guess.
-        if (!preg_match('/\A[+-]?[0-9]+\z/', $text)) {
-            return null;
-        }
-        $number = $text + 0;
-        if (is_float($number)) {
-            // A digit run too long for an int converts to a float instead:
-            // still whole, but possibly infinite and possibly outside the range
-            // an int holds. (int) answers both with a different value.
-            if (!is_finite($number)
-                    || $number < (float)PHP_INT_MIN || $number >= (float)PHP_INT_MAX) {
-                return null;
-            }
-        }
-        $integer = (int)$number;
-        return $integer < $minimum ? null : $integer;
+        // Trimmed HERE rather than in the shared reader: SHOW INDEX metadata
+        // arrives through drivers that pad, which is a fact about this source
+        // and not about whole numbers in general. A JSON journal this plugin
+        // wrote itself has no such excuse, and padding there means something
+        // else rewrote the field.
+        return ABJ_404_Solution_ExactInteger::read(trim((string)$value), $minimum);
     }
 }
