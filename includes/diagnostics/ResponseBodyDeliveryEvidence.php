@@ -107,13 +107,17 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     /** Neither half was available for this response. */
     const SOURCE_UNAVAILABLE = 'unavailable';
 
-    /**
-     * Bound on how many comparisons ride the journaled record. One ladder run
-     * produces at most one per dispatched step plus the real request; the cap
-     * only stops a long-lived session from turning one record into a large
-     * one.
-     */
-    const MAX_COMPARISONS_ON_RECORD = 24;
+    // No cap on how many comparisons ride the record, deliberately.
+    //
+    // There used to be one, slicing at 24 against a claim that it stopped a
+    // long-lived session from producing a large record. It could not:
+    // comparisonsIn() iterates the fixed AjaxCanaryLadder::STEPS list and adds
+    // at most one real-request row, so the count is bounded by the ladder's own
+    // length (13 today) and the slice was unreachable. Worse than dead: had
+    // STEPS ever grown past 24, the cap would have started silently dropping
+    // rows off the end of a diagnostic record, which is the one place a silent
+    // loss is least affordable. The bound belongs to the ladder's shape, and
+    // comparisons_total states the count outright.
 
     /**
      * The full emitted-against-delivered join for one browser session, ready
@@ -176,8 +180,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     public static function fromLines(array $lines, string $sessionKey, array $realRequest): array {
         $record = self::emptyRecord($sessionKey);
         $joined = self::comparisonsIn($lines, $sessionKey, $realRequest);
-        $record['comparisons'] = array_slice(
-            $joined['comparisons'], 0, self::MAX_COMPARISONS_ON_RECORD);
+        $record['comparisons'] = $joined['comparisons'];
         $record['comparisons_total'] = count($joined['comparisons']);
         $record['stream_flush_reached_sapi'] = $joined['stream_flush_reached_sapi'];
         $record['journal_lines_scanned'] = count($lines);
