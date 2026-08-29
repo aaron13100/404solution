@@ -297,7 +297,9 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             return new ABJ_404_Solution_EncodedJsonResponse(
                 ABJ_404_Solution_AjaxErrorEnvelope::encodeSafely(
                     'The plugin could not encode this response ('
-                        . get_class($t) . ': ' . $t->getMessage() . ').'),
+                        . get_class($t) . ': ' . $t->getMessage()
+                        . '). Reload the page to try again; if it keeps happening, '
+                        . 'the 404 Solution debug log records the full cause.'),
                 ABJ_404_Solution_EncodedJsonResponse::STRATEGY_ERROR_ENVELOPE,
                 JSON_ERROR_NONE,
                 get_class($t) . ': ' . $t->getMessage()

@@ -388,7 +388,7 @@ final class ABJ_404_Solution_AjaxCanaryLadder {
         return $realRequestFailed
             && $tableOutcome !== 'success'
             && empty($receipt['ok'])
-            && $overlapState === 'computed'
+            && $overlapState === ABJ_404_Solution_ConcurrentControlReceipt::OVERLAP_COMPUTED
             && is_numeric($overlap['durationMs'] ?? null)
             && (int)$overlap['durationMs'] > 0;
     }

@@ -34,6 +34,31 @@ final class ABJ_404_Solution_ConcurrentControlReceipt {
     const JOURNAL_EVENT = 'concurrent_control_client_receipt';
 
     /**
+     * The overlap-state vocabulary, as the browser spells it.
+     *
+     * A wire vocabulary shared with view_updater_concurrent_control_evidence.js,
+     * so it gets one definition here and ConcurrentControlReceiptTest pins these
+     * values against that file. Read as bare strings in two separate PHP files,
+     * the set was drift-prone in the worst direction: a renamed state does not
+     * error, it silently makes every receipt incomplete, and the support payload
+     * then reports "no concurrent control" for a run that had one.
+     */
+    const OVERLAP_COMPUTED = 'computed';
+    const OVERLAP_UNAVAILABLE = 'unavailable';
+    const OVERLAP_PENDING = 'pending';
+
+    /**
+     * Every state the browser may report. PENDING is deliberately absent from
+     * the accepted set in hasBrowserEvidence(): the table had not settled when
+     * the receipt was built, so there is no overlap to reason about yet.
+     *
+     * @return array<int, string>
+     */
+    public static function everyOverlapState(): array {
+        return array(self::OVERLAP_COMPUTED, self::OVERLAP_UNAVAILABLE, self::OVERLAP_PENDING);
+    }
+
+    /**
      * File the receipt beside that control's own server trace while retaining
      * which later request delivered it.
      *
@@ -45,14 +70,19 @@ final class ABJ_404_Solution_ConcurrentControlReceipt {
      * `session_key` this journal already uses for `detach_ab_mode`, because
      * equality is the whole requirement.
      *
-     * @param string $sessionId Already bounded by AjaxRequestLedger::readFields().
-     * @param array<string, mixed> $report
+     * @param array{carrierRequestId: string, sessionId: string, report: array<string, mixed>} $receipt
+     *   One keyed bag rather than two adjacent strings. Both are opaque
+     *   identifiers of the same type, and swapping them type-checks: the record
+     *   would then be filed under the session, `carried_by` would name the
+     *   session, and `session_key` would be a perfectly valid hash of a request
+     *   ID. Every join in the record points somewhere plausible and wrong, and
+     *   because the joins are what the reconstruction reads, nothing downstream
+     *   can tell. `sessionId` is already bounded by
+     *   AjaxRequestLedger::readFields().
      */
-    public static function journal(
-        string $carrierRequestId,
-        string $sessionId,
-        array $report
-    ): void {
+    public static function journal(array $receipt): void {
+        $carrierRequestId = $receipt['carrierRequestId'];
+        $report = $receipt['report'];
         $controlRequestId = self::ledgerIdOrEmpty($report['controlRequestId'] ?? '');
         $controlForRequestId = self::ledgerIdOrEmpty($report['controlForRequestId'] ?? '');
         ABJ_404_Solution_AjaxCheckpointLogger::record(
@@ -62,7 +92,7 @@ final class ABJ_404_Solution_ConcurrentControlReceipt {
                 'carried_by' => $carrierRequestId,
                 'control_for_request_id' => $controlForRequestId,
                 'control_request_id' => $controlRequestId,
-                'session_key' => ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($sessionId),
+                'session_key' => ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($receipt['sessionId']),
                 'report' => $report,
             )
         );
@@ -113,8 +143,8 @@ final class ABJ_404_Solution_ConcurrentControlReceipt {
         $receipt = is_array($report['receipt'] ?? null) ? $report['receipt'] : array();
         $overlap = is_array($report['overlap'] ?? null) ? $report['overlap'] : array();
         $overlapState = $overlap['state'] ?? '';
-        $validOverlap = $overlapState === 'unavailable'
-            || ($overlapState === 'computed'
+        $validOverlap = $overlapState === self::OVERLAP_UNAVAILABLE
+            || ($overlapState === self::OVERLAP_COMPUTED
                 && is_numeric($overlap['durationMs'] ?? null)
                 && (int)$overlap['durationMs'] >= 0);
         return self::isBrowserReceipt($report)

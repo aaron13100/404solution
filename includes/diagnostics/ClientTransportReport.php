@@ -116,11 +116,11 @@ final class ABJ_404_Solution_ClientTransportReport {
             // field with one of those names would otherwise overwrite them and
             // forge the identity of its own evidence.
             if (ABJ_404_Solution_ConcurrentControlReceipt::isBrowserReceipt($report)) {
-                ABJ_404_Solution_ConcurrentControlReceipt::journal(
-                    $requestId,
-                    (string)ABJ_404_Solution_AjaxRequestLedger::readFields($reader)['session_id'],
-                    $report
-                );
+                ABJ_404_Solution_ConcurrentControlReceipt::journal(array(
+                    'carrierRequestId' => $requestId,
+                    'sessionId' => (string)ABJ_404_Solution_AjaxRequestLedger::readFields($reader)['session_id'],
+                    'report' => $report,
+                ));
                 return;
             }
             ABJ_404_Solution_AjaxCheckpointLogger::record(
