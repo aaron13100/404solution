@@ -40,14 +40,26 @@ final class ABJ_404_Solution_DiagnosticCollectionManifestRenderer {
      */
     public static function render(array $manifest, int $budgetBytes): string {
         $header = self::headerLine($manifest);
+        $anythingEncoded = false;
         foreach (array($manifest, self::withoutIdLists($manifest), self::minimal($manifest)) as $candidate) {
             $line = self::encodeOrEmpty(array(ABJ_404_Solution_DiagnosticCollectionManifest::RECORD_KEY => $candidate));
-            if ($line !== '' && strlen($header) + strlen($line) <= $budgetBytes) {
+            if ($line === '') {
+                continue;
+            }
+            $anythingEncoded = true;
+            if (strlen($header) + strlen($line) <= $budgetBytes) {
                 return $header . $line;
             }
         }
+        // Two different reasons reach here and they are not the same finding.
+        // Everything encoded but nothing fit means the budget was too small --
+        // the site is fine and the payload was squeezed. Nothing encoding at
+        // all means the manifest itself held bytes json_encode() rejected,
+        // which is a defect worth chasing. Reporting both as `encoding_failed`
+        // sent a reader after the wrong one, in the very record whose job is
+        // to explain why the rest of the payload is thin.
         return $header . self::encodeOrEmpty(array(ABJ_404_Solution_DiagnosticCollectionManifest::RECORD_KEY => array(
-            'reduced' => 'encoding_failed',
+            'reduced' => $anythingEncoded ? 'all_forms_over_budget' : 'encoding_failed',
             'outcome' => self::stringOf($manifest['outcome'] ?? ABJ_404_Solution_DiagnosticCollectionManifest::OUTCOME_EMPTY),
         )));
     }
