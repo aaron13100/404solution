@@ -10,26 +10,41 @@
  */
 
 /**
+ * How long the health-bar request may run before it is abandoned.
+ *
+ * Shorter than the 30s admin default because this bar is a secondary
+ * enrichment of a page that has already rendered: if the summary cannot be
+ * had promptly the placeholder is removed and the redirects table is left
+ * alone, which is a better outcome than a status dot that spins past the
+ * point the admin has moved on.
+ */
+var ABJ404_HEALTH_BAR_TIMEOUT_MS = 15000;
+
+/**
  * Build the health-bar's status-dot + message (+ optional "View" link) as
  * real DOM nodes. Assigning `link.href` and `.textContent` are DOM property
  * writes, not HTML parsing, so `message` and `viewLink` cannot break out of
  * an attribute or inject markup regardless of their content.
  *
- * @param {string} dotClass
- * @param {string} message
- * @param {string|null} viewLink
+ * Takes one options object rather than three loose strings: `dotClass`,
+ * `message` and `viewLink` are all strings, so a positional signature lets any
+ * two of them be swapped with nothing to catch it -- the bar would render the
+ * message as a class name and the class name as its text, and every type check
+ * would still pass.
+ *
+ * @param {{dotClass: string, message: string, viewLink: (string|null)}} parts
  * @return {DocumentFragment}
  */
-function abj404BuildHealthBarFragment(dotClass, message, viewLink) {
+function abj404BuildHealthBarFragment(parts) {
     var fragment = document.createDocumentFragment();
     var dot = document.createElement('span');
-    dot.className = dotClass;
+    dot.className = parts.dotClass;
     fragment.appendChild(dot);
-    fragment.appendChild(document.createTextNode(' ' + message));
-    if (viewLink) {
+    fragment.appendChild(document.createTextNode(' ' + parts.message));
+    if (parts.viewLink) {
         fragment.appendChild(document.createTextNode(' '));
         var link = document.createElement('a');
-        link.href = viewLink;
+        link.href = parts.viewLink;
         link.textContent = 'View';
         fragment.appendChild(link);
     }
@@ -44,10 +59,21 @@ function abj404HealthBarTelemetry() {
         typeof telemetry.finishAttempt === 'function' ? telemetry : null;
 }
 
-/** @param {string} url @param {string} attemptId @returns {string} */
-function abj404HealthBarAttemptUrl(url, attemptId) {
-    var separator = String(url).indexOf('?') >= 0 ? '&' : '?';
-    return String(url) + separator + 'requestId=' + encodeURIComponent(attemptId);
+/**
+ * The endpoint URL with the attempt's request id attached, so a server-side
+ * journal entry can be joined to the client attempt that produced it.
+ *
+ * One options object: `url` and `attemptId` are both strings, and swapping
+ * them yields a syntactically fine URL built from the request id with the
+ * endpoint as a query value. It would fail at the server, far from the call
+ * site that transposed them.
+ *
+ * @param {{url: string, attemptId: string}} attempt
+ * @returns {string}
+ */
+function abj404HealthBarAttemptUrl(attempt) {
+    var separator = String(attempt.url).indexOf('?') >= 0 ? '&' : '?';
+    return String(attempt.url) + separator + 'requestId=' + encodeURIComponent(attempt.attemptId);
 }
 
 /** @param {string} textStatus @returns {string} */
@@ -85,7 +111,7 @@ function abj404HealthBarRequestContext() {
         part: 'health',
         attemptIndex: 0,
         subpage: subpage,
-        timeoutMs: 0
+        timeoutMs: ABJ404_HEALTH_BAR_TIMEOUT_MS
     }) : null;
     return {
         $bar: $bar,
@@ -100,31 +126,53 @@ function abj404HealthBarRequestContext() {
     };
 }
 
-/** @param {object} context @param {object} result @returns {void} */
-function abj404RenderHealthBarResult(context, result) {
+/**
+ * Render the health summary into the bar, or remove the bar when the server
+ * did not return one.
+ *
+ * The payload is named rather than passed as a bare `result` because four
+ * separate decisions read it: whether the response is usable at all, the
+ * active-redirect subtraction, whether the rollup has finished rebuilding,
+ * and which of the three dot states to show.
+ *
+ * @param {object} context Request context from abj404HealthBarRequestContext().
+ * @param {{highImpactCapturedCount: (number|null), statusCounts: object,
+ *          rollupAvailable: (boolean|undefined)}} health The health endpoint's payload.
+ * @returns {void}
+ */
+function abj404RenderHealthBarResult(context, health) {
     var $bar = context.$bar;
     $bar.removeAttr('data-health-bar-loading');
-    if (!result || typeof result.highImpactCapturedCount === 'undefined' || !result.statusCounts) {
+    if (!health || typeof health.highImpactCapturedCount === 'undefined' || !health.statusCounts) {
         $bar.removeAttr('data-health-bar-placeholder');
         $bar.empty();
         return;
     }
-    var active = (result.statusCounts.all || 0) - (result.statusCounts.trash || 0);
-    var available = result.rollupAvailable !== false && result.highImpactCapturedCount !== null;
-    var high = result.highImpactCapturedCount || 0;
+    var active = (health.statusCounts.all || 0) - (health.statusCounts.trash || 0);
+    var available = health.rollupAvailable !== false && health.highImpactCapturedCount !== null;
+    var high = health.highImpactCapturedCount || 0;
     var fragment;
     if (!available) {
-        fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-gray',
-            active + ' redirects active, URL attention status unavailable while logs rebuild', null);
+        fragment = abj404BuildHealthBarFragment({
+            dotClass: 'abj404-health-dot abj404-health-gray',
+            message: active + ' redirects active, URL attention status unavailable while logs rebuild',
+            viewLink: null
+        });
     } else if (high === 0) {
-        fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-green',
-            active + ' redirects active, no URLs need attention', null);
+        fragment = abj404BuildHealthBarFragment({
+            dotClass: 'abj404-health-dot abj404-health-green',
+            message: active + ' redirects active, no URLs need attention',
+            viewLink: null
+        });
     } else {
-        var viewLink = '?page=' + encodeURIComponent(getURLParameter('page') || 'abj404_solution') +
-            '&subpage=abj404_captured&filter=' + encodeURIComponent(result.statusCounts._capturedFilter || '');
-        fragment = abj404BuildHealthBarFragment('abj404-health-dot abj404-health-yellow',
+        fragment = abj404BuildHealthBarFragment({
+            dotClass: 'abj404-health-dot abj404-health-yellow',
             // allow-em-dash: visible separator preserved from the health-bar copy
-            active + ' redirects active — ' + high + ' captured URLs have repeat visitors', viewLink);
+            message: active + ' redirects active — ' + high + ' captured URLs have repeat visitors',
+            viewLink: '?page=' + encodeURIComponent(getURLParameter('page') || 'abj404_solution') +
+                '&subpage=abj404_captured&filter=' +
+                encodeURIComponent(health.statusCounts._capturedFilter || '')
+        });
     }
     $bar.empty().append(fragment);
     $bar.removeAttr('data-health-bar-placeholder');
@@ -135,9 +183,14 @@ function abj404HealthBarAjaxOptions(context) {
     var healthBarAjaxRunner = typeof abj404AjaxWithNonceRetry === 'function'
         ? abj404AjaxWithNonceRetry : jQuery.ajax; // ajax-direct-approved: nonce helper fallback
     var options = {
-        url: abj404HealthBarAttemptUrl(context.url, context.requestId),
+        url: abj404HealthBarAttemptUrl({ url: context.url, attemptId: context.requestId }),
         type: 'POST',
         dataType: 'json',
+        // Without this the bar keeps data-health-bar-loading set for the life
+        // of the page when a request never returns: neither handler below runs,
+        // so the placeholder is never cleared and a later pagination success
+        // cannot retry it either.
+        timeout: ABJ404_HEALTH_BAR_TIMEOUT_MS,
         data: {
             action: context.action,
             nonce: context.nonce,
