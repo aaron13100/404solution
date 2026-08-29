@@ -252,9 +252,10 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
         );
 
         foreach (self::INFRASTRUCTURE_HOST_MARKERS as $hostKey => $markers) {
-            foreach ($markers['paths'] as $path) {
-                if ($this->pathIsWithin($documentRoot, $path) || $this->pathIsWithin($installPath, $path)) {
-                    return array('host' => $hostKey, 'matched_marker' => 'path:' . $path);
+            foreach ($markers['paths'] as $markerPath) {
+                if ($this->pathIsWithin(array('candidate' => $documentRoot, 'marker' => $markerPath))
+                    || $this->pathIsWithin(array('candidate' => $installPath, 'marker' => $markerPath))) {
+                    return array('host' => $hostKey, 'matched_marker' => 'path:' . $markerPath);
                 }
             }
             foreach ($markers['cgroup'] as $needle) {
@@ -319,9 +320,25 @@ class ABJ_404_Solution_FeedbackEnvironmentExtras_PlatformFingerprint {
         return $path === '' ? '' : rtrim($path, '/\\');
     }
 
-    /** Is $path the marker directory itself, or something inside it? */
-    private function pathIsWithin(string $path, string $marker): bool {
-        return $path !== '' && ($path === $marker || strpos($path, $marker . '/') === 0);
+    /**
+     * Is the site's directory the platform marker directory itself, or
+     * something inside it?
+     *
+     * Keyed rather than positional: `candidate` and `marker` are both
+     * directory strings, so transposing them is type-correct and silently
+     * inverts the question into "does the platform's marker directory live
+     * inside this site?", which is false on every real host. Platform
+     * detection would simply stop matching, with nothing logged and no test
+     * failing unless one happened to cover this exact pair. Shipped code has
+     * a PHP 7.4 floor, so named arguments are not available here; the keyed
+     * bag is what makes the swap unwriteable.
+     *
+     * @param array{candidate: string, marker: string} $probe
+     */
+    private function pathIsWithin(array $probe): bool {
+        $candidate = $probe['candidate'];
+        $marker = $probe['marker'];
+        return $candidate !== '' && ($candidate === $marker || strpos($candidate, $marker . '/') === 0);
     }
 
     /**
