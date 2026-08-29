@@ -165,7 +165,7 @@ $abj404ClassesByDirectory = array(
         'OpcacheGenerationProbe', 'BootWaypointRecorder',
         'ClientTransportReport', 'ConcurrentControlReceipt', 'AjaxCanaryLadder', 'PayloadShapeFingerprint', 'AjaxCanaryPayloadFactory',
         'AjaxCanaryStreamFlush',
-        'DetachAbVerdict', 'ResponseBodyRewriteVerdict', 'ResponseBodyDeliveryEvidence',
+        'DetachAbAttempt', 'DetachAbVerdict', 'ResponseBodyRewriteVerdict', 'ResponseBodyDeliveryEvidence',
         'DeliveredTableResponseSize', 'MeasuredBodyBytes', 'BodyDeliveryObservations',
         'AjaxCanaryReceiptParser', 'DebugLogFileStore', 'DebugLogReader',
         'DebugLogArchiveBuilder', 'DeveloperLogMailer', 'ToolsDiagnostics',

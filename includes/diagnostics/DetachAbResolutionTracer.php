@@ -224,9 +224,17 @@ final class ABJ_404_Solution_DetachAbResolutionTracer {
         return preg_match('/^[a-z_]{1,32}$/', $type) === 1 ? $type : 'unknown';
     }
 
-    /** @param mixed $mode */
+    /**
+     * The journaled mode, narrowed to the vocabulary the ledger can actually
+     * assign. The list is not repeated here: a fifth mode added to
+     * ABJ_404_Solution_DetachAbAttempt must not silently start tracing as
+     * 'unknown'.
+     *
+     * @param mixed $mode
+     */
     private static function safeMode($mode): string {
-        return is_string($mode) && in_array($mode, array('inert', 'on', 'off', 'default'), true)
+        return is_string($mode)
+            && in_array($mode, ABJ_404_Solution_DetachAbAttempt::everyMode(), true)
             ? $mode : 'unknown';
     }
 

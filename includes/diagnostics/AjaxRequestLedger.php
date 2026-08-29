@@ -276,7 +276,7 @@ final class ABJ_404_Solution_AjaxRequestLedger {
      */
     public static function detachAbModeForAttempt(int $attemptIndex, string $assignmentSeed = ''): string {
         if ($attemptIndex < 0 || $attemptIndex >= self::AB_DETACH_MAX_ATTEMPTS) {
-            return 'default';
+            return ABJ_404_Solution_DetachAbAttempt::MODE_DEFAULT;
         }
         $pairOrdinal = intdiv($attemptIndex, 2);
         $position = $attemptIndex % 2;
@@ -285,7 +285,7 @@ final class ABJ_404_Solution_AjaxRequestLedger {
         if ($position === 1) {
             $onFirst = !$onFirst;
         }
-        return $onFirst ? 'on' : 'off';
+        return $onFirst ? ABJ_404_Solution_DetachAbAttempt::MODE_ON : ABJ_404_Solution_DetachAbAttempt::MODE_OFF;
     }
 
     /**
@@ -442,14 +442,14 @@ final class ABJ_404_Solution_AjaxRequestLedger {
                 $payloadKey = self::normalizeDetachAbPayloadKey($payloadKey);
                 $diagnosticEnabled = self::isDetachAbDiagnosticEnabled();
                 if (!$diagnosticEnabled) {
-                    return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => false,
+                    return array('mode' => ABJ_404_Solution_DetachAbAttempt::MODE_INERT, 'attempt_index' => -1, 'diagnostic_enabled' => false,
                         'build_channel' => $buildChannel, 'session_key' => $sessionKey,
                         'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
                         'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');
                 }
                 $attemptIndex = self::nextDetachAbAttemptIndex($sessionId, $part, $payloadKey);
                 if ($attemptIndex < 0) {
-                    return array('mode' => 'inert', 'attempt_index' => -1, 'diagnostic_enabled' => true,
+                    return array('mode' => ABJ_404_Solution_DetachAbAttempt::MODE_INERT, 'attempt_index' => -1, 'diagnostic_enabled' => true,
                         'build_channel' => $buildChannel, 'session_key' => $sessionKey,
                         'part' => $part, 'payload_key' => $payloadKey, 'ordinal' => -1,
                         'pair_ordinal' => -1, 'pair_position' => -1, 'assignment_seed' => '');

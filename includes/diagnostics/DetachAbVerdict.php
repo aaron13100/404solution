@@ -66,11 +66,12 @@ final class ABJ_404_Solution_DetachAbVerdict {
      * observed -- is honestly inconclusive rather than forced into one of
      * the three clean verdicts.
      *
-     * @param array<int, array<string, mixed>> $attempts
+     * @param array<int, ABJ_404_Solution_DetachAbAttempt> $attempts
      *   Chronological per-request outcomes for the real table endpoint's own
-     *   workload-matched A/B attempts (mode 'on'/'off', workload scope, and
-     *   ordinal as journaled by detach_ab_mode; ok = whether that attempt
-     *   completed from the client's own point of view).
+     *   workload-matched A/B attempts, already parsed at the journal boundary
+     *   by ABJ_404_Solution_DetachAbAttempt::fromJournalRecord(). This rule
+     *   re-inspects nothing: the mode is MODE_ON or MODE_OFF by construction,
+     *   and an attempt either has pair coordinates or does not.
      * @return array<string, mixed>
      */
     public static function fromAttempts(array $attempts): array {
@@ -139,14 +140,14 @@ final class ABJ_404_Solution_DetachAbVerdict {
      * without scope fields, duplicated positions, and malformed mode pairs
      * remain visible in raw attempt accounting but cannot decide causality.
      *
-     * @param array<int, array<string, mixed>> $attempts
+     * @param array<int, ABJ_404_Solution_DetachAbAttempt> $attempts
      * @return array<int, array{on_ok: bool, off_ok: bool, on_first: bool}>
      */
     private static function matchedDetachAbPairs(array $attempts): array {
         $grouped = array();
         $duplicates = array();
         foreach ($attempts as $attempt) {
-            $slot = self::detachAbPairSlot($attempt);
+            $slot = $attempt->pairSlot();
             if ($slot === null) {
                 continue;
             }
@@ -154,55 +155,25 @@ final class ABJ_404_Solution_DetachAbVerdict {
                 $duplicates[$slot['key']] = true;
                 continue;
             }
-            $grouped[$slot['key']][$slot['position']] = array(
-                'mode' => $slot['mode'],
-                'ok' => $slot['ok'],
-            );
+            $grouped[$slot['key']][$slot['position']] = $attempt;
         }
 
         $pairs = array();
         foreach ($grouped as $key => $positions) {
             if (isset($duplicates[$key]) || !isset($positions[0], $positions[1])
-                    || $positions[0]['mode'] === $positions[1]['mode']) {
+                    || $positions[0]->mode() === $positions[1]->mode()) {
                 continue;
             }
-            $on = $positions[0]['mode'] === 'on' ? $positions[0] : $positions[1];
-            $off = $positions[0]['mode'] === 'off' ? $positions[0] : $positions[1];
+            $onFirst = $positions[0]->mode() === ABJ_404_Solution_DetachAbAttempt::MODE_ON;
+            $on = $onFirst ? $positions[0] : $positions[1];
+            $off = $onFirst ? $positions[1] : $positions[0];
             $pairs[] = array(
-                'on_ok' => $on['ok'],
-                'off_ok' => $off['ok'],
-                'on_first' => $positions[0]['mode'] === 'on',
+                'on_ok' => $on->completed() === true,
+                'off_ok' => $off->completed() === true,
+                'on_first' => $onFirst,
             );
         }
         return $pairs;
-    }
-
-    /**
-     * Validate one evidence record and derive pair coordinates from ordinal.
-     * Supplemental pair metadata is journaled but never overrides the ordinal.
-     * @param mixed $attempt
-     * @return array{key: string, position: int, mode: string, ok: bool}|null
-     */
-    private static function detachAbPairSlot($attempt): ?array {
-        if (!is_array($attempt)) {
-            return null;
-        }
-        $part = is_scalar($attempt['part'] ?? null) ? (string)$attempt['part'] : '';
-        $payloadKey = is_scalar($attempt['payload_key'] ?? null)
-            ? (string)$attempt['payload_key'] : '';
-        $ordinal = isset($attempt['ordinal']) && is_numeric($attempt['ordinal'])
-            ? (int)$attempt['ordinal'] : -1;
-        $mode = is_scalar($attempt['mode'] ?? null) ? (string)$attempt['mode'] : '';
-        if ($part === '' || $payloadKey === '' || $ordinal < 0
-                || ($mode !== 'on' && $mode !== 'off')) {
-            return null;
-        }
-        return array(
-            'key' => $part . '|' . $payloadKey . '|' . intdiv($ordinal, 2),
-            'position' => $ordinal % 2,
-            'mode' => $mode,
-            'ok' => !empty($attempt['ok']),
-        );
     }
 
     /**
@@ -212,23 +183,24 @@ final class ABJ_404_Solution_DetachAbVerdict {
      * self-contained tally, not logic that needs to be inlined at the call
      * site.
      *
-     * @param array<int, array{mode?: mixed, ok?: mixed}> $attempts
+     * @param array<int, ABJ_404_Solution_DetachAbAttempt> $attempts
      * @return array{on: int, onOk: int, off: int, offOk: int}
      */
     private static function tallyDetachAbAttempts(array $attempts): array {
         $tally = array('on' => 0, 'onOk' => 0, 'off' => 0, 'offOk' => 0);
         foreach ($attempts as $attempt) {
-            if (!is_array($attempt)) {
+            // Named explicitly rather than built by concatenating the mode onto
+            // 'Ok'. A constructed key is a second, unchecked spelling of the
+            // protocol: rename a mode and the tally silently starts counting
+            // into a field nothing reads, with every total reading zero.
+            $completed = $attempt->completed() === true;
+            if ($attempt->mode() === ABJ_404_Solution_DetachAbAttempt::MODE_ON) {
+                $tally['on']++;
+                $tally['onOk'] += $completed ? 1 : 0;
                 continue;
             }
-            $mode = is_scalar($attempt['mode'] ?? null) ? (string)$attempt['mode'] : '';
-            if ($mode !== 'on' && $mode !== 'off') {
-                continue;
-            }
-            $tally[$mode]++;
-            if (!empty($attempt['ok'])) {
-                $tally[$mode . 'Ok']++;
-            }
+            $tally['off']++;
+            $tally['offOk'] += $completed ? 1 : 0;
         }
         return $tally;
     }
