@@ -4288,3 +4288,13 @@ msgstr[1] "No se han encontrado las redirecciones %s. Es posible que se hayan el
 
 msgid "No redirect was selected to edit."
 msgstr "No se ha seleccionado ninguna redirección para editar."
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "Has seleccionado %1$s redirecciones. Como máximo se pueden editar %2$s a la vez, por lo que no se ha cambiado nada. Selecciona menos e inténtalo de nuevo."
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "Nota: no se ha guardado %1$s condición. Una redirección puede tener como máximo %2$s condiciones."
+msgstr[1] "Nota: no se han guardado %1$s condiciones. Una redirección puede tener como máximo %2$s condiciones."

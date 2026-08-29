@@ -20,13 +20,28 @@ if (!defined('ABSPATH')) {
  * the missing-row notice needs the ids to name and the same source page to
  * send the admin back to.
  *
- * NOTE for a future change, not a defect today: EditRedirectHandler's
- * resolveSourcePage() answers the source-page question again on the write
- * side, with a different rule (it validates against a list of tabs, this
- * validates by excluding the edit tab itself). Those two want to become one
- * call to this class; that is a behavior change and belongs in its own change.
+ * This is also the single answer to "which subpage is a real one". The write
+ * side used to keep its own tab list in EditRedirectHandler while this class
+ * validated only by excluding the edit tab, so the same question had two
+ * answers that could drift apart -- and the weaker of the two fed a link the
+ * admin clicks.
  */
 class ABJ_404_Solution_RedirectEditRequest {
+
+    /**
+     * Every subpage the edit screen can legitimately have been opened from,
+     * and the only values getSourcePage() will return.
+     *
+     * Deliberately NOT including 'abj404_edit': the edit screen must not offer
+     * to send the admin back to the screen they are already on.
+     *
+     * @var array<int, string>
+     */
+    const LIST_SUBPAGES = array('abj404_redirects', 'abj404_captured', 'abj404_logs',
+            'abj404_stats', 'abj404_tools', 'abj404_options');
+
+    /** Where the edit screen returns to when the request names nothing usable. */
+    const DEFAULT_SUBPAGE = 'abj404_redirects';
 
     /** Request named a single redirect through the GET id parameter. */
     const SOURCE_GET_ID = 'get_id';
@@ -66,20 +81,37 @@ class ABJ_404_Solution_RedirectEditRequest {
      * Which list page the edit screen was opened from.
      *
      * Falls back to the Redirects list when the request names nothing usable,
-     * and treats the edit screen itself as "nothing usable" so a reload of the
-     * edit URL cannot make the screen offer to send the admin back to itself.
+     * which includes the edit screen itself -- so a reload of the edit URL
+     * cannot make the screen offer to send the admin back to itself.
      *
-     * @return string One of the plugin's list subpage keys.
+     * Returns a member of LIST_SUBPAGES or nothing at all: the answer is a
+     * subpage key, so a value that is not one is not an answer to narrow later.
+     * Returning the raw sanitized string made this a half-parse, and the raw
+     * string went straight into the back link as
+     * '?page=...&subpage=' . esc_attr($sourcePage) -- esc_attr escapes HTML,
+     * not URL components, so an '&' rode through and appended parameters of
+     * the caller's choosing to a link the admin is invited to click.
+     *
+     * @return string One of self::LIST_SUBPAGES.
      */
     public function getSourcePage(): string {
         $sourcePage = $this->sanitizedScalar('source_page');
         if ($sourcePage === '') {
             $sourcePage = $this->sanitizedScalar('subpage');
         }
-        if ($sourcePage === '' || $sourcePage == 'abj404_edit') {
-            $sourcePage = 'abj404_redirects';
-        }
-        return $sourcePage;
+        return self::isListSubpage($sourcePage) ? $sourcePage : self::DEFAULT_SUBPAGE;
+    }
+
+    /**
+     * Whether a value names a real plugin list page.
+     *
+     * Public so the write side resolves the same question through the same
+     * list rather than keeping a second copy of it.
+     *
+     * @param mixed $subpage
+     */
+    public static function isListSubpage($subpage): bool {
+        return is_string($subpage) && in_array($subpage, self::LIST_SUBPAGES, true);
     }
 
     /**
@@ -96,13 +128,16 @@ class ABJ_404_Solution_RedirectEditRequest {
      * page has always recorded without this method doing the logging itself.
      *
      * `truncated` reports that the request named more ids than
-     * MAX_SELECTED_IDS and the extras were dropped. Reported rather than
-     * silently applied: editing a subset of what the admin selected, with no
-     * indication that it happened, is a worse outcome than the unbounded work
-     * the cap exists to prevent.
+     * MAX_SELECTED_IDS, and `requestedCount` how many it named. The caller
+     * REFUSES on that flag rather than proceeding with the remainder: editing
+     * a subset of what the admin selected is worse than the unbounded work the
+     * cap exists to prevent, and a partial answer they cannot see the edge of
+     * is worse still -- they would have no way to tell which of their
+     * selections had been dropped. `requestedCount` survives the slice so the
+     * refusal can name the real number back to them.
      *
      * @return array{recnum: int|null, recnumsMultiple: array<int, int>, source: string,
-     *   truncated: bool}|null
+     *   truncated: bool, requestedCount: int}|null
      */
     public function getRequestedIds(): ?array {
         if (isset($_GET['id']) && is_scalar($_GET['id']) && $this->f->regexMatch('[0-9]+', (string)$_GET['id'])) {
@@ -111,6 +146,7 @@ class ABJ_404_Solution_RedirectEditRequest {
                 'recnumsMultiple' => array(),
                 'source' => self::SOURCE_GET_ID,
                 'truncated' => false,
+                'requestedCount' => 1,
             );
         }
 
@@ -120,6 +156,7 @@ class ABJ_404_Solution_RedirectEditRequest {
                 'recnumsMultiple' => array(),
                 'source' => self::SOURCE_POST_ID,
                 'truncated' => false,
+                'requestedCount' => 1,
             );
         }
 
@@ -133,7 +170,8 @@ class ABJ_404_Solution_RedirectEditRequest {
         // this request can cause, and sanitizing a million ids to then keep two
         // thousand of them has already done the work.
         $rawIds = (array)$rawIdnum;
-        $truncated = count($rawIds) > self::MAX_SELECTED_IDS;
+        $requestedCount = count($rawIds);
+        $truncated = $requestedCount > self::MAX_SELECTED_IDS;
         if ($truncated) {
             $rawIds = array_slice($rawIds, 0, self::MAX_SELECTED_IDS);
         }
@@ -148,6 +186,7 @@ class ABJ_404_Solution_RedirectEditRequest {
             'recnumsMultiple' => $recnumsMultiple,
             'source' => self::SOURCE_IDNUM,
             'truncated' => $truncated,
+            'requestedCount' => $requestedCount,
         );
     }
 

@@ -325,7 +325,8 @@ $abj404ClassesByDirectory = array(
     // Includes the view components converted from the former ViewTrait_* family.
     'view' => array(
         'TableViewOptionsResolver', 'ViewComponent', 'RedirectDestinationOptionsPresenter',
-        'RedirectEditFormPresenter', 'RedirectDestinationResolver', 'View_Logs', 'View_Redirects',
+        'RedirectEditFormPresenter', 'RedirectEditDeadEndRenderer',
+        'RedirectDestinationResolver', 'View_Logs', 'View_Redirects',
         'View_RedirectsTable', 'View_CapturedURLsTable', 'CapturedTableHeaderRenderer',
         'CapturedPageChromeRenderer', 'CapturedRowActionButtonsRenderer',
         'CapturedSourceEvidenceRenderer', 'View_RedirectForms', 'EditRedirectFormContext',

@@ -4294,3 +4294,14 @@ msgstr[2] "Перенаправления %s не найдены. Возможн
 
 msgid "No redirect was selected to edit."
 msgstr "Не выбрано ни одного перенаправления для редактирования."
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "Вы выбрали %1$s перенаправлений. За один раз можно изменить не более %2$s, поэтому ничего не изменено. Выберите меньше и повторите попытку."
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "Примечание: %1$s условие не сохранено. Перенаправление может содержать не более %2$s условий."
+msgstr[1] "Примечание: %1$s условия не сохранены. Перенаправление может содержать не более %2$s условий."
+msgstr[2] "Примечание: %1$s условий не сохранено. Перенаправление может содержать не более %2$s условий."

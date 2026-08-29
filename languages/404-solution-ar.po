@@ -4322,3 +4322,17 @@ msgstr[5] "لم يتم العثور على عمليات إعادة التوجي�
 
 msgid "No redirect was selected to edit."
 msgstr "لم يتم تحديد أي إعادة توجيه للتعديل."
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "لقد حددت %1$s من عمليات إعادة التوجيه. يمكن تحرير %2$s كحد أقصى في المرة الواحدة، لذلك لم يتم تغيير أي شيء. يرجى تحديد عدد أقل والمحاولة مرة أخرى."
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "ملاحظة: لم يتم حفظ %1$s شرط. يمكن أن تحتوي إعادة التوجيه على %2$s شرط كحد أقصى."
+msgstr[1] "ملاحظة: لم يتم حفظ %1$s شرط واحد. يمكن أن تحتوي إعادة التوجيه على %2$s شرط كحد أقصى."
+msgstr[2] "ملاحظة: لم يتم حفظ %1$s شرطين. يمكن أن تحتوي إعادة التوجيه على %2$s شرط كحد أقصى."
+msgstr[3] "ملاحظة: لم يتم حفظ %1$s شروط. يمكن أن تحتوي إعادة التوجيه على %2$s شرط كحد أقصى."
+msgstr[4] "ملاحظة: لم يتم حفظ %1$s شرطًا. يمكن أن تحتوي إعادة التوجيه على %2$s شرط كحد أقصى."
+msgstr[5] "ملاحظة: لم يتم حفظ %1$s شرط. يمكن أن تحتوي إعادة التوجيه على %2$s شرط كحد أقصى."

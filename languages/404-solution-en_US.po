@@ -4329,3 +4329,13 @@ msgstr[1] "Redirects %s were not found. They may have been deleted since this pa
 
 msgid "No redirect was selected to edit."
 msgstr "No redirect was selected to edit."
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgstr[1] "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."

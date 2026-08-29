@@ -4292,3 +4292,13 @@ msgstr[1] "Les redirections %s sont introuvables. Elles ont peut-être été sup
 
 msgid "No redirect was selected to edit."
 msgstr "Aucune redirection n'a été sélectionnée pour la modification."
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "Vous avez sélectionné %1$s redirections. Au maximum %2$s peuvent être modifiées à la fois, donc rien n'a été changé. Veuillez en sélectionner moins et réessayer."
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "Remarque : %1$s condition n'a pas été enregistrée. Une redirection peut comporter au maximum %2$s conditions."
+msgstr[1] "Remarque : %1$s conditions n'ont pas été enregistrées. Une redirection peut comporter au maximum %2$s conditions."

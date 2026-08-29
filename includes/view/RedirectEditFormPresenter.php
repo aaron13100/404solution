@@ -145,6 +145,35 @@ class ABJ_404_Solution_RedirectEditFormPresenter {
     }
 
     /**
+     * Build the notice shown when the request named more redirects than one
+     * edit screen may carry.
+     *
+     * A dead end on purpose, sharing the shape of the other two. The
+     * alternative -- render the first MAX_SELECTED_IDS and say so -- leaves the
+     * admin holding a partial selection whose edge they cannot see: nothing on
+     * the screen tells them WHICH of their choices was dropped, and the save
+     * that follows applies to the survivors. Refusing is recoverable in one
+     * step (select fewer), and names both numbers so the step is obvious.
+     *
+     * @param int $requestedCount How many the request actually named.
+     * @param int $maximum The plugin's ceiling.
+     * @param string $backUrl Where the "back to the list" link points.
+     * @param string $backLabel Visible text of that link.
+     * @return string
+     */
+    public function buildTooManySelectedNoticeHtml(int $requestedCount, int $maximum,
+            string $backUrl, string $backLabel): string {
+        $message = sprintf(
+            /* translators: 1: number of redirects the admin selected. 2: the maximum allowed. */
+            __('You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again.', '404-solution'),
+            number_format_i18n($requestedCount),
+            number_format_i18n($maximum)
+        );
+
+        return $this->buildEditScreenNoticeHtml($message, $backUrl, $backLabel);
+    }
+
+    /**
      * Build the notice shown when the edit screen was reached with no usable
      * redirect id at all (no id parameter, or only zero / non-numeric ones).
      *
@@ -255,7 +284,16 @@ class ABJ_404_Solution_RedirectEditFormPresenter {
             if ($value === '') {
                 continue;
             }
-            $url .= '&' . $name . '=' . $value;
+            // rawurlencode, matching AdminPageUrlBuilder, AdminPaginationLinks
+            // and AdminTableColumnHeaders. These are URL COMPONENTS: the filter
+            // is free text an admin typed into the list search box, and
+            // unencoded 'x&subpage=abj404_options' makes Cancel navigate to a
+            // screen nobody chose, because PHP takes the last value for a
+            // repeated parameter. esc_attr() does not help -- it escapes HTML
+            // and leaves '&' and '=' untouched -- and neither does the esc_url()
+            // the caller wraps this in, which validates a URL rather than
+            // deciding which '&' the author meant as a separator.
+            $url .= '&' . $name . '=' . rawurlencode($value);
         }
         return $url;
     }

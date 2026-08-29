@@ -18,6 +18,22 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent {
 
+    /** @var ABJ_404_Solution_RedirectEditFormPresenter|null */
+    private $editFormPresenter = null;
+
+    /**
+     * The builder that owns the shape of this screen's own links.
+     *
+     * @return ABJ_404_Solution_RedirectEditFormPresenter
+     */
+    private function editFormPresenter(): ABJ_404_Solution_RedirectEditFormPresenter {
+        if ($this->editFormPresenter === null) {
+            $this->editFormPresenter = new ABJ_404_Solution_RedirectEditFormPresenter(
+                $this->f, new ABJ_404_Solution_RedirectEngineLabeler());
+        }
+        return $this->editFormPresenter;
+    }
+
     private function tpl(string $name): string {
         $raw = ABJ_404_Solution_FileSystemService::readFileContents(dirname(__DIR__) . '/html/' . $name, false);
         return rtrim((string)$raw, "\n");
@@ -145,20 +161,13 @@ class ABJ_404_Solution_View_RedirectForms extends ABJ_404_Solution_ViewComponent
             '{conditions_section}' => $conditionsSection,
         ));
 
-        // Cancel button URL
-        $cancelUrl = '?page=' . ABJ404_PP;
-        if ($source_page) {
-            $cancelUrl .= '&subpage=' . esc_attr($source_page);
-        }
-        if ($filter !== null) {
-            $cancelUrl .= '&filter=' . esc_attr($filter);
-        }
-        if ($orderby !== null) {
-            $cancelUrl .= '&orderby=' . esc_attr($orderby);
-        }
-        if ($order !== null) {
-            $cancelUrl .= '&order=' . esc_attr($order);
-        }
+        // Cancel button URL, through the one builder that owns this link's
+        // shape. This was a second copy that encoded the same four values a
+        // different (and also wrong) way -- esc_attr here, nothing at all
+        // there -- which is how the two came to disagree about whether an '&'
+        // in a filter starts a new parameter.
+        $cancelUrl = $this->editFormPresenter()->buildCancelUrl(
+            (string)$source_page, (string)$filter, (string)$orderby, (string)$order);
 
         echo $this->f->str_replace(
             array('{cancel_url}', '{cancel_label}', '{submit_label}'),

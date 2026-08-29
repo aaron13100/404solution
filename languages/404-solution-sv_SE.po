@@ -4294,3 +4294,13 @@ msgstr[1] "Omdirigeringarna %s hittades inte. De kan ha tagits bort sedan den h�
 
 msgid "No redirect was selected to edit."
 msgstr "Ingen omdirigering har valts för redigering."
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "Du har valt %1$s omdirigeringar. Högst %2$s kan redigeras åt gången, så ingenting ändrades. Välj färre och försök igen."
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "Obs: %1$s villkor sparades inte. En omdirigering får ha högst %2$s villkor."
+msgstr[1] "Obs: %1$s villkor sparades inte. En omdirigering får ha högst %2$s villkor."

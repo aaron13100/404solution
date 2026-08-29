@@ -4296,3 +4296,12 @@ msgstr[0] "リダイレクト %s が見つかりませんでした。このペ�
 
 msgid "No redirect was selected to edit."
 msgstr "編集するリダイレクトが選択されていません。"
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "%1$s 件のリダイレクトが選択されました。一度に編集できるのは最大 %2$s 件までのため、変更は行われていません。選択する件数を減らしてもう一度お試しください。"
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "注意: %1$s 件の条件は保存されませんでした。1 つのリダイレクトに設定できる条件は最大 %2$s 件です。"

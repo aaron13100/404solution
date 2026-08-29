@@ -29,6 +29,9 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     /** @var ABJ_404_Solution_RedirectEditRequest|null */
     private $editRequest = null;
 
+    /** @var ABJ_404_Solution_RedirectEditDeadEndRenderer|null */
+    private $deadEnds = null;
+
     /**
      * @return ABJ_404_Solution_RedirectEditFormPresenter
      */
@@ -117,7 +120,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     public function renderBulkRedirectFormFields(array $context, array $recnums_multiple): ?array {
         $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs($recnums_multiple);
         if (empty($redirects_multiple)) {
-            return $this->renderMissingRedirects($context, $recnums_multiple);
+            return $this->deadEnds()->missingRedirects($context, $recnums_multiple);
         }
 
         $rowHtml = $this->editFormPresenter()->buildBulkUrlsRowHtml($redirects_multiple);
@@ -242,48 +245,14 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     }
 
     /**
-     * Render the edit screen's "those redirect ids no longer have a row"
-     * outcome, for both the single-id and the bulk branch.
-     *
-     * Deliberately below error level. A well-formed id that no longer resolves
-     * is a normal request condition, not a plugin failure: another admin can
-     * delete the row, this admin can trash it in a second tab, and
-     * deleteOldRedirectsCron removes rows on its own schedule, all while an
-     * already-rendered list page still carries the Edit link. The plugin keeps
-     * working, which by defensive-coding rule #8 makes this a non-error. It
-     * matters concretely because DebugLogReader::getLatestErrorLine() keys on
-     * the (ERROR) token to decide whether to mail the maintainer an error
-     * report, so logging a stale link at error level reports a bug that is not
-     * one (production report 349, plugin 4.3.4).
-     *
-     * A genuine database failure behind the same empty result is not hidden by
-     * this: DatabaseQueryExecutor::queryAndGetResults() is the centralized
-     * error handler and has already logged it via sqlErrorReporter.
-     *
-     * Takes the page context rather than resolving the destination again, so
-     * the notice's way back can never disagree with the way back the edit form
-     * itself would have offered.
-     *
-     * @param EditPageContext $context From editRedirectPageContext().
-     * @param array<int, int> $ids The redirect ids the request asked for. Empty
-     *     when the request carried no usable id at all.
-     * @return null Always null, so callers can `return $this->renderMissingRedirects(...)`.
+     * @return ABJ_404_Solution_RedirectEditDeadEndRenderer
      */
-    private function renderMissingRedirects(array $context, array $ids) {
-        $backUrl = $context['backUrl'];
-        $backLabel = $context['backLabel'];
-
-        if (empty($ids)) {
-            echo $this->editFormPresenter()->buildNoRedirectIdsNoticeHtml($backUrl, $backLabel);
-            $this->logger->debugMessage('Edit redirect page: request carried no usable redirect id.');
-            return null;
+    private function deadEnds(): ABJ_404_Solution_RedirectEditDeadEndRenderer {
+        if ($this->deadEnds === null) {
+            $this->deadEnds = new ABJ_404_Solution_RedirectEditDeadEndRenderer(
+                $this->editFormPresenter(), $this->logger);
         }
-
-        echo $this->editFormPresenter()->buildMissingRedirectsNoticeHtml($ids, $backUrl, $backLabel);
-        $this->logger->debugMessage('Edit redirect page: no redirect row exists for requested id(s): ' .
-                esc_html(implode(', ', array_map('strval', $ids))));
-
-        return null;
+        return $this->deadEnds;
     }
 
     /**
@@ -326,7 +295,10 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
         $isSimpleMode = $context['isSimpleMode'];
         $request = $this->editRequest()->getRequestedIds();
         if ($request === null) {
-            return $this->renderMissingRedirects($context, array());
+            return $this->deadEnds()->missingRedirects($context, array());
+        }
+        if ($request['truncated']) {
+            return $this->deadEnds()->tooManySelected($context, $request['requestedCount']);
         }
         // Recorded here rather than inside RedirectEditRequest so that reader
         // stays a pure getter (scripts/lint/lint-hidden-write-getters).
@@ -370,7 +342,7 @@ class ABJ_404_Solution_View_Redirects extends ABJ_404_Solution_ViewComponent {
     private function buildSingleRecordContent(array $context, int $recnum, bool $isSimpleMode): ?array {
         $redirects_multiple = $this->redirectsRepository->getRedirectsByIDs(array($recnum));
         if (empty($redirects_multiple)) {
-            return $this->renderMissingRedirects($context, array($recnum));
+            return $this->deadEnds()->missingRedirects($context, array($recnum));
         }
 
         /** @var array<string, mixed> $redirect */

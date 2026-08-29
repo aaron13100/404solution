@@ -4290,3 +4290,12 @@ msgstr[0] "未找到重定向 %s。它可能在本页面打开后已被删除。
 
 msgid "No redirect was selected to edit."
 msgstr "未选择要编辑的重定向。"
+
+#: includes/
+msgid "You selected %1$s redirects. At most %2$s can be edited at once, so nothing was changed. Please select fewer and try again."
+msgstr "您选择了 %1$s 条重定向。一次最多只能编辑 %2$s 条，因此未做任何更改。请减少选择的数量后重试。"
+
+#: includes/
+msgid "Note: %1$s condition was not saved. A redirect may have at most %2$s conditions."
+msgid_plural "Note: %1$s conditions were not saved. A redirect may have at most %2$s conditions."
+msgstr[0] "注意：有 %1$s 个条件未保存。一条重定向最多可以有 %2$s 个条件。"
