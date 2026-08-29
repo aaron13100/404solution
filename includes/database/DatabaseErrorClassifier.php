@@ -56,7 +56,13 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         $this->core = $core;
         $this->logger = $logger;
         $this->taxonomy = new ABJ_404_Solution_DatabaseInfrastructureErrorTaxonomy($functions);
-        $this->tableInspector = new ABJ_404_Solution_DatabaseErrorTableInspector($logger);
+        $this->tableInspector = new ABJ_404_Solution_DatabaseErrorTableInspector(
+            $logger,
+            function (string $tableName) use ($core): bool {
+                return $core->tableNameResolver()->tableExistenceStatus($tableName)
+                    === ABJ_404_Solution_DatabaseTableNameResolver::TABLE_ABSENT;
+            }
+        );
         $this->prefixDiagnostics = new ABJ_404_Solution_DatabasePrefixDiagnostics($core, $logger);
     }
 
@@ -85,9 +91,16 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
         return $this->taxonomy->schema()->isRedundantSchemaChangeError($errorText);
     }
 
-    /** Whether the text names a host/infrastructure SQL failure. */
+    /**
+     * Whether the error is a host/infrastructure failure.
+     *
+     * Most families are pure string taxonomy. A missing WordPress core table
+     * needs positive database evidence: it is infrastructure only when the
+     * authoritative table name WordPress exposes is also confirmed absent.
+     */
     public function isInfrastructureSqlError(string $errorText): bool {
-        return $this->taxonomy->isInfrastructureSqlError($errorText);
+        return $this->taxonomy->isInfrastructureSqlError($errorText)
+            || $this->tableInspector->isConfirmedMissingWordPressTableError($errorText);
     }
 
     /** Whether the server reports a corrupt or unusable key file. */
@@ -113,7 +126,7 @@ class ABJ_404_Solution_DatabaseErrorClassifier {
             return false;
         }
 
-        if ($this->taxonomy->isInfrastructureSqlError($errorText)) {
+        if ($this->isInfrastructureSqlError($errorText)) {
             $this->logger->warn("Server-side DB issue (handled): " . $errorText);
             $this->noteDatabaseIssueFromError($errorText);
             return true;

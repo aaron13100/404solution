@@ -13,11 +13,18 @@ class ABJ_404_Solution_DatabaseErrorTableInspector {
     /** @var ABJ_404_Solution_Logging */
     private $logger;
 
+    /** @var (callable(string): bool)|null */
+    private $confirmedTableAbsenceProbe;
+
     /**
      * @param ABJ_404_Solution_Logging $logger
+     * @param (callable(string): bool)|null $confirmedTableAbsenceProbe
+     *   Returns true only when the database positively confirms absence.
      */
-    public function __construct($logger) {
+    public function __construct($logger, $confirmedTableAbsenceProbe = null) {
         $this->logger = $logger;
+        $this->confirmedTableAbsenceProbe = is_callable($confirmedTableAbsenceProbe)
+            ? $confirmedTableAbsenceProbe : null;
     }
 
     /**
@@ -49,6 +56,61 @@ class ABJ_404_Solution_DatabaseErrorTableInspector {
         $fullName = $matches[1];
         $dotPos = strrpos($fullName, '.');
         return $dotPos !== false ? substr($fullName, $dotPos + 1) : $fullName;
+    }
+
+    /**
+     * Whether WordPress recognizes the missing table and the database also
+     * positively confirms that WordPress's authoritative name is absent.
+     *
+     * A failed query against a generated prefix remains a plugin ERROR when
+     * WordPress's own table exists: that means our name resolution drifted.
+     * An inconclusive SHOW TABLES probe also remains an ERROR because failure
+     * to prove presence is not evidence of absence.
+     *
+     * @param string $errorText
+     * @return bool
+     */
+    public function isConfirmedMissingWordPressTableError(string $errorText): bool {
+        if ($this->confirmedTableAbsenceProbe === null) {
+            return false;
+        }
+
+        $missingTable = $this->extractMissingTableNameFromError($errorText);
+        if ($missingTable === '') {
+            return false;
+        }
+
+        global $wpdb;
+        if (!isset($wpdb) || !is_object($wpdb)) {
+            return false;
+        }
+
+        $tableSuffixes = isset($wpdb->tables) && is_array($wpdb->tables)
+            ? $wpdb->tables : array();
+        $tableSuffixes[] = 'users';
+        $prefix = isset($wpdb->prefix) && is_scalar($wpdb->prefix)
+            ? (string)$wpdb->prefix : '';
+
+        foreach (array_unique($tableSuffixes, SORT_REGULAR) as $tableSuffix) {
+            if (!is_scalar($tableSuffix) || (string)$tableSuffix === '') {
+                continue;
+            }
+            $property = (string)$tableSuffix;
+            if (!isset($wpdb->{$property}) || !is_scalar($wpdb->{$property})) {
+                continue;
+            }
+            $wordpressTable = (string)$wpdb->{$property};
+            if ($wordpressTable === '') {
+                continue;
+            }
+            $generatedTable = $prefix . $property;
+            if ($missingTable !== $generatedTable && $missingTable !== $wordpressTable) {
+                continue;
+            }
+            return (bool)call_user_func($this->confirmedTableAbsenceProbe, $wordpressTable);
+        }
+
+        return false;
     }
 
     /**
