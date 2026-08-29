@@ -344,6 +344,7 @@ if (!function_exists('abj404_opcache_target_files')) {
         // that decision would recreate the stale class-linking fatal this
         // guard exists to prevent.
         require_once dirname(__DIR__) . '/core/PhpRuntimeCapabilityAdapter.php';
+        require_once dirname(__DIR__) . '/core/OpcacheAdapter.php';
         if (ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_get_status')) {
             // Suppressed because a host with opcache compiled in but disabled
             // for this SAPI raises a warning here rather than returning false.
@@ -449,6 +450,7 @@ if (!function_exists('abj404_opcache_refresh_after_upgrade')) {
         // This final, dependency-free class is safe to link only after the
         // persistent version gate above has made the upgrade decision.
         require_once dirname(__DIR__) . '/core/PhpRuntimeCapabilityAdapter.php';
+        require_once dirname(__DIR__) . '/core/OpcacheAdapter.php';
         if (!ABJ_404_Solution_PhpRuntimeCapabilityAdapter::isFunctionAvailable('opcache_invalidate')) {
             $result['reason'] = 'opcache-unavailable';
             return $result;
