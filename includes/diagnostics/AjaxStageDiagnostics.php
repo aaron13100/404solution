@@ -30,7 +30,7 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
      * @return void
      */
     public static function beginRequest(array $context): void {
-        $requestId = ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestId($context);
+        $requestId = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::diagnosticRequestId($context);
         if ($requestId === '') {
             unset($GLOBALS['abj404_ajax_request_trace']);
             return;
@@ -154,7 +154,7 @@ class ABJ_404_Solution_AjaxStageDiagnostics {
      * that do not otherwise have the raw request context in hand.
      */
     private static function currentRequestIdForCheckpoints(): string {
-        return ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestIdFromGlobalContext();
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::diagnosticRequestIdFromGlobalContext();
     }
 
     /**

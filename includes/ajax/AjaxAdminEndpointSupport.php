@@ -70,7 +70,7 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
         string $handlerName,
         array $options = array()
     ): bool {
-        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId($context);
+        $checkpointRequestId = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestId($context);
         $gate = function_exists('abj_service_optional') ? abj_service_optional('ajax_security_gate') : null;
         if (!is_object($gate) || !method_exists($gate, 'authorizeAdminWithNonce')) {
             ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'auth_service_unavailable_branch', array('handler' => $handlerName));
@@ -303,7 +303,7 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
         // path and produce a COMPARABLE trace -- came back with none of the
         // records it is compared against. Both predicates still require the
         // debug opt-in, so a default GA request stays inert either way.
-        $diagnosticsEnabled = ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestId($context) !== '';
+        $diagnosticsEnabled = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::diagnosticRequestId($context) !== '';
         self::configureDiagnosticOperationTracers($diagnosticsEnabled);
         return $context;
     }
@@ -321,7 +321,7 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
     public static function armAuthorizedRetryDiagnostics(array $context): array {
         $context['diagnostic_retry_authorized'] = true;
         $GLOBALS['abj404_ajax_context'] = $context;
-        $diagnosticsEnabled = ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestId($context) !== '';
+        $diagnosticsEnabled = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::diagnosticRequestId($context) !== '';
         self::configureDiagnosticOperationTracers($diagnosticsEnabled);
         return $context;
     }
@@ -381,7 +381,7 @@ class ABJ_404_Solution_AjaxAdminEndpointSupport {
             return '';
         }
 
-        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
+        $checkpointRequestId = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext();
         $out = '';
         if (ob_get_level() > 0) {
             if ($checkpointRequestId === '') {

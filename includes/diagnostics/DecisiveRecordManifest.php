@@ -251,7 +251,7 @@ final class ABJ_404_Solution_DecisiveRecordManifest {
         // getAndClearAjaxBufferedOutput()
         // dispatches abj404_should_manage_output_buffer and
         // sendJsonResponseAndExit() dispatches abj404_should_exit before the
-        // flush; AjaxRequestLedger::resolveDetachAbMode() dispatches
+        // flush; DetachAbExperiment::resolve() dispatches
         // abj404_should_run_detach_ab_diagnostic after it; WordPress
         // status_header() dispatches its named filter before core header
         // emission. All four run on every ajaxUpdatePaginationLinks response,

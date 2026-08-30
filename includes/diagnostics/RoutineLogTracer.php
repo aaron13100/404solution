@@ -101,8 +101,8 @@ final class ABJ_404_Solution_RoutineLogTracer {
     }
 
     private static function requestId(): string {
-        return class_exists('ABJ_404_Solution_AjaxRequestLedger')
-            ? ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext()
+        return class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')
+            ? ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext()
             : '';
     }
 

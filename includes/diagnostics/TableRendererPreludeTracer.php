@@ -51,8 +51,8 @@ final class ABJ_404_Solution_TableRendererPreludeTracer {
     private $lifecycleTracer;
 
     public static function begin(): ?self {
-        $requestId = class_exists('ABJ_404_Solution_AjaxRequestLedger')
-            ? ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext()
+        $requestId = class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')
+            ? ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext()
             : '';
         if ($requestId === '') {
             return null;

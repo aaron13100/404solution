@@ -64,9 +64,9 @@ final class ABJ_404_Solution_AjaxRequestIdScopes {
      */
     public static function fromGlobalContext(): self {
         return new self(array(
-            'checkpoint' => ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext(),
+            'checkpoint' => ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext(),
             'ledger' => ABJ_404_Solution_AjaxRequestLedger::requestIdFromGlobalContext(),
-            'measured' => ABJ_404_Solution_AjaxRequestLedger::diagnosticRequestIdFromGlobalContext(),
+            'measured' => ABJ_404_Solution_AjaxDiagnosticRequestPolicy::diagnosticRequestIdFromGlobalContext(),
         ));
     }
 

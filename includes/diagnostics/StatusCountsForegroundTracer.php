@@ -190,14 +190,14 @@ final class ABJ_404_Solution_StatusCountsForegroundTracer {
     }
 
     private static function requestId(): string {
-        if (!class_exists('ABJ_404_Solution_AjaxRequestLedger')) {
+        if (!class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')) {
             return '';
         }
         $context = $GLOBALS['abj404_ajax_context'] ?? null;
         $action = is_array($context) && is_scalar($context['action'] ?? null)
             ? (string)$context['action'] : '';
         if (!in_array($action, array(
-            ABJ_404_Solution_AjaxRequestLedger::INSTRUMENTED_ACTION,
+            ABJ_404_Solution_AjaxDiagnosticRequestPolicy::INSTRUMENTED_ACTION,
             'ajaxRunCanaryStep',
             'ajaxRefreshHealthBar',
         ), true)) {

@@ -64,8 +64,8 @@ final class ABJ_404_Solution_TableRenderTranslationTracer {
      * @return T
      */
     public static function traceScope(string $phase, string $messageSet, callable $render) {
-        $requestId = class_exists('ABJ_404_Solution_AjaxRequestLedger')
-            ? ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext()
+        $requestId = class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')
+            ? ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext()
             : '';
         if ($requestId === '') {
             return $render();

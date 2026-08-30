@@ -118,7 +118,7 @@ final class ABJ_404_Solution_AjaxQueryTimeline {
      * checkpoints it has to be read alongside.
      */
     public static function armedRequestId(): string {
-        return ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext();
     }
 
     /** Whether this request records per-query attribution at all. */

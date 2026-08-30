@@ -62,7 +62,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
      */
     public static function forSession(string $sessionId): array {
         $sessionId = substr($sessionId, 0, 64);
-        $sessionKey = ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($sessionId);
+        $sessionKey = ABJ_404_Solution_DetachAbExperiment::sessionKey($sessionId);
         $record = self::emptyRecord($sessionId);
         if ($sessionId === '') {
             $record['status'] = self::STATUS_NO_SESSION;
@@ -94,7 +94,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
         return array(
             'status' => self::STATUS_NO_RECEIPTS,
             'source' => 'checkpoint_receipts',
-            'session_key' => ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($sessionId),
+            'session_key' => ABJ_404_Solution_DetachAbExperiment::sessionKey($sessionId),
             'plugin_version' => '',
             'receipt_records' => 0,
             'baseline_receipts' => 0,
@@ -204,7 +204,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
      *
      * @param array<int, string> $lines
      * @param array<string, bool> $sessionRequestIds
-     * @param string $sessionKey AjaxRequestLedger::detachAbSessionKey() of the requested session.
+     * @param string $sessionKey DetachAbExperiment::sessionKey() of the requested session.
      * @return array<int, array<string, mixed>>
      */
     private static function sessionReceiptRecords(

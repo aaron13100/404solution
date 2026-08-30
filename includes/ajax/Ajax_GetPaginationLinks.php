@@ -30,7 +30,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         // to this request from their very first boundary.
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
             $requestReader->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
-        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId(array(
+        $checkpointRequestId = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestId(array(
             'action' => 'ajaxUpdatePaginationLinks',
             'request_id' => $requestId,
         ));
@@ -60,7 +60,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
         $cacheMode = self::normalizeCacheMode((string)$requestReader->getPostOrGetSanitize('cacheMode', 'normal'));
         $currentSignature = self::normalizeCurrentSignature((string)$requestReader->getPostOrGetSanitize('currentSignature', ''));
         $retryCount = min(2, absint($requestReader->getPostOrGetSanitize('retryCount', '0')));
-        $detachAbPayloadKey = ABJ_404_Solution_AjaxRequestLedger::detachAbPayloadKey(array(
+        $detachAbPayloadKey = ABJ_404_Solution_DetachAbExperiment::payloadKey(array(
             'subpage' => (string)$subpage, 'page' => (string)$page,
             'rows_per_page' => $rowsPerPage, 'filter_text' => (string)$filterText,
             'filter' => (string)$filter, 'orderby' => (string)$orderby,
@@ -120,7 +120,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
             if ($retryCount > 0) {
                 $context = ABJ_404_Solution_AjaxAdminEndpointSupport::
                     armAuthorizedRetryDiagnostics($context);
-                $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::
+                $checkpointRequestId = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::
                     instrumentedRequestId($context);
             }
 
@@ -238,7 +238,7 @@ class ABJ_404_Solution_Ajax_GetPaginationLinks {
      * @param array<string, mixed> $context
      */
     private static function checkRateLimitOrRespond(int $maxRequestsPerMinute, array $context): bool {
-        $checkpointRequestId = ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestId($context);
+        $checkpointRequestId = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestId($context);
         $rateLimited = ABJ_404_Solution_AjaxCheckpointLogger::around(
             $checkpointRequestId,
             'rate_limit_check',

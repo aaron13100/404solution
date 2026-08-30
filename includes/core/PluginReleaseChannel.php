@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
  * ordinary installs a wp.org release reaches, can arm itself from a fact the
  * build already carries instead of from a switch somebody has to remember to
  * flip. That memory is not hypothetical: the detach A/B experiment
- * (ABJ_404_Solution_AjaxRequestLedger::isDetachAbDiagnosticEnabled(), Bruno
+ * (ABJ_404_Solution_DetachAbExperiment::isEnabled(), Bruno
  * timeout cause matrix gap G9) shipped completely inert because its filter
  * defaulted false and nothing in the codebase or the packaging steps ever set
  * it true. A gate whose only "on" path is a manual step is a gate that ships

@@ -121,7 +121,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      * @return array<string, mixed>
      */
     public static function forSession(string $sessionId): array {
-        $sessionKey = ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($sessionId);
+        $sessionKey = ABJ_404_Solution_DetachAbExperiment::sessionKey($sessionId);
         try {
             if ($sessionId === '') {
                 $record = self::emptyRecord($sessionKey);
@@ -163,7 +163,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      * than through two that can disagree.
      *
      * @param array<int, string> $lines Checkpoint JSONL lines, oldest first.
-     * @param string $sessionKey ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey().
+     * @param string $sessionKey ABJ_404_Solution_DetachAbExperiment::sessionKey().
      * @param array{bytes: int|null, source: string, request_id: string} $realRequest
      * @return array<string, mixed>
      */
@@ -216,7 +216,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
      * a permanent `emitted_unknown` row in every record.
      *
      * @param array<int, string> $lines JSONL lines, oldest first.
-     * @param string $sessionKey ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey().
+     * @param string $sessionKey ABJ_404_Solution_DetachAbExperiment::sessionKey().
      * @param array{bytes: int|null, source: string, request_id: string} $realRequest
      *   ABJ_404_Solution_EncodedTableResponseSize::forSession(). Unknown fields
      *   are tolerated; only `bytes` and `request_id` are read.

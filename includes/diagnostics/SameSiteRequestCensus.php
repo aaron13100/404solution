@@ -268,7 +268,7 @@ final class ABJ_404_Solution_SameSiteRequestCensus {
         // filterable the way WordPress itself lets other code correct the
         // signal, and it can be substituted in a test instead of leaking a
         // process-wide constant the moment one test defines it. Same reasoning
-        // as AjaxRequestLedger::bootWaypointRequestId()'s wp_doing_ajax() call.
+        // as AjaxDiagnosticRequestPolicy::bootWaypointRequestId()'s wp_doing_ajax() call.
         if (function_exists('wp_doing_cron') && wp_doing_cron()) {
             return 'cron';
         }

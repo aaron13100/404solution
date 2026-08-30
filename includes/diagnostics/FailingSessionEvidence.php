@@ -115,7 +115,7 @@ final class ABJ_404_Solution_FailingSessionEvidence {
         string $clickSessionId
     ): array {
         $clickSessionId = substr($clickSessionId, 0, 64);
-        $clickSessionKey = ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($clickSessionId);
+        $clickSessionKey = ABJ_404_Solution_DetachAbExperiment::sessionKey($clickSessionId);
         $record = self::emptyRecord($clickSessionKey);
         try {
             $failing = self::normalizeIdSet($failingIds);
@@ -246,7 +246,7 @@ final class ABJ_404_Solution_FailingSessionEvidence {
     ): array {
         $keyOf = array();
         foreach (array_keys($idsBySession) as $rawSessionId) {
-            $keyOf[$rawSessionId] = ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($rawSessionId);
+            $keyOf[$rawSessionId] = ABJ_404_Solution_DetachAbExperiment::sessionKey($rawSessionId);
         }
         uksort($idsBySession, static function ($a, $b) use ($keyOf) {
             return strcmp($keyOf[$a], $keyOf[$b]);

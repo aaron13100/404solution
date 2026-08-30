@@ -175,10 +175,10 @@ final class ABJ_404_Solution_PostAuthorizationFailureTracer {
     }
 
     private static function requestId(): string {
-        if (!class_exists('ABJ_404_Solution_AjaxRequestLedger')) {
+        if (!class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')) {
             return '';
         }
-        return ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext();
     }
 
     private static function operationId(string $requestId, string $operation): string {

@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
  *
  * Its input is the request ledger's own per-attempt journal -- the real table
  * endpoint's workload-matched 'on'/'off' attempts, as recorded by
- * ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode() and
+ * ABJ_404_Solution_DetachAbExperiment::resolve() and
  * ABJ_404_Solution_AjaxAdminEndpointSupport::checkpointedFlushAndFinish() --
  * and its consumer is ABJ_404_Solution_DetachAbEvidence, which assembles the
  * record this verdict travels in. Neither of those is the canary ladder.
@@ -48,7 +48,7 @@ final class ABJ_404_Solution_DetachAbVerdict {
     /**
      * The decisive-measurement rule for the detach A/B experiment (Bruno
      * timeout cause matrix, gap G9 / c434;
-     * ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode() picks the
+     * ABJ_404_Solution_DetachAbExperiment::resolve() picks the
      * mode, ABJ_404_Solution_AjaxAdminEndpointSupport::checkpointedFlushAndFinish()
      * records it per request ID). Kept as its own pure function rather than
      * folded into interpretResults(): two independent verdicts computed from

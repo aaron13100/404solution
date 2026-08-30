@@ -277,7 +277,7 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         }
 
         // Bruno timeout cause matrix, gap G9 (c434): within a bounded,
-        // opt-in-twice diagnostic session (AjaxRequestLedger::resolveDetachAbMode()),
+        // opt-in-twice diagnostic session (DetachAbExperiment::resolve()),
         // counterbalance whether the detach below actually runs within
         // matched workload pairs, so a beta.2
         // SUCCESS can be attributed to the detach fix rather than merely
@@ -375,7 +375,7 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
             $rawPayloadKey = $GLOBALS['abj404_ajax_context']['detach_ab_payload_key'] ?? '';
             $payloadKey = is_scalar($rawPayloadKey) ? (string)$rawPayloadKey : '';
         }
-        $abDetachMode = ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode(
+        $abDetachMode = ABJ_404_Solution_DetachAbExperiment::resolve(
             $sessionId, $part, $payloadKey);
         ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'detach_ab_mode', $abDetachMode);
         return $abDetachMode['mode'] === 'off';

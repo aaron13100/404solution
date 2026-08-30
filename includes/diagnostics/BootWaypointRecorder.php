@@ -49,7 +49,7 @@ final class ABJ_404_Solution_BootWaypointRecorder {
      * and a request that dies before trace construction still has its boot
      * cost attributable from whichever waypoints it reached.
      *
-     * Scope is gated by ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId()
+     * Scope is gated by ABJ_404_Solution_AjaxDiagnosticRequestPolicy::bootWaypointRequestId()
      * to our own table-AJAX and canary-ladder requests: never for ordinary
      * front-end page views, where the write cost would land on the hot 404
      * path. Never throws.
@@ -58,7 +58,7 @@ final class ABJ_404_Solution_BootWaypointRecorder {
      */
     public static function record(string $event, array $boundary = array()): void {
         try {
-            $requestId = ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId();
+            $requestId = ABJ_404_Solution_AjaxDiagnosticRequestPolicy::bootWaypointRequestId();
             if ($requestId === '') {
                 return;
             }

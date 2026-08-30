@@ -158,7 +158,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
      * lost by the silence of a channel it does not live in.
      *
      * Carried as `session_key` -- the md5 this journal already files
-     * `detach_ab_mode` under (AjaxRequestLedger::detachAbSessionKey) -- rather
+     * `detach_ab_mode` under (DetachAbExperiment::sessionKey) -- rather
      * than as a raw id. The reconstruction needs equality and nothing else, and
      * the checkpoint channel has never carried a browser session in the clear.
      *
@@ -185,7 +185,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                 array_merge($receipt, array(
                     'carried_by' => $carrierRequestId,
                     'session_key' =>
-                        ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($sessionId),
+                        ABJ_404_Solution_DetachAbExperiment::sessionKey($sessionId),
                 ))
             );
         }

@@ -439,7 +439,7 @@ class ABJ_404_Solution_AdminAssetEnqueuer {
             'canaryStaticAssetUrl' => ABJ404_URL . 'includes/diagnostics/assets/canary-1kb.txt',
             // Gap-hunt iteration 3: the repeated ladder baseline belongs only
             // to the same pre-release diagnostic that consumes its result.
-            'detachAbDiagnosticEnabled' => ABJ_404_Solution_AjaxRequestLedger::isDetachAbDiagnosticEnabled(),
+            'detachAbDiagnosticEnabled' => ABJ_404_Solution_DetachAbExperiment::isEnabled(),
         ));
         $bootstrap = 'window.ABJ404=window.ABJ404||{};Object.assign(window.ABJ404,'
             . (is_string($payload) ? $payload : '{}') . ');';

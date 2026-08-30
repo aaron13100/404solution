@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
  * timeout cause matrix, gap G9 / gap-hunt iteration 2 Codex gap #2).
  *
  * The experiment produces its two halves in two different places and never in
- * the same record. ABJ_404_Solution_AjaxRequestLedger::resolveDetachAbMode()
+ * the same record. ABJ_404_Solution_DetachAbExperiment::resolve()
  * decides whether a given table request detaches the connection, and the
  * response tail journals that decision under the request's own id. Whether
  * that same request ever COMPLETED is something only the browser can say, and
@@ -67,7 +67,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
 
     /**
      * Attempts listed verbatim on the journaled record. One workload scope is
-     * ABJ_404_Solution_AjaxRequestLedger::AB_DETACH_MAX_ATTEMPTS attempts.
+     * ABJ_404_Solution_DetachAbExperiment::MAX_ATTEMPTS attempts.
      * This copy has headroom for a restarted scope, but the TALLY is never
      * bounded by it: only the human-readable copy is, so one long-lived
      * session cannot turn a decision record into a large one.
@@ -91,14 +91,14 @@ final class ABJ_404_Solution_DetachAbEvidence {
      * @return array<string, mixed>
      */
     public static function verdictForSession(string $sessionId): array {
-        $sessionKey = ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($sessionId);
+        $sessionKey = ABJ_404_Solution_DetachAbExperiment::sessionKey($sessionId);
         $record = self::emptyRecord($sessionKey);
         try {
             if ($sessionKey === '') {
                 $record['status'] = self::STATUS_NO_SESSION;
                 return $record;
             }
-            if (!ABJ_404_Solution_AjaxRequestLedger::isDetachAbDiagnosticEnabled()) {
+            if (!ABJ_404_Solution_DetachAbExperiment::isEnabled()) {
                 $record['status'] = self::STATUS_NOT_ARMED;
                 return $record;
             }
@@ -120,7 +120,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
      * literal, so a "nothing to decide" record can never drift out of step with
      * the shape a decided one has.
      *
-     * @param string $sessionKey ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey().
+     * @param string $sessionKey ABJ_404_Solution_DetachAbExperiment::sessionKey().
      * @return array<string, mixed>
      */
     private static function emptyRecord(string $sessionKey): array {
@@ -183,7 +183,7 @@ final class ABJ_404_Solution_DetachAbEvidence {
      * groups for an entire release.
      *
      * @param array<int, string> $lines JSONL lines, oldest first.
-     * @param string $sessionKey ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey().
+     * @param string $sessionKey ABJ_404_Solution_DetachAbExperiment::sessionKey().
      * @return array{attempts: array<int, ABJ_404_Solution_DetachAbAttempt>, unresolved: int,
      *   with_mode: int}
      */

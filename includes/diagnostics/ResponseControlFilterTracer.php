@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
  *   - AjaxResponseEmitter::sendJsonResponseAndExit() dispatches
  *     `abj404_should_exit` after the echo boundary and before the first flush
  *     checkpoint.
- *   - AjaxRequestLedger::resolveDetachAbMode() dispatches
+ *   - DetachAbExperiment::resolve() dispatches
  *     `abj404_should_run_detach_ab_diagnostic` after the response flush and
  *     before the connection-detach call.
  *   - WordPress status_header() dispatches `status_header` before core header
@@ -33,7 +33,7 @@ if (!defined('ABSPATH')) {
  * which callback ran there.
  *
  * The tracer is active only inside an instrumented table AJAX request
- * (AjaxRequestLedger::instrumentedRequestIdFromGlobalContext() !== ''); every
+ * (AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext() !== ''); every
  * other request -- the canary ladder, the hot front-end 404 path, any other
  * AJAX action -- is a pure pass-through with no record, no registry access, and
  * behavior byte-identical to a bare apply_filters(). For an instrumented
@@ -92,8 +92,8 @@ final class ABJ_404_Solution_ResponseControlFilterTracer {
      * @return T
      */
     public static function traceDispatch(string $filterHook, callable $dispatch) {
-        $requestId = class_exists('ABJ_404_Solution_AjaxRequestLedger')
-            ? ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext()
+        $requestId = class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')
+            ? ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext()
             : '';
         if ($requestId === '') {
             // Not the instrumented endpoint (canary ladder, front-end 404, any

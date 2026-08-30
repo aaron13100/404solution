@@ -142,10 +142,10 @@ final class ABJ_404_Solution_DetachAbResolutionTracer {
     }
 
     private static function requestId(): string {
-        if (!class_exists('ABJ_404_Solution_AjaxRequestLedger')) {
+        if (!class_exists('ABJ_404_Solution_AjaxDiagnosticRequestPolicy')) {
             return '';
         }
-        return ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
+        return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext();
     }
 
     /** @return array<string, string> */

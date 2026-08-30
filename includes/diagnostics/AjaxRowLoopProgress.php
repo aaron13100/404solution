@@ -215,7 +215,7 @@ final class ABJ_404_Solution_AjaxRowLoopProgress {
 
     private static function resolveRequestId(): string {
         try {
-            return ABJ_404_Solution_AjaxRequestLedger::instrumentedRequestIdFromGlobalContext();
+            return ABJ_404_Solution_AjaxDiagnosticRequestPolicy::instrumentedRequestIdFromGlobalContext();
         } catch (Throwable $e) {
             self::reportFailure('row loop arming failed: ' . $e->getMessage());
             return '';

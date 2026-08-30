@@ -92,7 +92,7 @@ final class ABJ_404_Solution_ConcurrentControlReceipt {
                 'carried_by' => $carrierRequestId,
                 'control_for_request_id' => $controlForRequestId,
                 'control_request_id' => $controlRequestId,
-                'session_key' => ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey($receipt['sessionId']),
+                'session_key' => ABJ_404_Solution_DetachAbExperiment::sessionKey($receipt['sessionId']),
                 'report' => $report,
             )
         );

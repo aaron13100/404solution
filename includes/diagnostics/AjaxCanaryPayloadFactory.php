@@ -14,6 +14,65 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
 
+    /**
+     * Build one repeated baseline response without letting its ordinal alter
+     * the encoded size.
+     *
+     * Fractional values fall back rather than truncating, because repetitions
+     * sent as 1 and 1.9 must not journal as the same sample. The ordinal is
+     * appended and then paid for out of the filler, preserving the established
+     * response key order as well as the exact byte contract.
+     *
+     * @param mixed $rawOrdinal
+     * @return array<string, mixed>
+     */
+    public static function buildBaselineControl(string $requestId, $rawOrdinal): array {
+        $ordinal = min(20, ABJ_404_Solution_ExactInteger::readOr($rawOrdinal, 0, 0));
+        $payload = self::buildFiller(
+            $requestId,
+            ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL,
+            ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
+        );
+        $payload['baselineOrdinal'] = $ordinal;
+        $excessBytes = max(
+            0,
+            self::encodedBytes($payload) - ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
+        );
+        if ($excessBytes > 0) {
+            $payload['filler'] = substr(
+                $payload['filler'],
+                0,
+                max(0, strlen($payload['filler']) - $excessBytes)
+            );
+        }
+        return $payload;
+    }
+
+    /**
+     * Normalize all untrusted size-probe inputs before its timing stage opens.
+     *
+     * @param mixed $rawBytes
+     * @param mixed $rawVariant
+     * @param mixed $rawRungPercent
+     * @param mixed $rawTargetSource
+     * @return array{request_id: string, target_bytes: int, variant: string, rung_percent: int, target_source: string}
+     */
+    public static function normalizeSizeProbeOptions(
+        string $requestId,
+        $rawBytes,
+        $rawVariant,
+        $rawRungPercent,
+        $rawTargetSource
+    ): array {
+        return array(
+            'request_id' => $requestId,
+            'target_bytes' => self::clampTargetBytes($rawBytes),
+            'variant' => self::normalizeVariant($rawVariant),
+            'rung_percent' => self::normalizeRungPercent($rawRungPercent),
+            'target_source' => self::normalizeTargetSource($rawTargetSource),
+        );
+    }
+
     /** @param mixed $raw */
     public static function clampTargetBytes(
         $raw,
@@ -121,7 +180,12 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
      * @param array<string, mixed> $envelope
      */
     private static function envelopeOverheadBytes(array $envelope): int {
-        return strlen(ABJ_404_Solution_JsonResponseEncoder::encode($envelope)->json());
+        return self::encodedBytes($envelope);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private static function encodedBytes(array $payload): int {
+        return strlen(ABJ_404_Solution_JsonResponseEncoder::encode($payload)->json());
     }
 
     private static function incompressibleText(string $seed, int $length): string {

@@ -14,6 +14,25 @@ if (!defined('ABSPATH')) {
 final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
 
     /**
+     * The one AJAX action whose per-boundary checkpoints are collected. The
+     * admin table endpoint is what the timeout investigation is about; the
+     * other handlers sharing the AJAX plumbing must not pay the file-write
+     * overhead.
+     */
+    const INSTRUMENTED_ACTION = 'ajaxUpdatePaginationLinks';
+
+    /**
+     * Actions whose boot-phase lifecycle is checkpointed: the table endpoint
+     * and the canary ladder that repeats its boot, auth, and dispatch path to
+     * isolate transient host causes. Every other admin AJAX action and every
+     * ordinary front-end request pays zero write cost for this.
+     */
+    const BOOT_WAYPOINT_ACTIONS = array(
+        'ajaxUpdatePaginationLinks' => true,
+        'ajaxRunCanaryStep' => true,
+    );
+
+    /**
      * Actions whose durable stage trace and operation tracers are armed once
      * the debug setting opts in. A superset of AjaxRequestLedger's
      * BOOT_WAYPOINT_ACTIONS, and deliberately separate from it: a boot
@@ -78,7 +97,7 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
      */
     public static function instrumentedRequestId(array $context): string {
         $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
-        if ($action !== ABJ_404_Solution_AjaxRequestLedger::INSTRUMENTED_ACTION
+        if ($action !== self::INSTRUMENTED_ACTION
                 || (!self::isEnabled() && !self::isAuthorizedRetry($context))) {
             return '';
         }
@@ -101,6 +120,18 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
             return '';
         }
         return ABJ_404_Solution_AjaxRequestLedger::normalizeId($context['request_id'] ?? null);
+    }
+
+    /** diagnosticRequestId() against the shared AJAX debug context global. */
+    public static function diagnosticRequestIdFromGlobalContext(): string {
+        $context = $GLOBALS['abj404_ajax_context'] ?? null;
+        return is_array($context) ? self::diagnosticRequestId($context) : '';
+    }
+
+    /** instrumentedRequestId() against the shared AJAX debug context global. */
+    public static function instrumentedRequestIdFromGlobalContext(): string {
+        $context = $GLOBALS['abj404_ajax_context'] ?? null;
+        return is_array($context) ? self::instrumentedRequestId($context) : '';
     }
 
     /**
@@ -139,7 +170,7 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
         }
         $action = isset($_REQUEST['action']) && is_scalar($_REQUEST['action'])
             ? (string)$_REQUEST['action'] : '';
-        if (!isset(ABJ_404_Solution_AjaxRequestLedger::BOOT_WAYPOINT_ACTIONS[$action])) {
+        if (!isset(self::BOOT_WAYPOINT_ACTIONS[$action])) {
             return '';
         }
         $rawId = $_REQUEST['requestId'] ?? '';
@@ -162,7 +193,7 @@ final class ABJ_404_Solution_AjaxDiagnosticRequestPolicy {
         }
         $action = is_scalar($context['action'] ?? null) ? (string)$context['action'] : '';
         $retryCount = $context['retry_count'] ?? null;
-        return $action === ABJ_404_Solution_AjaxRequestLedger::INSTRUMENTED_ACTION
+        return $action === self::INSTRUMENTED_ACTION
             && is_numeric($retryCount)
             && (int)$retryCount >= 1
             && (int)$retryCount <= 2;

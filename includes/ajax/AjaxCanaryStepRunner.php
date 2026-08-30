@@ -151,13 +151,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     }
 
     /**
-     * Repeated identical round trips, so run-to-run variance is measurable.
-     *
-     * The ordinal rides in the payload and is then paid for out of the filler,
-     * so every repetition encodes to the same number of bytes as `auth_only`.
-     * Without that trim the ordinal's own digits would make later repetitions
-     * marginally larger than earlier ones, and the ladder would be reading its
-     * own instrument as if it were the site.
+     * Repeated fixed-size reference with an exact, bounded ordinal.
      *
      * @param CanaryStepRequest $stepRequest
      * @param array<string, mixed> $context
@@ -166,34 +160,14 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     private static function runBaselineControlStep(array $stepRequest, array &$context): array {
         $requestId = $stepRequest['request_id'];
         $rawOrdinal = $stepRequest['request_reader']->getPostOrGetSanitize('baselineOrdinal', '0');
-        // Exact, not truncated: two repetitions sent as 1 and '1.9' would both
-        // journal as ordinal 1 and the ladder would read one baseline sample
-        // where the browser took two.
-        $ordinal = min(20, ABJ_404_Solution_ExactInteger::readOr($rawOrdinal, 0, 0));
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage(
             $context,
             'canary_baseline_control',
-            static function () use ($requestId, $ordinal) {
-                $payload = ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
+            static function () use ($requestId, $rawOrdinal) {
+                return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildBaselineControl(
                     $requestId,
-                    ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL,
-                    ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
+                    $rawOrdinal
                 );
-                $payload['baselineOrdinal'] = $ordinal;
-                $encodedBytes = strlen((string)json_encode($payload));
-                $excessBytes = max(
-                    0,
-                    $encodedBytes - ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
-                );
-                if ($excessBytes > 0) {
-                    $filler = $payload['filler'];
-                    $payload['filler'] = substr(
-                        $filler,
-                        0,
-                        max(0, strlen($filler) - $excessBytes)
-                    );
-                }
-                return $payload;
             }
         );
     }
@@ -241,11 +215,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     }
 
     /**
-     * The size axis: a payload of a requested size, shape and rung.
-     *
-     * All four inputs are normalized before the stage opens, so a hostile or
-     * malformed query string can only ever produce a payload inside the
-     * ladder's declared bounds.
+     * Size-axis probe; all inputs are normalized before timing opens.
      *
      * @param CanaryStepRequest $stepRequest
      * @param array<string, mixed> $context
@@ -254,23 +224,16 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     private static function runSizeProbeStep(array $stepRequest, array &$context): array {
         $requestId = $stepRequest['request_id'];
         $requestReader = $stepRequest['request_reader'];
-        $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes(
-            $requestReader->getPostOrGetSanitize('payloadBytes', ''));
-        $variant = ABJ_404_Solution_AjaxCanaryLadder::normalizePayloadVariant(
-            $requestReader->getPostOrGetSanitize('payloadVariant', ''));
-        $rungPercent = ABJ_404_Solution_AjaxCanaryLadder::normalizePayloadRungPercent(
-            $requestReader->getPostOrGetSanitize('payloadRungPercent', ''));
-        $targetSource = ABJ_404_Solution_AjaxCanaryLadder::normalizeTargetBytesSource(
-            $requestReader->getPostOrGetSanitize('targetBytesSource', ''));
+        $options = ABJ_404_Solution_AjaxCanaryPayloadFactory::normalizeSizeProbeOptions(
+            $requestId,
+            $requestReader->getPostOrGetSanitize('payloadBytes', ''),
+            $requestReader->getPostOrGetSanitize('payloadVariant', ''),
+            $requestReader->getPostOrGetSanitize('payloadRungPercent', ''),
+            $requestReader->getPostOrGetSanitize('targetBytesSource', '')
+        );
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_size_probe',
-            static function () use ($requestId, $bytes, $variant, $rungPercent, $targetSource) {
-                return ABJ_404_Solution_AjaxCanaryLadder::buildPayloadVariant(array(
-                    'request_id' => $requestId,
-                    'target_bytes' => $bytes,
-                    'variant' => $variant,
-                    'rung_percent' => $rungPercent,
-                    'target_source' => $targetSource,
-                ));
+            static function () use ($options) {
+                return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildVariant($options);
             });
     }
 
@@ -353,7 +316,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
         $requestId = $stepRequest['request_id'];
         $obLevelBefore = isset($context['ob_level_before']) && is_numeric($context['ob_level_before'])
             ? (int)$context['ob_level_before'] : 0;
-        $streamSessionKey = ABJ_404_Solution_AjaxRequestLedger::detachAbSessionKey(
+        $streamSessionKey = ABJ_404_Solution_DetachAbExperiment::sessionKey(
             self::sessionIdFrom($context));
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_stream',
             static function () use ($requestId, $obLevelBefore, $streamSessionKey) {
