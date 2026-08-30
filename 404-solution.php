@@ -133,7 +133,7 @@ spl_autoload_register('abj404_autoloader');
 // a slow auth/DB path were indistinguishable. These checkpoints localize a
 // slow boot to a phase instead of a total. Gated to our own table-AJAX and
 // canary-ladder requests only (see
-// ABJ_404_Solution_AjaxRequestLedger::bootWaypointRequestId()); the frontend
+// ABJ_404_Solution_AjaxDiagnosticRequestPolicy::bootWaypointRequestId()); the frontend
 // 404 path is hot and must never pay this write cost.
 //
 // 'muplugins_loaded' is not separately hooked here: WordPress fires that
