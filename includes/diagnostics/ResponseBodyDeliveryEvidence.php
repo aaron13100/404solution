@@ -55,13 +55,15 @@ if (!defined('ABSPATH')) {
  *      The `stream` step echoes a leading whitespace block OUTSIDE
  *      json_encode(), so on a host where that block is actually emitted the
  *      encoded size understates the body by exactly
- *      AjaxCanaryLadder::STREAM_WHITESPACE_BYTES. That is exact accounting
+ *      AjaxCanaryStreamFlush::WHITESPACE_BYTES. That is exact accounting
  *      the journal already carries, not slack to be absorbed by a tolerance.
  *   3. Session scoping. The checkpoint journal is site-wide and two admin
  *      tabs write into one file, so a comparison is only ever built from
  *      records this session's own browser produced.
  */
 final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
+
+    private const MAX_REPORTED_STEP_CHARS = 32;
 
     /** The journal event this class writes its joined evidence under. */
     const EVIDENCE_EVENT = 'body_delivery_evidence';
@@ -104,7 +106,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     // why it is one definition rather than a copy on each side.
 
     // No cap on how many comparisons ride the record, deliberately: the count
-    // is already bounded by the fixed AjaxCanaryLadder::STEPS list plus one
+    // is already bounded by the fixed CanaryLadderStep::DISPATCHED list plus one
     // real-request row, so a cap could only ever start silently dropping rows
     // off a diagnostic record if the ladder grew. There is no separate total
     // field either -- with nothing truncated, a stored count could only ever
@@ -174,7 +176,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
         $record['stream_flush_reached_sapi'] = $joined['stream_flush_reached_sapi'];
         $record['journal_lines_scanned'] = count($lines);
         $record['verdict'] = ABJ_404_Solution_ResponseBodyRewriteVerdict::fromComparisons(
-            $joined['comparisons'], ABJ_404_Solution_AjaxCanaryLadder::MAX_REPORTED_STEP_CHARS);
+            $joined['comparisons'], self::MAX_REPORTED_STEP_CHARS);
         return $record;
     }
 
@@ -242,14 +244,14 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
         }
 
         $comparisons = array();
-        foreach (ABJ_404_Solution_AjaxCanaryLadder::STEPS as $step) {
+        foreach (ABJ_404_Solution_CanaryLadderStep::DISPATCHED as $step) {
             if (!isset($receipts[$step])) {
                 continue;
             }
             $requestId = $receipts[$step]['request_id'];
             $flush = $streamFlush[$requestId] ?? null;
             if ($streamReachedSapi === null
-                    && $step === ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM && $flush !== null) {
+                    && $step === ABJ_404_Solution_CanaryLadderStep::STREAM && $flush !== null) {
                 $streamReachedSapi = $flush['reached_sapi'];
             }
             $comparisons[] = self::comparison(array(
@@ -284,7 +286,7 @@ final class ABJ_404_Solution_ResponseBodyDeliveryEvidence {
     /**
      * One comparison row. The known-ness of each half is NAMED here; whether a
      * known pair actually differs is a decision and stays in
-     * ABJ_404_Solution_AjaxCanaryLadder::interpretResults().
+     * ABJ_404_Solution_CanaryLadderInterpretation::interpret().
      *
      * Takes one keyed row rather than positional arguments. `step`,
      * `request_id` and `timing_state` are all strings, so in positional form a

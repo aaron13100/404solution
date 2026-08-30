@@ -13,6 +13,18 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_AjaxCanaryReceiptParser {
 
+    /** Hard bound applied before any JSON parsing. */
+    const MAX_RAW_BYTES = 16384;
+
+    /** Hard bound on records accepted from one request. */
+    const MAX_RECEIPTS = 32;
+
+    /** Longest unknown step name retained for diagnostic evidence. */
+    const MAX_REPORTED_STEP_CHARS = 32;
+
+    /** Longest transport status string retained from the browser. */
+    private const MAX_TEXT_STATUS_CHARS = 32;
+
     /**
      * @param mixed $raw
      * @return array<int, array<string, mixed>>
@@ -22,11 +34,11 @@ final class ABJ_404_Solution_AjaxCanaryReceiptParser {
         if ($text === '') {
             return array();
         }
-        $truncated = strlen($text) > ABJ_404_Solution_AjaxCanaryLadder::MAX_STEP_RECEIPTS_BYTES;
+        $truncated = strlen($text) > self::MAX_RAW_BYTES;
         $decoded = json_decode(substr(
             $text,
             0,
-            ABJ_404_Solution_AjaxCanaryLadder::MAX_STEP_RECEIPTS_BYTES
+            self::MAX_RAW_BYTES
         ), true);
         if (!is_array($decoded)) {
             return array(array(
@@ -48,7 +60,7 @@ final class ABJ_404_Solution_AjaxCanaryReceiptParser {
                 continue;
             }
             $receipts[] = self::normalizeReceipt($entry, $truncated);
-            if (count($receipts) >= ABJ_404_Solution_AjaxCanaryLadder::MAX_STEP_RECEIPTS) {
+            if (count($receipts) >= self::MAX_RECEIPTS) {
                 break;
             }
         }
@@ -61,8 +73,8 @@ final class ABJ_404_Solution_AjaxCanaryReceiptParser {
      */
     private static function normalizeReceipt(array $entry, bool $truncated): array {
         $rawStep = isset($entry['step']) && is_scalar($entry['step']) ? (string)$entry['step'] : '';
-        $known = $rawStep === ABJ_404_Solution_AjaxCanaryLadder::STEP_STATIC_ASSET
-            || in_array($rawStep, ABJ_404_Solution_AjaxCanaryLadder::STEPS, true);
+        $known = $rawStep === ABJ_404_Solution_CanaryLadderStep::STATIC_ASSET
+            || in_array($rawStep, ABJ_404_Solution_CanaryLadderStep::DISPATCHED, true);
         $requestId = isset($entry['requestId']) && is_scalar($entry['requestId'])
             ? (string)$entry['requestId'] : '';
         if (preg_match('/^[a-zA-Z0-9]{1,64}$/', $requestId) !== 1) {
@@ -76,7 +88,7 @@ final class ABJ_404_Solution_AjaxCanaryReceiptParser {
             'reported_step' => substr(
                 $rawStep,
                 0,
-                ABJ_404_Solution_AjaxCanaryLadder::MAX_REPORTED_STEP_CHARS
+                self::MAX_REPORTED_STEP_CHARS
             ),
             'step_request_id' => $requestId,
             'ok' => !empty($entry['ok']),
@@ -85,7 +97,7 @@ final class ABJ_404_Solution_AjaxCanaryReceiptParser {
             'text_status' => substr(
                 $status,
                 0,
-                ABJ_404_Solution_AjaxCanaryLadder::MAX_TEXT_STATUS_CHARS
+                self::MAX_TEXT_STATUS_CHARS
             ),
         ), self::transportEvidence($entry), self::payloadEvidence($entry), array(
             'truncated_on_arrival' => $truncated,
@@ -105,7 +117,7 @@ final class ABJ_404_Solution_AjaxCanaryReceiptParser {
             'content_encoding' => substr(
                 $contentEncoding,
                 0,
-                ABJ_404_Solution_AjaxCanaryLadder::MAX_TEXT_STATUS_CHARS
+                self::MAX_TEXT_STATUS_CHARS
             ),
             'transfer_bytes' => self::nonnegativeOrUnavailable($entry['transferBytes'] ?? null),
             'encoded_body_bytes' => self::nonnegativeOrUnavailable($entry['encodedBodyBytes'] ?? null),
@@ -123,19 +135,12 @@ final class ABJ_404_Solution_AjaxCanaryReceiptParser {
     private static function payloadEvidence(array $entry): array {
         $variant = isset($entry['payloadVariant']) && is_scalar($entry['payloadVariant'])
             ? (string)$entry['payloadVariant'] : '';
-        if (!in_array($variant, array(
-            ABJ_404_Solution_AjaxCanaryLadder::PAYLOAD_VARIANT_COMPRESSIBLE,
-            ABJ_404_Solution_AjaxCanaryLadder::PAYLOAD_VARIANT_INCOMPRESSIBLE,
-        ), true)) {
+        if (!in_array($variant, ABJ_404_Solution_AjaxCanaryPayloadFactory::VARIANTS, true)) {
             $variant = '';
         }
         $targetSource = isset($entry['targetBytesSource']) && is_scalar($entry['targetBytesSource'])
             ? (string)$entry['targetBytesSource'] : '';
-        if (!in_array($targetSource, array(
-            ABJ_404_Solution_AjaxCanaryLadder::TARGET_SOURCE_SESSION_JSON,
-            ABJ_404_Solution_AjaxCanaryLadder::TARGET_SOURCE_BROWSER,
-            ABJ_404_Solution_AjaxCanaryLadder::TARGET_SOURCE_DEFAULT,
-        ), true)) {
+        if (!in_array($targetSource, ABJ_404_Solution_AjaxCanaryPayloadFactory::TARGET_SOURCES, true)) {
             $targetSource = '';
         }
         return array(

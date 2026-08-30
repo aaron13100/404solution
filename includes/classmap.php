@@ -122,7 +122,7 @@ $abj404ClassesByDirectory = array(
         'ActiveOperationBreadcrumbs', 'ActiveOperationBoundaryManifest',
         'CheckpointJournalWriter',
         'CheckpointJournalReader', 'EncodedTableResponseSize', 'RequiredCheckpointEvidence', 'RequiredCheckpointIdentityEvidence',
-        'CanaryLadderVerdicts',
+        'CanaryLadderVerdicts', 'CanaryLadderStep', 'CanaryLadderInterpretation',
         'MalformedCheckpointEvidence',
         'DecisiveRecordManifest',
         'DecisiveRecordAuthorizationFamilies',
@@ -165,7 +165,7 @@ $abj404ClassesByDirectory = array(
         'StrandedRequestLedger',
         'RequestEnvironmentFingerprint', 'ClientBuildFingerprint', 'DiagnosticModuleManifest',
         'OpcacheGenerationProbe', 'BootWaypointRecorder',
-        'ClientTransportReport', 'ConcurrentControlReceipt', 'AjaxCanaryLadder', 'PayloadShapeFingerprint', 'AjaxCanaryPayloadFactory',
+        'ClientTransportReport', 'ConcurrentControlReceipt', 'PayloadShapeFingerprint', 'AjaxCanaryPayloadFactory',
         'AjaxCanaryStreamFlush',
         'DetachAbAttempt', 'DetachAbVerdict', 'ResponseBodyRewriteVerdict', 'ResponseBodyDeliveryEvidence',
         'DeliveredTableResponseSize', 'MeasuredBodyBytes', 'BodyDeliveryObservations',
@@ -364,6 +364,8 @@ $abj404ClassFileExceptions = array(
     'ABJ_404_Solution_Ajax_SearchFeedback' => 'includes/ajax/AjaxSearchFeedback.php',
     'ABJ_404_Solution_SystemClock' => 'includes/core/Clock.php',
     'ABJ_404_Solution_FrozenClock' => 'includes/core/Clock.php',
+    'ABJ_404_Solution_AjaxCanaryStreamFlushPlan' =>
+        'includes/diagnostics/AjaxCanaryStreamFlush.php',
     'ABJ_404_Solution_RedirectHitCountHistogramQueryException' =>
         'includes/stats/RedirectHitCountHistogramRepository.php',
     'ABJ_404_Solution_TrackingLogsHitsRollupService' => 'includes/logs/TrackingLogsRepository.php',

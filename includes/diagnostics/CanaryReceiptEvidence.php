@@ -45,14 +45,14 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
 
     /** Evidence required before absence can never be mistaken for failure. */
     const REQUIRED_STEPS = array(
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_STATIC_ASSET,
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_AUTH_ONLY,
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_POST_LIMITER,
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_SUMMARY,
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_INERT,
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_ON,
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_OFF,
-        ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM,
+        ABJ_404_Solution_CanaryLadderStep::STATIC_ASSET,
+        ABJ_404_Solution_CanaryLadderStep::AUTH_ONLY,
+        ABJ_404_Solution_CanaryLadderStep::POST_LIMITER,
+        ABJ_404_Solution_CanaryLadderStep::SUMMARY,
+        ABJ_404_Solution_CanaryLadderStep::INERT,
+        ABJ_404_Solution_CanaryLadderStep::COMPRESS_ON,
+        ABJ_404_Solution_CanaryLadderStep::COMPRESS_OFF,
+        ABJ_404_Solution_CanaryLadderStep::STREAM,
     );
 
     /**
@@ -172,7 +172,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
         }
 
         $observations = $projection['observations'];
-        $observations[ABJ_404_Solution_AjaxCanaryLadder::STEP_CONCURRENT_CONTROL] =
+        $observations[ABJ_404_Solution_CanaryLadderStep::CONCURRENT_CONTROL] =
             self::projectConcurrentControl($concurrent);
         // The emitted-against-delivered join is rebuilt from the SAME
         // receipts this reconstruction already holds. Recomputing the matrix
@@ -187,7 +187,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
         $record['status'] = self::STATUS_RECONSTRUCTED;
         $record['body_delivery'] = $bodyDelivery;
         $record['interpretation'] =
-            ABJ_404_Solution_AjaxCanaryLadder::interpretResults($observations, true, $bodyDelivery);
+            ABJ_404_Solution_CanaryLadderInterpretation::interpret($observations, true, $bodyDelivery);
         return $record;
     }
 
@@ -245,7 +245,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
         $start = -1;
         foreach ($receipts as $index => $receipt) {
             $step = self::reportedStep($receipt);
-            if ($step === ABJ_404_Solution_AjaxCanaryLadder::STEP_STATIC_ASSET) {
+            if ($step === ABJ_404_Solution_CanaryLadderStep::STATIC_ASSET) {
                 $start = $index;
             }
         }
@@ -267,7 +267,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
             $valid = ($receipt['envelope'] ?? '') === 'full'
                 && ($receipt['decoded'] ?? null) === true
                 && $step !== ''
-                && ($step === ABJ_404_Solution_AjaxCanaryLadder::STEP_STATIC_ASSET
+                && ($step === ABJ_404_Solution_CanaryLadderStep::STATIC_ASSET
                     || $stepRequestId !== '')
                 && empty($receipt['truncated_on_arrival']);
             if (!$valid) {
@@ -277,7 +277,7 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
                 }
                 continue;
             }
-            $identity = $step === ABJ_404_Solution_AjaxCanaryLadder::STEP_STATIC_ASSET
+            $identity = $step === ABJ_404_Solution_CanaryLadderStep::STATIC_ASSET
                 ? $step : $step . '|' . $stepRequestId;
             if (isset($seen[$identity])) {
                 continue;
@@ -287,14 +287,14 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
                 'ok' => ($receipt['ok'] ?? null) === true,
                 'ms' => is_numeric($receipt['ms'] ?? null) ? (int)$receipt['ms'] : -1,
             );
-            if ($step === ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL) {
+            if ($step === ABJ_404_Solution_CanaryLadderStep::BASELINE_CONTROL) {
                 $baselines[] = $projected;
             } else {
                 $byStep[$step] = $projected;
             }
         }
         $observations = $byStep;
-        $observations[ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL] = $baselines;
+        $observations[ABJ_404_Solution_CanaryLadderStep::BASELINE_CONTROL] = $baselines;
         return array(
             'observations' => $observations,
             'baselines' => $baselines,
@@ -327,13 +327,13 @@ final class ABJ_404_Solution_CanaryReceiptEvidence {
             }
         }
         if (count($projection['baselines']) < self::REQUIRED_BASELINE_RECEIPTS) {
-            $missing[] = ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL;
+            $missing[] = ABJ_404_Solution_CanaryLadderStep::BASELINE_CONTROL;
         }
         if ($concurrent === null
                 || !ABJ_404_Solution_ConcurrentControlReceipt::isCompleteJournalRecord(
                     $concurrent
                 )) {
-            $missing[] = ABJ_404_Solution_AjaxCanaryLadder::STEP_CONCURRENT_CONTROL;
+            $missing[] = ABJ_404_Solution_CanaryLadderStep::CONCURRENT_CONTROL;
         }
         if ($projection['malformed'] > 0 && $missing === array()) {
             $missing[] = 'malformed_receipt';

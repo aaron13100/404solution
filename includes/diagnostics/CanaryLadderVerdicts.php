@@ -100,7 +100,7 @@ final class ABJ_404_Solution_CanaryLadderVerdicts {
         $interpretation = null;
         $stageMetadata = array();
         if ($parsed['status'] === self::INTERPRETATION_AVAILABLE) {
-            $interpretation = ABJ_404_Solution_AjaxCanaryLadder::interpretResults(
+            $interpretation = ABJ_404_Solution_CanaryLadderInterpretation::interpret(
                 $parsed['observations'], $inputs['real_request_failed'], $bodyDelivery);
             foreach ($interpretation as $key => $value) {
                 if (is_scalar($value)) {

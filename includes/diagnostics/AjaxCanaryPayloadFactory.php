@@ -14,6 +14,13 @@ if (!defined('ABSPATH')) {
  */
 final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
 
+    const AUTH_ONLY_BYTES = 1024;
+    const DEFAULT_TARGET_BYTES = 50000;
+    const MIN_TARGET_BYTES = 64;
+    const MAX_TARGET_BYTES = 2000000;
+    const VARIANTS = array('compressible', 'incompressible');
+    const TARGET_SOURCES = array('session_json_encode', 'browser_response', 'default_unavailable');
+
     /**
      * Build one repeated baseline response without letting its ordinal alter
      * the encoded size.
@@ -30,13 +37,13 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
         $ordinal = min(20, ABJ_404_Solution_ExactInteger::readOr($rawOrdinal, 0, 0));
         $payload = self::buildFiller(
             $requestId,
-            ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL,
-            ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
+            ABJ_404_Solution_CanaryLadderStep::BASELINE_CONTROL,
+            self::AUTH_ONLY_BYTES
         );
         $payload['baselineOrdinal'] = $ordinal;
         $excessBytes = max(
             0,
-            self::encodedBytes($payload) - ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES
+            self::encodedBytes($payload) - self::AUTH_ONLY_BYTES
         );
         if ($excessBytes > 0) {
             $payload['filler'] = substr(
@@ -76,24 +83,22 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
     /** @param mixed $raw */
     public static function clampTargetBytes(
         $raw,
-        int $default = ABJ_404_Solution_AjaxCanaryLadder::DEFAULT_INERT_BYTES
+        int $default = self::DEFAULT_TARGET_BYTES
     ): int {
         $value = is_numeric($raw) ? (int)$raw : $default;
         if ($value <= 0) {
             $value = $default;
         }
         return max(
-            ABJ_404_Solution_AjaxCanaryLadder::MIN_INERT_BYTES,
-            min(ABJ_404_Solution_AjaxCanaryLadder::MAX_INERT_BYTES, $value)
+            self::MIN_TARGET_BYTES,
+            min(self::MAX_TARGET_BYTES, $value)
         );
     }
 
     /** @param mixed $raw */
     public static function normalizeVariant($raw): string {
         $candidate = is_scalar($raw) ? (string)$raw : '';
-        return $candidate === ABJ_404_Solution_AjaxCanaryLadder::PAYLOAD_VARIANT_INCOMPRESSIBLE
-            ? ABJ_404_Solution_AjaxCanaryLadder::PAYLOAD_VARIANT_INCOMPRESSIBLE
-            : ABJ_404_Solution_AjaxCanaryLadder::PAYLOAD_VARIANT_COMPRESSIBLE;
+        return $candidate === self::VARIANTS[1] ? self::VARIANTS[1] : self::VARIANTS[0];
     }
 
     /** @param mixed $raw */
@@ -104,11 +109,7 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
     /** @param mixed $raw */
     public static function normalizeTargetSource($raw): string {
         $candidate = is_scalar($raw) ? (string)$raw : '';
-        return in_array($candidate, array(
-            ABJ_404_Solution_AjaxCanaryLadder::TARGET_SOURCE_SESSION_JSON,
-            ABJ_404_Solution_AjaxCanaryLadder::TARGET_SOURCE_BROWSER,
-            ABJ_404_Solution_AjaxCanaryLadder::TARGET_SOURCE_DEFAULT,
-        ), true) ? $candidate : ABJ_404_Solution_AjaxCanaryLadder::TARGET_SOURCE_DEFAULT;
+        return in_array($candidate, self::TARGET_SOURCES, true) ? $candidate : self::TARGET_SOURCES[2];
     }
 
     /**
@@ -150,7 +151,7 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
         $variant = self::normalizeVariant($options['variant']);
         $envelope = array(
             'requestId' => $requestId,
-            'canaryStep' => ABJ_404_Solution_AjaxCanaryLadder::STEP_SIZE_PROBE,
+            'canaryStep' => ABJ_404_Solution_CanaryLadderStep::SIZE_PROBE,
             'filler' => '',
             'payloadVariant' => $variant,
             'payloadRungPercent' => self::normalizeRungPercent($options['rung_percent']),
@@ -160,7 +161,7 @@ final class ABJ_404_Solution_AjaxCanaryPayloadFactory {
         $overhead = self::envelopeOverheadBytes($envelope);
         $fillerLength = max(0, $targetBytes - $overhead);
         $envelope['filler'] = $variant
-            === ABJ_404_Solution_AjaxCanaryLadder::PAYLOAD_VARIANT_INCOMPRESSIBLE
+            === self::VARIANTS[1]
             ? self::incompressibleText($requestId, $fillerLength)
             : str_repeat('a', $fillerLength);
         return $envelope;

@@ -44,7 +44,7 @@ if (!defined('ABSPATH')) {
  *                        so the client can observe XHR progress and locate
  *                        downstream buffering. Emitted only where the flush
  *                        can actually reach the client (see
- *                        AjaxCanaryLadder::resolveStreamFlushPlan); elsewhere
+ *                        AjaxCanaryStreamFlushPlan::fromObservation); elsewhere
  *                        the step reports why it could not stream rather than
  *                        prefixing the body with bytes nobody sees early.
  *   interpret         - journals the client-computed interpretation matrix
@@ -53,12 +53,36 @@ if (!defined('ABSPATH')) {
  */
 class ABJ_404_Solution_Ajax_CanaryLadder {
 
+    /**
+     * Reuses the real table endpoint's nonce action. A separately minted
+     * nonce would test a different credential from the request under
+     * diagnosis while providing no additional capability boundary.
+     */
+    const NONCE_ACTION = 'abj404_updatePaginationLink';
+
+    /**
+     * Steps that do real work get the shared abuse ceiling. Auth-only must
+     * bypass it by design, while post-limiter measures the real limiter and
+     * must not add a second ceiling in front of that measurement.
+     */
+    private const RATE_LIMITED_STEPS = array(
+        ABJ_404_Solution_CanaryLadderStep::SUMMARY,
+        ABJ_404_Solution_CanaryLadderStep::SIZE_TARGET,
+        ABJ_404_Solution_CanaryLadderStep::SIZE_PROBE,
+        ABJ_404_Solution_CanaryLadderStep::INERT,
+        ABJ_404_Solution_CanaryLadderStep::COMPRESS_ON,
+        ABJ_404_Solution_CanaryLadderStep::COMPRESS_OFF,
+        ABJ_404_Solution_CanaryLadderStep::STREAM,
+    );
+
     /** @return void */
     public function handle() {
         $requestReader = ABJ_404_Solution_AjaxAdminEndpointSupport::getRequestReader();
         $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
             $requestReader->getPostOrGetSanitize('requestId', ABJ_404_Solution_AjaxRequestLedger::UNKNOWN_ID));
-        $step = ABJ_404_Solution_AjaxCanaryLadder::normalizeStep($requestReader->getPostOrGetSanitize('canaryStep', ''));
+        $step = ABJ_404_Solution_CanaryLadderStep::normalize(
+            $requestReader->getPostOrGetSanitize('canaryStep', '')
+        );
         $subpage = (string)$requestReader->getPostOrGetSanitize('subpage', 'abj404_redirects');
         $ledger = ABJ_404_Solution_AjaxRequestLedger::readFields($requestReader);
 
@@ -79,7 +103,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
 
         try {
             if (!ABJ_404_Solution_AjaxAdminEndpointSupport::requireAdminWithNonceOrRespond(
-                ABJ_404_Solution_AjaxCanaryLadder::NONCE_ACTION,
+                self::NONCE_ACTION,
                 $context,
                 'ajaxRunCanaryStep'
             )) {
@@ -108,7 +132,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
                 return;
             }
 
-            if (in_array($step, ABJ_404_Solution_AjaxCanaryLadder::RATE_LIMITED_STEPS, true)
+            if (in_array($step, self::RATE_LIMITED_STEPS, true)
                     && !self::checkWorkRateLimitOrRespond($context)) {
                 return;
             }
@@ -176,7 +200,7 @@ class ABJ_404_Solution_Ajax_CanaryLadder {
         string $sessionId,
         $raw
     ): void {
-        foreach (ABJ_404_Solution_AjaxCanaryLadder::parseStepReceipts($raw) as $receipt) {
+        foreach (ABJ_404_Solution_AjaxCanaryReceiptParser::parse($raw) as $receipt) {
             $stepRequestId = isset($receipt['step_request_id']) && is_string($receipt['step_request_id'])
                 ? $receipt['step_request_id'] : '';
             ABJ_404_Solution_AjaxCheckpointLogger::record(

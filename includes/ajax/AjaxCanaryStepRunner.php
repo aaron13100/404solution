@@ -76,36 +76,36 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
      */
     public static function dispatchStep(array $stepRequest, array &$context): array {
         switch ($stepRequest['step']) {
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_CONCURRENT_CONTROL:
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_AUTH_ONLY:
+            case ABJ_404_Solution_CanaryLadderStep::CONCURRENT_CONTROL:
+            case ABJ_404_Solution_CanaryLadderStep::AUTH_ONLY:
                 return self::runFillerStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_SIZE_TARGET:
+            case ABJ_404_Solution_CanaryLadderStep::SIZE_TARGET:
                 return self::resolveSizeTarget($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_BASELINE_CONTROL:
+            case ABJ_404_Solution_CanaryLadderStep::BASELINE_CONTROL:
                 return self::runBaselineControlStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_POST_LIMITER:
+            case ABJ_404_Solution_CanaryLadderStep::POST_LIMITER:
                 return self::runPostLimiterStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_SUMMARY:
+            case ABJ_404_Solution_CanaryLadderStep::SUMMARY:
                 return self::runSummaryStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_SIZE_PROBE:
+            case ABJ_404_Solution_CanaryLadderStep::SIZE_PROBE:
                 return self::runSizeProbeStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_INERT:
+            case ABJ_404_Solution_CanaryLadderStep::INERT:
                 return self::runInertStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_ON:
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_OFF:
+            case ABJ_404_Solution_CanaryLadderStep::COMPRESS_ON:
+            case ABJ_404_Solution_CanaryLadderStep::COMPRESS_OFF:
                 return self::runCompressionStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM:
+            case ABJ_404_Solution_CanaryLadderStep::STREAM:
                 return self::runStreamStep($stepRequest, $context);
 
-            case ABJ_404_Solution_AjaxCanaryLadder::STEP_INTERPRET:
+            case ABJ_404_Solution_CanaryLadderStep::INTERPRET:
                 return self::runInterpretStep($stepRequest, $context);
 
             default:
@@ -144,9 +144,9 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
         $step = $stepRequest['step'];
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_' . $step,
             static function () use ($requestId, $step) {
-                return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
+                return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller(
                     $requestId, $step,
-                    ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES);
+                    ABJ_404_Solution_AjaxCanaryPayloadFactory::AUTH_ONLY_BYTES);
             });
     }
 
@@ -188,9 +188,9 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                 // actually trip: this step measures the limiter's own
                 // overhead, not its enforcement.
                 ABJ_404_Solution_Ajax_Php::consumeRateLimit('canary_ladder_probe', 6000, 60);
-                return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
-                    $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_POST_LIMITER,
-                    ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES);
+                return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller(
+                    $requestId, ABJ_404_Solution_CanaryLadderStep::POST_LIMITER,
+                    ABJ_404_Solution_AjaxCanaryPayloadFactory::AUTH_ONLY_BYTES);
             });
     }
 
@@ -249,12 +249,12 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
      */
     private static function runInertStep(array $stepRequest, array &$context): array {
         $requestId = $stepRequest['request_id'];
-        $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes(
+        $bytes = ABJ_404_Solution_AjaxCanaryPayloadFactory::clampTargetBytes(
             $stepRequest['request_reader']->getPostOrGetSanitize('payloadBytes', ''));
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_inert',
             static function () use ($requestId, $bytes) {
-                return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
-                    $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_INERT, $bytes);
+                return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller(
+                    $requestId, ABJ_404_Solution_CanaryLadderStep::INERT, $bytes);
             });
     }
 
@@ -272,12 +272,12 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
     private static function runCompressionStep(array $stepRequest, array &$context): array {
         $requestId = $stepRequest['request_id'];
         $step = $stepRequest['step'];
-        $bytes = ABJ_404_Solution_AjaxCanaryLadder::clampTargetBytes(
+        $bytes = ABJ_404_Solution_AjaxCanaryPayloadFactory::clampTargetBytes(
             $stepRequest['request_reader']->getPostOrGetSanitize('payloadBytes', ''));
         return ABJ_404_Solution_AjaxStageDiagnostics::runStage($context, 'canary_' . $step,
             static function () use ($requestId, $step, $bytes) {
                 $fields = array('compressionMode' => $step);
-                if ($step === ABJ_404_Solution_AjaxCanaryLadder::STEP_COMPRESS_OFF) {
+                if ($step === ABJ_404_Solution_CanaryLadderStep::COMPRESS_OFF) {
                     // Both halves of the suppression are refusable at runtime
                     // and neither refusal is visible to a caller that discards
                     // the outcome, so the outcome rides the payload: a rung
@@ -293,7 +293,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                 // alone, 98 once the suppression outcome joined it -- the
                 // size-controlled comparison drifting in size because of what
                 // it reports about itself.
-                return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
+                return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller(
                     $requestId, $step, $bytes, $fields);
             });
     }
@@ -332,7 +332,7 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                 // non-JSON bytes that reached no client, escaped the
                 // plugin's own containment floor, and confounded the
                 // comparison against `inert`. See
-                // ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan().
+                // ABJ_404_Solution_AjaxCanaryStreamFlushPlan::fromObservation().
                 //
                 // around()-bracketed rather than announced by a bare
                 // pre-call record (gap-hunt iteration 2, the same
@@ -346,14 +346,14 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                 // reads as an instant flush rather than no flush.
                 $manageOutputBuffer = (bool)apply_filters(
                     'abj404_should_manage_output_buffer', true, array('source' => 'canaryLadder_stream'));
-                $plan = ABJ_404_Solution_AjaxCanaryLadder::resolveStreamFlushPlan(array(
+                $plan = ABJ_404_Solution_AjaxCanaryStreamFlushPlan::fromObservation(array(
                     'manage_output_buffer' => $manageOutputBuffer,
                     'ob_level_before' => $obLevelBefore,
                     'ob_level_now' => ob_get_level(),
                 ));
                 $flushOutcome = ABJ_404_Solution_AjaxCanaryStreamFlush::emitAndFlush(
                     $plan,
-                    ABJ_404_Solution_AjaxCanaryLadder::STREAM_WHITESPACE_BYTES,
+                    ABJ_404_Solution_AjaxCanaryStreamFlush::WHITESPACE_BYTES,
                     static function (): void {
                         ABJ_404_Solution_JsonResponseHead::emitEarly(200);
                     },
@@ -397,9 +397,9 @@ final class ABJ_404_Solution_AjaxCanaryStepRunner {
                     // consumer and the outcome would simply stop being found.
                     ABJ_404_Solution_BodyDeliveryObservations::STREAM_FLUSH_EVENT,
                     array_merge($flushOutcome, array('session_key' => $streamSessionKey)));
-                return ABJ_404_Solution_AjaxCanaryLadder::buildFillerPayload(
-                    $requestId, ABJ_404_Solution_AjaxCanaryLadder::STEP_STREAM,
-                    ABJ_404_Solution_AjaxCanaryLadder::AUTH_ONLY_BYTES, $flushOutcome);
+                return ABJ_404_Solution_AjaxCanaryPayloadFactory::buildFiller(
+                    $requestId, ABJ_404_Solution_CanaryLadderStep::STREAM,
+                    ABJ_404_Solution_AjaxCanaryPayloadFactory::AUTH_ONLY_BYTES, $flushOutcome);
             });
     }
 

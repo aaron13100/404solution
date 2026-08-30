@@ -67,7 +67,7 @@ final class ABJ_404_Solution_BodyDeliveryObservations {
             $requestId = ABJ_404_Solution_AjaxRequestLedger::normalizeId(
                 $record['step_request_id'] ?? null, '');
             if ($step === '' || $requestId === ''
-                    || !in_array($step, ABJ_404_Solution_AjaxCanaryLadder::STEPS, true)) {
+                    || !in_array($step, ABJ_404_Solution_CanaryLadderStep::DISPATCHED, true)) {
                 continue;
             }
             $receipts[$step] = array(

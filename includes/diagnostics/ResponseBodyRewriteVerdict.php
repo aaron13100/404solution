@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
  * Timing says arrived -- and it has two consumers: the evidence record itself
  * (so a support payload read months later states the conclusion even when the
  * `interpret` response never reached the browser) and
- * ABJ_404_Solution_AjaxCanaryLadder::interpretResults(), which folds it into
+ * ABJ_404_Solution_CanaryLadderInterpretation::interpret(), which folds it into
  * the ladder matrix. Two consumers over one input is what makes it a module
  * rather than a section of the ladder, the same way
  * ABJ_404_Solution_DetachAbVerdict is.
