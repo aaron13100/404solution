@@ -70,26 +70,57 @@
         }
     }
 
-    /** @param {string} text @param {{opener: string, closer: string}} delimiters @returns {object|null} */
+    /**
+     * Look for a delimiter-bounded JSON region inside a body that would not
+     * parse whole.
+     *
+     * Answers THREE outcomes, not two. This used to return null both when no
+     * such region existed and when one existed but failed to parse, which threw
+     * away the more informative of the two: a body carrying a brace-delimited
+     * region that does not parse is positive evidence that something wrapped or
+     * rewrote our JSON in transit, and that is the single hypothesis this whole
+     * classifier exists to separate. A body with no braces at all is evidence
+     * against it. Collapsing them reported both as plain invalid-json with no
+     * record that a candidate had even been found.
+     *
+     * @param {string} text
+     * @param {{opener: string, closer: string}} delimiters
+     * @returns {{found: boolean, valid: boolean, prefixChars: number, suffixChars: number}}
+     */
     function wrappedJsonCandidate(text, delimiters) {
         var start = text.indexOf(delimiters.opener);
         var end = text.lastIndexOf(delimiters.closer);
         if (start < 0 || end < start) {
-            return null;
+            return { found: false, valid: false, prefixChars: 0, suffixChars: 0 };
         }
         try {
             JSON.parse(text.slice(start, end + 1));
             return {
-                classification: 'valid-json-with-wrapper',
+                found: true,
+                valid: true,
                 prefixChars: start,
                 suffixChars: text.length - end - 1
             };
         } catch (error) {
-            return null;
+            // Deliberately not propagated: this runs in an admin's browser to
+            // DESCRIBE an already-failed response, and the parse error's own
+            // message is the engine's wording for text we are not allowed to
+            // retain. That the region exists and did not parse is the whole of
+            // the evidence, and it is now returned rather than dropped.
+            return { found: true, valid: false, prefixChars: 0, suffixChars: 0 };
         }
     }
 
-    /** @param {string} text @param {number} first @param {object} shape @returns {boolean} */
+    /**
+     * Record what the wrapper probe found, and report whether it settled the
+     * classification.
+     *
+     * `wrapperCandidateFound` is written on every path, including the ones that
+     * return false, because "we looked and found no JSON region" is a finding
+     * the reader needs in order to interpret a bare invalid-json.
+     *
+     * @param {string} text @param {number} first @param {object} shape @returns {boolean}
+     */
     function applyWrappedShape(text, first, shape) {
         var firstChar = text.charAt(first);
         var wrapped;
@@ -98,13 +129,25 @@
         } else if (firstChar === '[') {
             wrapped = wrappedJsonCandidate(text, ARRAY_DELIMITERS);
         } else {
-            wrapped = wrappedJsonCandidate(text, OBJECT_DELIMITERS) ||
-                wrappedJsonCandidate(text, ARRAY_DELIMITERS);
+            wrapped = wrappedJsonCandidate(text, OBJECT_DELIMITERS);
+            if (!wrapped.valid) {
+                var asArray = wrappedJsonCandidate(text, ARRAY_DELIMITERS);
+                // A found-but-broken object region still counts as found even
+                // when the array probe finds nothing, so the two are OR-ed
+                // rather than the second simply replacing the first.
+                wrapped = {
+                    found: wrapped.found || asArray.found,
+                    valid: asArray.valid,
+                    prefixChars: asArray.prefixChars,
+                    suffixChars: asArray.suffixChars
+                };
+            }
         }
-        if (!wrapped) {
+        shape.wrapperCandidateFound = wrapped.found;
+        if (!wrapped.valid) {
             return false;
         }
-        shape.classification = wrapped.classification;
+        shape.classification = 'valid-json-with-wrapper';
         shape.prefixChars = wrapped.prefixChars;
         shape.suffixChars = wrapped.suffixChars;
         return true;
@@ -115,7 +158,8 @@
      * @returns {{classification: string, length: number, leadingWhitespace: number,
      *   trailingWhitespace: number, firstSignificantCodeUnit: number|null,
      *   lastSignificantCodeUnit: number|null, prefixChars: number,
-     *   suffixChars: number, parseErrorOffset: number|null}}
+     *   suffixChars: number, parseErrorOffset: number|null,
+     *   wrapperCandidateFound: boolean}}
      */
     function inspect(body) {
         var text = typeof body === 'string' ? body : '';
@@ -130,7 +174,11 @@
             lastSignificantCodeUnit: last >= 0 ? text.charCodeAt(last) : null,
             prefixChars: 0,
             suffixChars: 0,
-            parseErrorOffset: null
+            parseErrorOffset: null,
+            // Whether a delimiter-bounded JSON region was found at all. False
+            // on bodies that never reach the wrapper probe (empty, whitespace,
+            // natively valid), which is accurate: no region was found.
+            wrapperCandidateFound: false
         };
         if (text.length === 0) {
             return shape;
