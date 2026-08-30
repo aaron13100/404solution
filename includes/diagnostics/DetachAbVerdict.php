@@ -118,8 +118,22 @@ final class ABJ_404_Solution_DetachAbVerdict {
 
         return array(
             'verdict' => $verdict,
-            // Derived, never decided here: exactly one is true on every path,
-            // by construction rather than by the arithmetic happening to agree.
+            // WIRE SERIALIZATION of the discriminant above, not a second source
+            // of truth. `verdict` is authoritative; in-process code branches on
+            // it and never on these. They exist because they are published
+            // support-payload fields (docs/diagnostic-catalog.md, payload schema
+            // version 2, and already present in captured payloads), so they
+            // cannot be dropped without a schema bump -- a reader that only
+            // knows the boolean names must keep working.
+            //
+            // The previous note here claimed exactly one is true "by
+            // construction". That is true at the moment this array is built and
+            // says nothing afterwards: this is a mutable array, so once it is
+            // returned, an edit to `verdict` alone, or to one flag alone, makes
+            // the record contradict itself, and no accessor is standing between
+            // a caller and that. The guarantee is enforced by
+            // DetachAbVerdictTest::testTheDerivedFlagsAlwaysAgreeWithTheDiscriminant
+            // across every reachable verdict, not by this comment.
             'detachCausal' => $verdict === self::VERDICT_DETACH_CAUSAL,
             'transientCausal' => $verdict === self::VERDICT_TRANSIENT_CAUSAL,
             'neitherModeHelps' => $verdict === self::VERDICT_NEITHER_MODE_HELPS,
