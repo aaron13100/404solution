@@ -35,7 +35,7 @@ class ABJ_404_Solution_EngineProfileResolver {
     /**
      * Per-blog memo of the resolved profile rows. Scoped to the blog id active
      * at cache time (not just the request) because wp_abj404_engine_profiles is
-     * a genuinely per-blog table (getTableName() derives it from $wpdb->prefix,
+     * a genuinely per-blog table (the repository derives it from $wpdb->prefix,
      * which switch_to_blog() changes): a multisite background batch that
      * switch_to_blog()s mid-request (DatabaseUpgradeMultiSite::processMultisiteBatch(),
      * NGramCacheRebuildScheduler, network-wide deactivation/uninstall) would
@@ -52,8 +52,8 @@ class ABJ_404_Solution_EngineProfileResolver {
     private $cachedProfilesBlogId = null;
 
     /** @var ABJ_404_Solution_DataAccess|null Lazy DAO accessor for centralized query handling. */
-    /** @var ABJ_404_Solution_DatabaseCore|null */
-    private $dbCore = null;
+    /** @var ABJ_404_Solution_EngineProfileRepository|null */
+    private $repository = null;
 
     /** @return self */
     public static function getInstance() {
@@ -64,17 +64,15 @@ class ABJ_404_Solution_EngineProfileResolver {
     }
 
     /**
-     * Lazy dbCore accessor, defers resolution until first use so unit tests
-     * that exercise pure-logic methods (URL matching, JSON decoding) don't
-     * boot the database layer.
-     *
-     * @return ABJ_404_Solution_DatabaseCore
+     * Lazy repository accessor, deferring resolution until first use so unit
+     * tests that exercise pure-logic methods (URL matching, JSON decoding)
+     * never boot the database layer.
      */
-    private function dbCore() {
-        if ($this->dbCore === null) {
-            $this->dbCore = abj_service('db_core');
+    private function repository(): ABJ_404_Solution_EngineProfileRepository {
+        if ($this->repository === null) {
+            $this->repository = new ABJ_404_Solution_EngineProfileRepository();
         }
-        return $this->dbCore;
+        return $this->repository;
     }
 
     /**
@@ -167,25 +165,7 @@ class ABJ_404_Solution_EngineProfileResolver {
             return $this->cachedProfiles;
         }
 
-        $table = $this->getTableName();
-
-        if ($this->tableIsAbsent($table)) {
-            $this->cachedProfiles = [];
-            $this->cachedProfilesBlogId = $currentBlogId;
-            return $this->cachedProfiles;
-        }
-
-        $queryResult = $this->dbCore()->queryAndGetResults(
-            "SELECT `id`, `name`, `url_pattern`, `is_regex`, `enabled_engines`, `priority`
-             FROM `{$table}`
-             WHERE `status` = 1
-             ORDER BY `priority` ASC, `id` ASC
-             LIMIT %d",
-            ['query_params' => [200], 'result_type' => OBJECT]
-        );
-        $rows = $queryResult['rows'] ?? [];
-
-        $this->cachedProfiles = is_array($rows) ? $rows : [];
+        $this->cachedProfiles = $this->repository()->readActiveProfiles();
         $this->cachedProfilesBlogId = $currentBlogId;
         return $this->cachedProfiles;
     }
@@ -307,97 +287,15 @@ class ABJ_404_Solution_EngineProfileResolver {
     }
 
     /**
-     * @return string The fully-prefixed table name.
-     */
-    private function getTableName(): string {
-        global $wpdb;
-        return strtolower($wpdb->prefix) . 'abj404_engine_profiles';
-    }
-
-    /**
-     * Whether the engine profiles table is known NOT to be there.
-     *
-     * SHOW TABLES LIKE returns no rows both for a table that is not there and
-     * for a probe that never ran, and the two answers must not share a code
-     * path: a false "absent" caches an empty profile set for the rest of the
-     * request, so one failed probe silently drops every custom search-engine
-     * profile out of matching (and out of the admin list) until the next
-     * request. last_error is what separates them, and an unanswerable probe
-     * lets the SELECT below run so the centralized handler reports the fault.
-     *
-     * @param string $table
-     * @return bool
-     */
-    private function tableIsAbsent(string $table): bool {
-        $queryResult = $this->dbCore()->queryAndGetResults(
-            'SHOW TABLES LIKE %s',
-            ['query_params' => [$table]]
-        );
-        $lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error'])
-            ? trim($queryResult['last_error']) : '';
-        if ($lastError !== '' || !empty($queryResult['timed_out'])) {
-            return false;
-        }
-        $rows = isset($queryResult['rows']) && is_array($queryResult['rows']) ? $queryResult['rows'] : [];
-        $first = $rows[0] ?? null;
-        if (!is_array($first)) {
-            return true;
-        }
-        $firstValue = reset($first);
-        return $firstValue !== $table;
-    }
-
-    /**
      * Insert or update a profile row.
      *
      * @param array<string, mixed> $data
      * @return int|false Inserted/updated row ID, or false on failure.
      */
     public function saveProfile(array $data) {
-        $table = $this->getTableName();
-
-        $id = isset($data['id']) && is_numeric($data['id']) ? (int)$data['id'] : 0;
-
-        $name            = isset($data['name'])            ? sanitize_text_field(is_string($data['name']) ? $data['name'] : '')                                 : '';
-        $urlPattern      = isset($data['url_pattern'])     ? wp_unslash(is_string($data['url_pattern']) ? $data['url_pattern'] : '')                           : '';
-        $isRegex         = isset($data['is_regex'])        ? (int)(bool)$data['is_regex']                                                                      : 0;
-        $enabledEngines  = isset($data['enabled_engines']) ? (is_string($data['enabled_engines']) ? $data['enabled_engines'] : '[]')                           : '[]';
-        $priority        = isset($data['priority'])        ? (is_numeric($data['priority']) ? (int)$data['priority'] : 0)                                      : 0;
-        $status          = isset($data['status'])          ? (int)(bool)$data['status']                                                                        : 1;
-
-        // Validate enabled_engines is valid JSON array.
-        $decoded = json_decode($enabledEngines, true);
-        if (!is_array($decoded)) {
-            $enabledEngines = '[]';
-        }
-
-        if ($id > 0) {
-            $queryResult = $this->dbCore()->queryAndGetResults(
-                "UPDATE `{$table}`
-                    SET `name` = %s, `url_pattern` = %s, `is_regex` = %d,
-                        `enabled_engines` = %s, `priority` = %d, `status` = %d
-                  WHERE `id` = %d",
-                ['query_params' => [$name, $urlPattern, $isRegex, $enabledEngines, $priority, $status, $id]]
-            );
-            $this->cachedProfiles = null;
-            $this->cachedProfilesBlogId = null;
-            $updateError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
-            return $updateError === '' ? $id : false;
-        }
-
-        $queryResult = $this->dbCore()->queryAndGetResults(
-            "INSERT INTO `{$table}` (`name`, `url_pattern`, `is_regex`, `enabled_engines`, `priority`, `status`)
-                  VALUES (%s, %s, %d, %s, %d, %d)",
-            ['query_params' => [$name, $urlPattern, $isRegex, $enabledEngines, $priority, $status]]
-        );
-        $this->cachedProfiles = null;
-        $this->cachedProfilesBlogId = null;
-        $lastError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
-        if ($lastError !== '') {
-            return false;
-        }
-        $insertId = isset($queryResult['insert_id']) && is_scalar($queryResult['insert_id']) ? (int)$queryResult['insert_id'] : 0;
-        return $insertId > 0 ? $insertId : false;
+        $result = $this->repository()->insertOrUpdate($data);
+        $this->clearCache();
+        return $result;
     }
 
     /**
@@ -407,37 +305,29 @@ class ABJ_404_Solution_EngineProfileResolver {
      * @return bool
      */
     public function deleteProfile(int $id): bool {
-        $table = $this->getTableName();
-        $queryResult = $this->dbCore()->queryAndGetResults(
-            "DELETE FROM `{$table}` WHERE `id` = %d",
-            ['query_params' => [$id]]
-        );
-        $this->cachedProfiles = null;
-        $this->cachedProfilesBlogId = null;
-        $deleteError = isset($queryResult['last_error']) && is_string($queryResult['last_error']) ? $queryResult['last_error'] : '';
-        return $deleteError === '';
+        $deleted = $this->repository()->delete($id);
+        $this->clearCache();
+        return $deleted;
     }
 
     /**
-     * Return all profiles (including inactive) for admin display.
+     * Every profile, active or not, for the admin edit screen.
+     *
+     * The rows and the ceiling belong to
+     * ABJ_404_Solution_EngineProfileRepository; this stays as the published
+     * entry point because the admin AJAX handlers reach the profile subsystem
+     * through this singleton, which is also the seam their tests inject at.
+     * Kept deliberately thin: no SQL, no policy, just the subsystem's front door.
      *
      * @return array<int, array<string, mixed>>
      */
     public function getAllProfilesForAdmin(): array {
-        $table = $this->getTableName();
+        return $this->repository()->readAllForAdmin();
+    }
 
-        if ($this->tableIsAbsent($table)) {
-            return [];
-        }
-
-        $queryResult = $this->dbCore()->queryAndGetResults(
-            "SELECT `id`, `name`, `url_pattern`, `is_regex`, `enabled_engines`, `priority`, `status`
-             FROM `{$table}`
-             ORDER BY `priority` ASC, `id` ASC"
-        );
-        $rows = $queryResult['rows'] ?? [];
-
-        return is_array($rows) ? $rows : [];
+    /** Whether the last getAllProfilesForAdmin() call filled the repository's ceiling. */
+    public function adminProfileListWasTruncated(): bool {
+        return $this->repository()->lastAdminReadWasTruncated();
     }
 
     /**

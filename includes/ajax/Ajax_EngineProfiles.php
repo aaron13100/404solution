@@ -42,8 +42,18 @@ class ABJ_404_Solution_Ajax_EngineProfiles {
 
         abj_service('ajax_security_gate')->requireAdminWithNonce('abj404_engine_profiles_nonce');
 
-        $profiles = ABJ_404_Solution_EngineProfileResolver::getInstance()->getAllProfilesForAdmin();
-        wp_send_json_success(['profiles' => $profiles]);
+        $resolver = ABJ_404_Solution_EngineProfileResolver::getInstance();
+        $profiles = $resolver->getAllProfilesForAdmin();
+        // `truncated` travels with the list rather than being inferred from its
+        // length: a capped list and a genuinely short one are the same size to
+        // a reader, and an admin whose profiles stopped appearing must be able
+        // to tell that from having deleted them. Additive, so a client that
+        // does not know the field keeps working.
+        wp_send_json_success([
+            'profiles' => $profiles,
+            'truncated' => $resolver->adminProfileListWasTruncated(),
+            'limit' => ABJ_404_Solution_EngineProfileRepository::MAX_ADMIN_PROFILES,
+        ]);
     }
 
     /**

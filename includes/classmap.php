@@ -222,7 +222,8 @@ $abj404ClassesByDirectory = array(
     ),
     'matching' => array(
         'EngineProfileSaveRequest', 'MatchingEngineOrchestrator', 'RedirectCandidateEvaluator',
-        'WordPressGuessFallback', 'EngineProfileResolver', 'MatchingEngine', 'MatchRequest',
+        'WordPressGuessFallback', 'EngineProfileResolver', 'EngineProfileRepository',
+        'MatchingEngine', 'MatchRequest',
         'MatchResult', 'MinimumAutoRedirectScore', 'NearMissMatch', 'NearMissRecorder',
         'OldPermalinkStructureResolver', 'PermalinkStructureCompiler',
         'OldPermalinkCandidateStructureProvider', 'OldPermalinkPostResolver',
