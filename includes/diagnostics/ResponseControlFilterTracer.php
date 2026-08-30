@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
  *   - AjaxResponseEmitter::sendJsonResponseAndExit() dispatches
  *     `abj404_should_exit` after the echo boundary and before the first flush
  *     checkpoint.
- *   - DetachAbExperiment::resolve() dispatches
+ *   - DetachAbExperiment::assignNextAttempt() dispatches
  *     `abj404_should_run_detach_ab_diagnostic` after the response flush and
  *     before the connection-detach call.
  *   - WordPress status_header() dispatches `status_header` before core header

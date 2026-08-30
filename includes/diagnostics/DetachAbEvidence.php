@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
  * timeout cause matrix, gap G9 / gap-hunt iteration 2 Codex gap #2).
  *
  * The experiment produces its two halves in two different places and never in
- * the same record. ABJ_404_Solution_DetachAbExperiment::resolve()
+ * the same record. ABJ_404_Solution_DetachAbExperiment::assignNextAttempt()
  * decides whether a given table request detaches the connection, and the
  * response tail journals that decision under the request's own id. Whether
  * that same request ever COMPLETED is something only the browser can say, and

@@ -43,10 +43,20 @@ final class ABJ_404_Solution_DetachAbScope {
     /** @var string A 40-character lowercase hex payload fingerprint. */
     private $payloadKey;
 
-    private function __construct(string $sessionId, string $part, string $payloadKey) {
-        $this->sessionId = $sessionId;
-        $this->part = $part;
-        $this->payloadKey = $payloadKey;
+    /**
+     * Keyed, not positional. Three adjacent strings here would put the exact
+     * transposition this type exists to end back inside the type itself: both
+     * named constructors below would still compile with two of them swapped,
+     * and the value they produced would be a well-formed scope for the wrong
+     * workload. The same mistake was made and caught once already in
+     * ABJ_404_Solution_RequestedRedirectIds' own private constructor.
+     *
+     * @param array{sessionId: string, part: string, payloadKey: string} $fields
+     */
+    private function __construct(array $fields) {
+        $this->sessionId = $fields['sessionId'];
+        $this->part = $fields['part'];
+        $this->payloadKey = $fields['payloadKey'];
     }
 
     /**
@@ -60,11 +70,13 @@ final class ABJ_404_Solution_DetachAbScope {
      */
     public static function fromAjaxContext($context): self {
         $fields = is_array($context) ? $context : array();
-        return new self(
-            self::scalarField($fields, 'session_id', ''),
-            self::normalizePart(self::scalarField($fields, 'part', self::DEFAULT_PART)),
-            self::normalizePayloadKey(self::scalarField($fields, 'detach_ab_payload_key', ''))
-        );
+        return new self(array(
+            'sessionId' => self::scalarField($fields, 'session_id', ''),
+            'part' => self::normalizePart(
+                self::scalarField($fields, 'part', self::DEFAULT_PART)),
+            'payloadKey' => self::normalizePayloadKey(
+                self::scalarField($fields, 'detach_ab_payload_key', '')),
+        ));
     }
 
     /**
@@ -77,11 +89,13 @@ final class ABJ_404_Solution_DetachAbScope {
      * @param array{part?: string, payload_key?: string} $options
      */
     public static function forSession(string $sessionId, array $options = array()): self {
-        return new self(
-            $sessionId,
-            self::normalizePart(isset($options['part']) ? (string)$options['part'] : self::DEFAULT_PART),
-            self::normalizePayloadKey(isset($options['payload_key']) ? (string)$options['payload_key'] : '')
-        );
+        return new self(array(
+            'sessionId' => $sessionId,
+            'part' => self::normalizePart(
+                isset($options['part']) ? (string)$options['part'] : self::DEFAULT_PART),
+            'payloadKey' => self::normalizePayloadKey(
+                isset($options['payload_key']) ? (string)$options['payload_key'] : ''),
+        ));
     }
 
     /** The raw session id, needed only to derive keys; never journalled. */

@@ -101,7 +101,13 @@ final class ABJ_404_Solution_DetachAbExperiment {
     }
 
     /**
-     * Resolve the gate, normalized workload, counter slot, and assigned mode.
+     * Reserve this workload's next attempt slot and return its assignment.
+     *
+     * A COMMAND, not a query, and named accordingly since 2026-08-30: calling
+     * this consumes one of the six slots the scope will ever have. It was
+     * called resolve(), which reads as a question, and a reader checking "what
+     * mode is this request in?" twice would have silently burned two thirds of
+     * a counterbalanced pair sequence.
      *
      * `inert` is positive evidence that the experiment did not run. `default`
      * means the bounded experiment finished and the ordinary detach path was
@@ -115,7 +121,7 @@ final class ABJ_404_Solution_DetachAbExperiment {
      *
      * @return array<string, mixed>
      */
-    public static function resolve(ABJ_404_Solution_DetachAbScope $scope): array {
+    public static function assignNextAttempt(ABJ_404_Solution_DetachAbScope $scope): array {
         return ABJ_404_Solution_DetachAbResolutionTracer::traceResolution(
             $scope,
             static function () use ($scope): array {
