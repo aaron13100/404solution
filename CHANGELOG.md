@@ -1,6 +1,6 @@
 # Changelog #
 
-## Version 4.3.5 (August 28, 2026) ##
+## Version 4.3.5 (August 30, 2026) ##
 
 **Bug Fixes**
 

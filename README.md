@@ -204,7 +204,7 @@ Check out [AJ Experience](https://www.ajexperience.com/) for other useful tools 
 
 ## Changelog ##
 
-## Version 4.3.5 (August 28, 2026) ##
+## Version 4.3.5 (August 30, 2026) ##
 
 **Bug Fixes**
 
