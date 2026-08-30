@@ -113,7 +113,24 @@ class ABJ_404_Solution_FeedbackTransport {
             'type' => $type,
         );
         // allow-cache-empty: feedback envelope is generated locally and may contain an intentionally empty payload.
-        set_transient(self::TRANSIENT_PREFIX . $uuid, $envelope, self::TRANSIENT_TTL);
+        $stored = set_transient(self::TRANSIENT_PREFIX . $uuid, $envelope, self::TRANSIENT_TTL);
+        if (!$stored) {
+            // The cron handler's whole job is to load THIS uuid's envelope and
+            // send it. Scheduling it against a store that just refused the
+            // write books a job whose only possible outcome is finding nothing,
+            // and the report is gone with no record that it ever existed.
+            // Options tables do fill up and object caches do go down; those are
+            // the hosting failures this plugin degrades past rather than
+            // crashes on, so this is a warning and not an error, but it is not
+            // silence.
+            ABJ_404_Solution_FeedbackTransportLog::log('warn', sprintf(
+                'abj404_transport: could not persist the %s report envelope (uuid %s); '
+                    . 'no send was scheduled because there is nothing to send.',
+                $type,
+                $uuid
+            ));
+            return;
+        }
         abj_cron_scheduler()->scheduleSingle(self::CRON_HOOK, 0, array($uuid));
 
         // Trigger spawn_cron so the listener runs on the next request rather

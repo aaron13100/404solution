@@ -133,6 +133,7 @@ $abj404ClassesByDirectory = array(
         'DecisiveRecordShutdownFamilies',
         'DecisiveRecordFailureFamilies',
         'AjaxRequestLedger', 'AjaxDiagnosticRequestPolicy', 'DetachAbExperiment',
+        'DetachAbScope', 'DetachAbAttemptCounter',
         'AuthorizationLogTracer', 'PostAuthorizationFailureTracer',
         'TableRenderTranslationTracer', 'DiagnosticInternalHookObserver',
         'HookInstrumentationRegistration', 'HookInstrumentationRegistry',

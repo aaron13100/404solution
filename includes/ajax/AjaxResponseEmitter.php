@@ -364,19 +364,9 @@ final class ABJ_404_Solution_AjaxResponseEmitter {
         if ($checkpointRequestId === '') {
             return false;
         }
-        $sessionId = '';
-        $part = 'all';
-        $payloadKey = '';
-        if (isset($GLOBALS['abj404_ajax_context']) && is_array($GLOBALS['abj404_ajax_context'])) {
-            $rawSessionId = $GLOBALS['abj404_ajax_context']['session_id'] ?? '';
-            $sessionId = is_scalar($rawSessionId) ? (string)$rawSessionId : '';
-            $rawPart = $GLOBALS['abj404_ajax_context']['part'] ?? 'all';
-            $part = is_scalar($rawPart) ? (string)$rawPart : 'all';
-            $rawPayloadKey = $GLOBALS['abj404_ajax_context']['detach_ab_payload_key'] ?? '';
-            $payloadKey = is_scalar($rawPayloadKey) ? (string)$rawPayloadKey : '';
-        }
-        $abDetachMode = ABJ_404_Solution_DetachAbExperiment::resolve(
-            $sessionId, $part, $payloadKey);
+        $scope = ABJ_404_Solution_DetachAbScope::fromAjaxContext(
+            $GLOBALS['abj404_ajax_context'] ?? null);
+        $abDetachMode = ABJ_404_Solution_DetachAbExperiment::resolve($scope);
         ABJ_404_Solution_AjaxCheckpointLogger::record($checkpointRequestId, 'detach_ab_mode', $abDetachMode);
         return $abDetachMode['mode'] === 'off';
     }
